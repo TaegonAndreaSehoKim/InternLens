@@ -1,0 +1,13 @@
+{
+  "job_id": "job_001",
+  "company": "Example AI",
+  "title": "Machine Learning Intern",
+  "location": "San Francisco, CA",
+  "description": "We are looking for a machine learning intern...",
+  "min_qualifications": "Python, SQL, machine learning fundamentals",
+  "preferred_qualifications": "Experience with recommendation systems, AWS, Docker",
+  "posting_date": "2026-03-25",
+  "sponsorship_info": "No sponsorship available",
+  "employment_type": "Internship",
+  "source": "manual"
+}

@@ -1,0 +1,13 @@
+{
+  "profile_id": "seho_001",
+  "resume_text": "Full resume text goes here...",
+  "degree_level": "Master's",
+  "grad_date": "2027-12",
+  "preferred_roles": ["Machine Learning Engineer Intern", "Applied Scientist Intern"],
+  "preferred_locations": ["California", "Remote"],
+  "target_industries": ["AI", "Tech"],
+  "sponsorship_need": true,
+  "extracted_skills": ["Python", "PyTorch", "Machine Learning", "Data Analysis"],
+  "years_of_experience": 1,
+  "notes": "Interested in recommendation and ranking systems"
+}
