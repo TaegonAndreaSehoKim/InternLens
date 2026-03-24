@@ -21,3 +21,10 @@
 
 ## Reflection
 Day 1 was mainly about setting up the project foundation. Although no application logic was implemented yet, establishing the repository structure and documentation workflow was important for keeping development organized from the beginning.
+
+## Day 2 Summary
+- Defined the initial schema for job postings and candidate profiles.
+- Documented the schema in `docs/architecture/schema.md`.
+- Created sample JSON files for one job posting and one candidate profile.
+- Prepared the project structure for the baseline matching pipeline.
+- Updated the sample candidate graduation date to match the expected real profile timeline more closely.
