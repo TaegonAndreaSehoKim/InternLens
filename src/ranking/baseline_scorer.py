@@ -2,6 +2,25 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
+# A small controlled keyword list for the baseline version.
+# This can be expanded later or replaced with a more robust skill extraction pipeline.
+SKILL_KEYWORDS = [
+    "python",
+    "sql",
+    "pytorch",
+    "tensorflow",
+    "aws",
+    "docker",
+    "kubernetes",
+    "airflow",
+    "spark",
+    "machine learning",
+    "deep learning",
+    "recommendation systems",
+    "data analysis",
+    "statistics",
+]
+
 
 def _tokenize(text: str) -> set[str]:
     """
@@ -19,33 +38,39 @@ def _safe_ratio(numerator: int, denominator: int) -> float:
     return numerator / denominator
 
 
+def _extract_keywords_from_text(text: str) -> Set[str]:
+    """
+    Extract known skill keywords that appear in the given text.
+    This is a simple rule-based baseline extractor.
+    """
+    text = text.lower()
+    return {keyword for keyword in SKILL_KEYWORDS if keyword in text}
+
+
 def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], List[str]]:
     """
-    Measure how well the candidate's extracted skills overlap with
-    the job's required and preferred qualification text.
+    Measure how well the candidate covers the job's required and preferred skills.
 
-    Returns:
-        skill_score: baseline skill match score in [0, 1]
-        matched_skills: all matched skills
-        required_matches: skills found in required qualifications
+    Important:
+    This version scores against the job's requested skills, not against the
+    full size of the candidate's skill set. That makes the score much more
+    interpretable for ranking.
     """
     candidate_skills = profile["skill_set"]
 
-    required_text = job["min_qualifications"]
-    preferred_text = job["preferred_qualifications"]
+    required_keywords = _extract_keywords_from_text(job["min_qualifications"])
+    preferred_keywords = _extract_keywords_from_text(job["preferred_qualifications"])
 
-    # Check whether each candidate skill appears in the required/preferred text.
-    required_matches = sorted([skill for skill in candidate_skills if skill in required_text])
-    preferred_matches = sorted([skill for skill in candidate_skills if skill in preferred_text])
-
+    required_matches = sorted(candidate_skills & required_keywords)
+    preferred_matches = sorted(candidate_skills & preferred_keywords)
     matched_skills = sorted(set(required_matches + preferred_matches))
 
-    # In this baseline, the score is based on how many candidate skills appear in the job text.
-    required_overlap_score = _safe_ratio(len(required_matches), max(len(candidate_skills), 1))
-    preferred_overlap_score = _safe_ratio(len(preferred_matches), max(len(candidate_skills), 1))
+    # Score against job-side demand instead of candidate-side inventory.
+    required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
+    preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
 
-    # Weight required qualifications more than preferred ones.
-    skill_score = min(1.0, required_overlap_score * 0.7 + preferred_overlap_score * 0.3)
+    # Give more weight to required qualifications.
+    skill_score = min(1.0, required_overlap_score * 0.75 + preferred_overlap_score * 0.25)
 
     return skill_score, matched_skills, required_matches
 
@@ -141,33 +166,19 @@ def _generate_reasons(
 
 def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
     """
-    Generate a small list of missing skills by checking common ML/data keywords
-    found in the job qualifications but missing from the candidate profile.
+    Generate missing skills by comparing the candidate's skills against
+    the job's extracted required and preferred keywords.
     """
     candidate_skills = profile["skill_set"]
 
-    # This is a manually defined keyword list for the first baseline version.
-    required_keywords = [
-        "python",
-        "sql",
-        "pytorch",
-        "tensorflow",
-        "aws",
-        "docker",
-        "kubernetes",
-        "airflow",
-        "spark",
-        "machine learning",
-        "deep learning",
-        "recommendation systems",
-    ]
+    required_keywords = _extract_keywords_from_text(job["min_qualifications"])
+    preferred_keywords = _extract_keywords_from_text(job["preferred_qualifications"])
 
-    combined_text = f"{job['min_qualifications']} {job['preferred_qualifications']}"
-    gaps = []
+    # Prioritize missing required skills first, then preferred skills.
+    missing_required = sorted(required_keywords - candidate_skills)
+    missing_preferred = sorted(preferred_keywords - candidate_skills)
 
-    for keyword in required_keywords:
-        if keyword in combined_text and keyword not in candidate_skills:
-            gaps.append(keyword)
+    gaps = missing_required + [skill for skill in missing_preferred if skill not in missing_required]
 
     return gaps[:4]
 
