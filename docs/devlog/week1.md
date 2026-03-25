@@ -28,3 +28,10 @@ Day 1 was mainly about setting up the project foundation. Although no applicatio
 - Created sample JSON files for one job posting and one candidate profile.
 - Prepared the project structure for the baseline matching pipeline.
 - Updated the sample candidate graduation date to match the expected real profile timeline more closely.
+
+## Day 3 Summary
+- Implemented parsers for candidate profiles and job postings.
+- Built the first baseline ranking pipeline using skill match, role match, and location preference.
+- Refactored the scoring logic to separate fit score from blocking constraints such as sponsorship availability.
+- Improved the skill scoring method to measure coverage of job-required keywords instead of comparing against the full candidate skill inventory.
+- Ran the first end-to-end baseline example and verified that the output was interpretable.
