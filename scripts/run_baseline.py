@@ -38,6 +38,10 @@ def main() -> None:
         print(f"    Location: {job['location']}")
         print(f"    Score: {job['score']}")
         print(f"    Action: {job['action_label']}")
+        print(
+            f"    Blocking Issues: "
+            f"{', '.join(job['blocking_issues']) if job['blocking_issues'] else 'None'}"
+        )
         print(f"    Matched Skills: {', '.join(job['matched_skills']) if job['matched_skills'] else 'None'}")
         print(f"    Skill Gaps: {', '.join(job['skill_gaps']) if job['skill_gaps'] else 'None'}")
         print("    Reasons:")

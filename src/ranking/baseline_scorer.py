@@ -93,17 +93,19 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
     return 0.0
 
 
-def _compute_sponsorship_penalty(profile: Dict[str, Any], job: Dict[str, Any]) -> float:
+def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
     """
-    Apply a penalty if the candidate needs sponsorship but the job explicitly says
-    that sponsorship is not available.
+    Check hard constraints that may make a job effectively ineligible,
+    even if the overall fit score is strong.
     """
+    blockers: List[str] = []
+
     sponsorship_text = job["sponsorship_info"]
 
     if profile["sponsorship_need"] and "no sponsorship" in sponsorship_text:
-        return 0.35
+        blockers.append("Sponsorship is not available for this role")
 
-    return 0.0
+    return blockers
 
 
 def _generate_reasons(
@@ -111,7 +113,7 @@ def _generate_reasons(
     role_score: float,
     location_score: float,
     matched_skills: List[str],
-    sponsorship_penalty: float,
+    blockers: List[str],
 ) -> List[str]:
     """
     Generate human-readable explanation strings from the baseline scoring signals.
@@ -127,8 +129,8 @@ def _generate_reasons(
     if location_score >= 1.0:
         reasons.append("Location preference matches this opportunity")
 
-    if sponsorship_penalty > 0:
-        reasons.append("This role may be less suitable because sponsorship is not available")
+    if blockers:
+        reasons.append("This role has a blocking eligibility constraint")
 
     # Fallback reason when no major signal is strong enough.
     if not reasons:
@@ -173,19 +175,22 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     """
     Score one job for one candidate profile and return the final result dictionary.
+
+    Important design note:
+    - The fit score measures how well the job matches the candidate.
+    - Blocking issues are handled separately instead of being mixed directly
+      into the numeric score.
     """
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
-    sponsorship_penalty = _compute_sponsorship_penalty(profile, job)
+    blockers = _check_blocking_constraints(profile, job)
 
-    # Weighted baseline scoring rule.
-    # Skill match is the most important signal in the first version.
+    # Compute a pure fit score without mixing in hard eligibility blockers.
     raw_score = (
-        skill_score * 0.55
+        skill_score * 0.60
         + role_score * 0.25
-        + location_score * 0.20
-        - sponsorship_penalty
+        + location_score * 0.15
     )
 
     # Clamp the score to [0, 1].
@@ -194,8 +199,10 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     # Convert to a 100-point scale for easier interpretation.
     final_score = round(bounded_score * 100, 2)
 
-    # Simple rule-based action label.
-    if final_score >= 70:
+    # Decide the action label separately from the fit score.
+    if blockers:
+        action_label = "Skip"
+    elif final_score >= 70:
         action_label = "Apply Now"
     elif final_score >= 45:
         action_label = "Apply Later"
@@ -207,7 +214,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         role_score=role_score,
         location_score=location_score,
         matched_skills=matched_skills,
-        sponsorship_penalty=sponsorship_penalty,
+        blockers=blockers,
     )
 
     skill_gaps = _generate_skill_gaps(profile, job)
@@ -222,12 +229,12 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         "matched_skills": matched_skills,
         "skill_gaps": skill_gaps,
         "reasons": reasons,
+        "blocking_issues": blockers,
         # Keep component scores for debugging and analysis.
         "component_scores": {
             "skill_score": round(skill_score, 4),
             "role_score": round(role_score, 4),
             "location_score": round(location_score, 4),
-            "sponsorship_penalty": round(sponsorship_penalty, 4),
         },
     }
 
