@@ -140,11 +140,12 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
     top_results = ranked_jobs[: request.top_k]
+    job_results = [JobResult(**job) for job in top_results]
 
     return RecommendResponse(
         profile_source=profile_source,
         jobs_dir=request.jobs_dir,
         total_jobs_scored=len(ranked_jobs),
-        returned_jobs=len(top_results),
-        results=top_results,
+        returned_jobs=len(job_results),
+        results=job_results,
     )
