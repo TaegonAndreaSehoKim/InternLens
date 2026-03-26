@@ -54,10 +54,11 @@ def test_recommend_endpoint_with_inline_profile_returns_ranked_results() -> None
 
     response = client.post("/recommend", json=payload)
     body = response.json()
+    jobs = load_all_job_postings(JOBS_DIR)
 
     assert response.status_code == 200
     assert body["profile_source"] == "inline_profile_payload"
-    assert body["total_jobs_scored"] == 5
+    assert body["total_jobs_scored"] == len(jobs)
     assert body["returned_jobs"] == 5
     assert len(body["results"]) == 5
     assert body["results"][0]["title"] == "applied scientist intern"
@@ -115,3 +116,14 @@ def test_non_internship_job_triggers_blocker() -> None:
     result = score_job(profile, fake_job)
 
     assert "This role does not appear to be an internship" in result["blocking_issues"]
+
+def test_full_time_phd_job_triggers_multiple_blockers() -> None:
+    profile = load_candidate_profile(PROFILE_PATH)
+    jobs = load_all_job_postings(JOBS_DIR)
+
+    phd_full_time_job = next(job for job in jobs if job["job_id"] == "job_006")
+    result = score_job(profile, phd_full_time_job)
+
+    assert "This role does not appear to be an internship" in result["blocking_issues"]
+    assert "This role appears to require a PhD" in result["blocking_issues"]
+    assert result["action_label"] == "Skip"

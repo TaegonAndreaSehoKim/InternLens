@@ -31,6 +31,37 @@
     }
   },
   {
+    "job_id": "job_006",
+    "company": "research frontier",
+    "title": "machine learning research engineer",
+    "location": "new york, ny",
+    "score": 75.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "deep learning",
+      "statistics"
+    ],
+    "reasons": [
+      "Strong skill overlap in: machine learning, python, pytorch",
+      "Preferred role alignment through: learning, machine",
+      "This role has a blocking eligibility constraint"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.8333,
+      "role_score": 1.0,
+      "location_score": 0.0
+    }
+  },
+  {
     "job_id": "job_005",
     "company": "insight labs",
     "title": "machine learning engineer intern",
