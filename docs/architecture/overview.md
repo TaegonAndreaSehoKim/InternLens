@@ -76,11 +76,12 @@ Blocking issues are handled separately from the numeric score so that a role can
 
 ## Current blocker logic
 
-The current implementation already checks sponsorship mismatch. The next extension is to include lightweight eligibility blockers such as:
+The current implementation checks blocker conditions separately from the fit score. At this stage, the blocker logic includes:
 
-* non-internship job type
-* explicit graduation date mismatch
-* explicit degree requirement mismatch
+- sponsorship mismatch
+- non-internship job type
+- explicit PhD requirement mismatch
+- lightweight graduation timing mismatch checks
 
 ## Next evolution path
 

@@ -35,3 +35,29 @@ Day 1 was mainly about setting up the project foundation. Although no applicatio
 - Refactored the scoring logic to separate fit score from blocking constraints such as sponsorship availability.
 - Improved the skill scoring method to measure coverage of job-required keywords instead of comparing against the full candidate skill inventory.
 - Ran the first end-to-end baseline example and verified that the output was interpretable.
+
+## Day 4 Summary
+- Added multiple sample internship postings to make ranking comparisons more realistic.
+- Improved the baseline ranking logic by filtering overly generic role-title tokens and adding simple skill alias normalization.
+- Added JSON and CSV export for ranked results through `run_baseline.py`.
+- Built the first FastAPI version of the project with `/health` and `/recommend` endpoints.
+- Extended `/recommend` to support inline profile payloads in addition to file-based profile input.
+- Added pytest coverage for core API behavior, sponsorship blocking, ranking order, and blocker-focused cases.
+- Added an architecture overview document and started documenting the current system flow more clearly.
+- Expanded blocker logic beyond sponsorship to include additional eligibility-style checks.
+- Added a blocker-focused sample job to verify that non-internship and PhD-related constraints are surfaced correctly.
+
+## Key Decisions
+- Stopped further heuristic tuning once the baseline ranking became reasonably interpretable.
+- Shifted focus from score tweaking to productization: exports, API, tests, and project documentation.
+- Kept fit score and blocking constraints separate so that the system can distinguish between "good fit but blocked" and "weak fit."
+
+## Problems Encountered
+- Some IDE type warnings appeared when response objects were returned as plain dictionaries instead of typed response models.
+- Test expectations had to be updated after adding more sample jobs to the dataset.
+- Documentation started to drift slightly from the current implementation as blocker logic expanded.
+
+## Next Steps
+- Update `README.md` and `docs/architecture/overview.md` so the documentation matches the current blocker logic.
+- Consider adding one more blocker-focused example if needed for demo clarity.
+- Decide whether the next major step should be feedback-based reranking or semantic retrieval.
