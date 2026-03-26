@@ -1,0 +1,145 @@
+[
+  {
+    "job_id": "job_002",
+    "company": "vision scale",
+    "title": "applied scientist intern",
+    "location": "remote",
+    "score": 77.5,
+    "action_label": "Apply Now",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "statistics",
+      "aws",
+      "recommendation systems",
+      "sql"
+    ],
+    "reasons": [
+      "Strong skill overlap in: data analysis, machine learning, python, pytorch",
+      "Preferred role alignment through: applied",
+      "Location preference matches this opportunity"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 1.0,
+      "location_score": 1.0
+    }
+  },
+  {
+    "job_id": "job_005",
+    "company": "insight labs",
+    "title": "machine learning engineer intern",
+    "location": "irvine, ca",
+    "score": 62.5,
+    "action_label": "Apply Later",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "sql",
+      "aws",
+      "deep learning",
+      "docker"
+    ],
+    "reasons": [
+      "Strong skill overlap in: data analysis, machine learning, python, pytorch",
+      "Preferred role alignment through: learning, machine"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 1.0,
+      "location_score": 0.0
+    }
+  },
+  {
+    "job_id": "job_001",
+    "company": "example ai",
+    "title": "machine learning intern",
+    "location": "san francisco, ca",
+    "score": 55.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "sql",
+      "aws",
+      "docker",
+      "recommendation systems"
+    ],
+    "reasons": [
+      "Strong skill overlap in: machine learning, python",
+      "Preferred role alignment through: learning, machine",
+      "This role has a blocking eligibility constraint"
+    ],
+    "blocking_issues": [
+      "Sponsorship is not available for this role"
+    ],
+    "component_scores": {
+      "skill_score": 0.5,
+      "role_score": 1.0,
+      "location_score": 0.0
+    }
+  },
+  {
+    "job_id": "job_003",
+    "company": "data orbit",
+    "title": "data scientist intern",
+    "location": "los angeles, ca",
+    "score": 37.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "sql",
+      "statistics"
+    ],
+    "reasons": [
+      "Strong skill overlap in: data analysis, machine learning, python"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 0.0,
+      "location_score": 0.0
+    }
+  },
+  {
+    "job_id": "job_004",
+    "company": "cloud forge",
+    "title": "backend software engineer intern",
+    "location": "seattle, wa",
+    "score": 11.25,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [
+      "aws",
+      "docker",
+      "kubernetes"
+    ],
+    "reasons": [
+      "This role was ranked mainly from baseline text and preference signals"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.1875,
+      "role_score": 0.0,
+      "location_score": 0.0
+    }
+  }
+]
