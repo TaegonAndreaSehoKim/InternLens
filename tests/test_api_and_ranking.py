@@ -93,3 +93,25 @@ def test_backend_job_has_lower_score_than_applied_scientist_job() -> None:
     results_by_job_id = {job["job_id"]: score_job(profile, job) for job in jobs}
 
     assert results_by_job_id["job_002"]["score"] > results_by_job_id["job_004"]["score"]
+
+def test_non_internship_job_triggers_blocker() -> None:
+    profile = load_candidate_profile(PROFILE_PATH)
+
+    fake_job = {
+        "job_id": "job_x",
+        "company": "example",
+        "title": "machine learning engineer",
+        "location": "remote",
+        "description": "Full-time machine learning engineer role.",
+        "min_qualifications": "Python, machine learning",
+        "preferred_qualifications": "PyTorch",
+        "posting_date": "2026-03-27",
+        "sponsorship_info": "Sponsorship available",
+        "employment_type": "Full-time",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, fake_job)
+
+    assert "This role does not appear to be an internship" in result["blocking_issues"]

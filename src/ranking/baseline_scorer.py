@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Set, Tuple
 
+import re
+
+from typing import Optional
+
 
 SKILL_KEYWORDS = [
     "python",
@@ -133,13 +137,48 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
     return 0.0
 
 
+def _extract_grad_year(grad_date: str) -> Optional[int]:
+    match = re.search(r"(20\d{2})", grad_date)
+    if match:
+        return int(match.group(1))
+    return None
+
+
 def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
     blockers: List[str] = []
 
-    sponsorship_text = job["sponsorship_info"]
+    sponsorship_text = job["sponsorship_info"].lower()
+    employment_type = job["employment_type"].lower()
+    combined_text = " ".join(
+        [
+            job["title"],
+            job["description"],
+            job["min_qualifications"],
+            job["preferred_qualifications"],
+            job["employment_type"],
+        ]
+    ).lower()
+
+    degree_level = profile["degree_level"].lower()
+    grad_year = _extract_grad_year(profile["grad_date"])
 
     if profile["sponsorship_need"] and "no sponsorship" in sponsorship_text:
         blockers.append("Sponsorship is not available for this role")
+
+    if "intern" not in employment_type and "intern" not in combined_text:
+        blockers.append("This role does not appear to be an internship")
+
+    if "phd" in combined_text and "phd" not in degree_level:
+        blockers.append("This role appears to require a PhD")
+
+    if grad_year is not None:
+        year_matches = re.findall(r"20\d{2}", combined_text)
+        mentioned_years = {int(year) for year in year_matches}
+
+        if mentioned_years:
+            if grad_year not in mentioned_years and (grad_year - 1) not in mentioned_years and (grad_year + 1) not in mentioned_years:
+                if any(keyword in combined_text for keyword in ["graduate", "graduation", "graduating", "expected to graduate"]):
+                    blockers.append("Graduation timing may not match this role")
 
     return blockers
 
