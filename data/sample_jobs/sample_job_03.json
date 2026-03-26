@@ -1,0 +1,14 @@
+{
+  "job_id": "job_002",
+  "company": "vision scale",
+  "title": "applied scientist intern",
+  "location": "remote",
+  "description": "We are looking for an applied scientist intern to work on recommendation and ranking problems for large-scale user-facing systems.",
+  "min_qualifications": "Python, machine learning, statistics, data analysis",
+  "preferred_qualifications": "PyTorch, recommendation systems, SQL, AWS",
+  "posting_date": "2026-03-27",
+  "sponsorship_info": "Sponsorship available",
+  "employment_type": "Internship",
+  "source": "manual",
+  "remote_status": "remote"
+}

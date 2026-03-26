@@ -1,0 +1,14 @@
+{
+  "job_id": "job_004",
+  "company": "cloud forge",
+  "title": "backend software engineer intern",
+  "location": "seattle, wa",
+  "description": "Work on backend infrastructure, APIs, and cloud services for distributed systems.",
+  "min_qualifications": "Python, Docker, Kubernetes, AWS",
+  "preferred_qualifications": "Distributed systems, backend development, APIs, cloud infrastructure",
+  "posting_date": "2026-03-27",
+  "sponsorship_info": "Sponsorship available",
+  "employment_type": "Internship",
+  "source": "manual",
+  "remote_status": "onsite"
+}

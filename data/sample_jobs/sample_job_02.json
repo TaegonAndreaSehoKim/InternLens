@@ -1,0 +1,14 @@
+{
+  "job_id": "job_003",
+  "company": "data orbit",
+  "title": "data scientist intern",
+  "location": "los angeles, ca",
+  "description": "Join our analytics team to build dashboards, run experiments, and analyze product performance.",
+  "min_qualifications": "Python, SQL, statistics, data analysis",
+  "preferred_qualifications": "Machine learning, A/B testing, dashboarding, experimentation",
+  "posting_date": "2026-03-27",
+  "sponsorship_info": "Sponsorship available",
+  "employment_type": "Internship",
+  "source": "manual",
+  "remote_status": "hybrid"
+}

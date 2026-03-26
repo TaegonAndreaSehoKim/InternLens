@@ -1,0 +1,14 @@
+{
+  "job_id": "job_005",
+  "company": "insight labs",
+  "title": "machine learning engineer intern",
+  "location": "irvine, ca",
+  "description": "Build machine learning systems for model training, evaluation, and deployment.",
+  "min_qualifications": "Python, machine learning, data analysis, SQL",
+  "preferred_qualifications": "PyTorch, Docker, AWS, deep learning",
+  "posting_date": "2026-03-27",
+  "sponsorship_info": "Sponsorship available",
+  "employment_type": "Internship",
+  "source": "manual",
+  "remote_status": "hybrid"
+}
