@@ -21,6 +21,8 @@ Given a candidate profile and a set of internship postings, InternLens:
   - blocking issues
   - reasons
 
+This makes it possible to distinguish between a role that is a good fit but blocked by eligibility constraints and a role that is simply a weak fit.
+
 ## Current features
 
 - candidate profile parsing
