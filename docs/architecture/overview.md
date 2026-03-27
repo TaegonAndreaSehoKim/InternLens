@@ -23,10 +23,8 @@ Normalized Profile + Jobs
                 |
                 v
         Baseline Ranking Engine
-      - skill match
-      - role match
-      - location match
-      - blocking constraints
+        - fit scoring
+        - blocker checks
                 |
                 v
            Ranked Job Results
@@ -66,27 +64,39 @@ Normalized Profile + Jobs
 
 ## Current ranking logic
 
-The baseline score is computed from:
+The baseline fit score is computed from:
 
 * skill match
 * role match
 * location match
 
-Blocking issues are handled separately from the numeric score so that a role can still be recognized as a strong fit even when the candidate cannot realistically apply.
+The role-matching step also reduces false positives by filtering overly generic title tokens, and skill matching includes lightweight alias normalization.
 
 ## Current blocker logic
 
-The current implementation checks blocker conditions separately from the fit score. At this stage, the blocker logic includes:
+Blocking issues are evaluated separately from the numeric fit score so that a role can still be recognized as a strong fit even when the candidate cannot realistically apply.
+
+At the current stage, the blocker layer includes:
 
 - sponsorship mismatch
+- expanded eligibility-style checks from job requirements
+
+Examples currently covered include:
+
 - non-internship job type
 - explicit PhD requirement mismatch
 - lightweight graduation timing mismatch checks
 
+## Why fit score and blockers are separated
+
+This separation is a deliberate design choice.
+
+A job can be a strong relevance match based on skills, role, and location, while still being a poor application target because of a hard constraint. Keeping blockers outside the numeric fit score makes the ranking behavior easier to explain and easier to extend.
+
 ## Next evolution path
 
-1. strengthen blocker logic
-2. improve result explanations
+1. improve result explanations and demo clarity
+2. add feedback-based reranking
 3. add semantic retrieval
 4. replace heuristic ranking with learning-to-rank
 5. add persistence and deployment

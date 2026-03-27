@@ -1,6 +1,6 @@
 # InternLens
 
-InternLens is an internship application strategy optimizer that ranks job postings by candidate fit and returns **Apply Now / Apply Later / Skip** recommendations.
+InternLens is an internship application strategy optimizer that ranks job postings by candidate fit and recommends **Apply Now**, **Apply Later**, or **Skip**.
 
 ## Why I built it
 
@@ -23,15 +23,40 @@ Given a candidate profile and a set of internship postings, InternLens:
 
 This makes it possible to distinguish between a role that is a good fit but blocked by eligibility constraints and a role that is simply a weak fit.
 
+## Current ranking logic
+
+The current baseline fit score is computed from:
+
+- skill match
+- role match
+- location match
+
+Blocking constraints are handled separately from the numeric fit score so that a posting can still be recognized as relevant even when the candidate cannot realistically apply.
+
+## Current blocker logic
+
+The current blocker layer includes:
+
+- sponsorship mismatch
+- expanded eligibility-style checks from job requirements
+
+Examples of eligibility-style checks currently covered include:
+
+- non-internship job type
+- explicit PhD requirement mismatch
+- lightweight graduation timing mismatch checks
+
 ## Current features
 
 - candidate profile parsing
 - job posting parsing
 - baseline ranking engine
 - skill alias normalization
+- role matching with generic token filtering
 - blocking constraint handling
 - JSON / CSV result export
 - FastAPI endpoints (`/health`, `/recommend`)
+- inline profile payload support for `/recommend`
 - pytest coverage for core API and ranking behavior
 
 ## Project structure
@@ -96,10 +121,14 @@ python -m pytest -q
 }
 ```
 
+## Notes on the demo data
+
+The sample dataset includes blocker-oriented examples to make recommendation behavior easier to understand. In particular, `job_006` helps demonstrate how a posting can look relevant on fit signals but still be recommended as **Skip** because of blocker logic.
+
 ## Next steps
 
-- richer blocker logic
-- semantic retrieval
-- learning-to-rank models
-- feedback-based reranking
-- deployment
+- improve explanation quality and recommendation transparency
+- add feedback-based reranking
+- add semantic retrieval for better matching recall
+- replace heuristic ranking with learning-to-rank
+- add persistence and deployment
