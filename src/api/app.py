@@ -17,12 +17,16 @@ from src.preprocessing.profile_parser import (
     normalize_candidate_profile,
 )
 from src.ranking.baseline_scorer import rank_jobs
+from src.ranking.feedback_reranker import (
+    apply_feedback_reranking,
+    load_feedback_profile,
+)
 
 
 app = FastAPI(
     title="InternLens API",
     description="Internship application strategy optimizer API",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
@@ -53,10 +57,15 @@ class RecommendRequest(BaseModel):
         default="data/sample_jobs",
         description="Path to the directory containing job posting JSON files, relative to the project root.",
     )
+    feedback_path: Optional[str] = Field(
+        default=None,
+        description="Optional path to a feedback JSON file, relative to the project root.",
+    )
     top_k: int = Field(default=10, ge=1, le=100)
 
     @model_validator(mode="after")
     def validate_profile_source(self) -> "RecommendRequest":
+        # Require at least one profile source so the endpoint has a ranking target.
         if self.profile_path is None and self.profile_data is None:
             raise ValueError("Either profile_path or profile_data must be provided.")
         return self
@@ -75,16 +84,23 @@ class JobResult(BaseModel):
     blocking_issues: List[str]
     component_scores: Dict[str, float]
 
+    # Expose reranking fields only when feedback-based reranking is applied.
+    feedback_adjustment: Optional[float] = None
+    reranked_score: Optional[float] = None
+
 
 class RecommendResponse(BaseModel):
     profile_source: str
     jobs_dir: str
+    feedback_source: Optional[str]
+    reranking_applied: bool
     total_jobs_scored: int
     returned_jobs: int
     results: List[JobResult]
 
 
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
+    # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_candidate_profile(profile_data.model_dump())
 
 
@@ -98,6 +114,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     jobs_dir = PROJECT_ROOT / request.jobs_dir
 
     try:
+        # Resolve the candidate profile from either inline payload or file path.
         if request.profile_data is not None:
             profile = _build_profile_from_payload(request.profile_data)
             profile_source = "inline_profile_payload"
@@ -108,6 +125,19 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
 
         jobs = load_all_job_postings(jobs_dir)
         ranked_jobs = rank_jobs(profile, jobs)
+
+        # Apply optional feedback-based reranking only when a feedback file is provided.
+        reranking_applied = False
+        feedback_source: Optional[str] = None
+        final_jobs = ranked_jobs
+
+        if request.feedback_path is not None:
+            feedback_path = PROJECT_ROOT / request.feedback_path
+            feedback_profile = load_feedback_profile(feedback_path)
+            final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
+            reranking_applied = True
+            feedback_source = str(request.feedback_path)
+
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
@@ -115,13 +145,15 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    top_results = ranked_jobs[: request.top_k]
+    top_results = final_jobs[: request.top_k]
     job_results = [JobResult(**job) for job in top_results]
 
     return RecommendResponse(
         profile_source=profile_source,
         jobs_dir=request.jobs_dir,
-        total_jobs_scored=len(ranked_jobs),
+        feedback_source=feedback_source,
+        reranking_applied=reranking_applied,
+        total_jobs_scored=len(final_jobs),
         returned_jobs=len(job_results),
         results=job_results,
     )
