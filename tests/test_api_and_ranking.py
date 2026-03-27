@@ -175,3 +175,33 @@ def test_rank_jobs_prioritizes_action_labels_before_raw_score() -> None:
     assert ranked[0]["action_label"] in {"Apply Now", "Apply Later"}
     assert ranked[1]["job_id"] == "high_fit_blocked"
     assert ranked[1]["action_label"] == "Skip"
+
+def test_recommend_endpoint_with_profile_path_returns_ranked_results() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "top_k": 3,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+    jobs = load_all_job_postings(JOBS_DIR)
+
+    assert response.status_code == 200
+    assert body["profile_source"] == "data/processed/candidate_profile_example.json"
+    assert body["total_jobs_scored"] == len(jobs)
+    assert body["returned_jobs"] == 3
+    assert len(body["results"]) == 3
+    assert body["results"][0]["action_label"] == "Apply Now"
+
+def test_recommend_endpoint_requires_profile_source() -> None:
+    payload = {
+        "jobs_dir": "data/sample_jobs",
+        "top_k": 5,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 422
+    assert "Either profile_path or profile_data must be provided." in str(body)

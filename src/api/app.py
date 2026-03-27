@@ -12,6 +12,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from src.preprocessing.job_parser import load_all_job_postings
+from src.preprocessing.profile_parser import (
+    load_candidate_profile,
+    normalize_candidate_profile,
+)
 from src.ranking.baseline_scorer import rank_jobs
 
 
@@ -80,34 +84,8 @@ class RecommendResponse(BaseModel):
     results: List[JobResult]
 
 
-def _normalize_text(text: str) -> str:
-    return " ".join(text.lower().strip().split())
-
-
-def _normalize_list(values: List[str]) -> List[str]:
-    normalized: List[str] = []
-    for value in values:
-        if isinstance(value, str) and value.strip():
-            normalized.append(_normalize_text(value))
-    return normalized
-
-
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
-    parsed_profile = {
-        "profile_id": profile_data.profile_id,
-        "resume_text": profile_data.resume_text,
-        "degree_level": _normalize_text(profile_data.degree_level),
-        "grad_date": str(profile_data.grad_date).strip(),
-        "preferred_roles": _normalize_list(profile_data.preferred_roles),
-        "preferred_locations": _normalize_list(profile_data.preferred_locations),
-        "target_industries": _normalize_list(profile_data.target_industries),
-        "sponsorship_need": bool(profile_data.sponsorship_need),
-        "extracted_skills": _normalize_list(profile_data.extracted_skills),
-        "years_of_experience": profile_data.years_of_experience,
-        "notes": profile_data.notes,
-    }
-    parsed_profile["skill_set"] = set(parsed_profile["extracted_skills"])
-    return parsed_profile
+    return normalize_candidate_profile(profile_data.model_dump())
 
 
 @app.get("/health")
@@ -125,8 +103,6 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             profile_source = "inline_profile_payload"
         else:
             profile_path = PROJECT_ROOT / str(request.profile_path)
-            from src.preprocessing.profile_parser import load_candidate_profile
-
             profile = load_candidate_profile(profile_path)
             profile_source = str(request.profile_path)
 

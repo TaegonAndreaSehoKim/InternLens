@@ -25,22 +25,11 @@ def _normalize_list(values: List[str]) -> List[str]:
     return normalized
 
 
-def load_candidate_profile(file_path: str | Path) -> Dict[str, Any]:
+def normalize_candidate_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Load a candidate profile JSON file and return a normalized dictionary
-    that is easy to use for downstream scoring and ranking.
+    Normalize a candidate profile dictionary so both file-based input
+    and inline API payloads follow the same schema and rules.
     """
-    path = Path(file_path)
-
-    # Fail early if the input file does not exist.
-    if not path.exists():
-        raise FileNotFoundError(f"Candidate profile file not found: {path}")
-
-    # Read the JSON file.
-    with path.open("r", encoding="utf-8") as f:
-        profile = json.load(f)
-
-    # These fields are required for the first baseline pipeline.
     required_fields = [
         "profile_id",
         "resume_text",
@@ -52,12 +41,10 @@ def load_candidate_profile(file_path: str | Path) -> Dict[str, Any]:
         "extracted_skills",
     ]
 
-    # Report exactly which required fields are missing.
     missing_fields = [field for field in required_fields if field not in profile]
     if missing_fields:
         raise ValueError(f"Missing required profile fields: {missing_fields}")
 
-    # Build a normalized version of the candidate profile.
     parsed_profile = {
         "profile_id": profile["profile_id"],
         "resume_text": profile["resume_text"],
@@ -72,7 +59,21 @@ def load_candidate_profile(file_path: str | Path) -> Dict[str, Any]:
         "notes": profile.get("notes", ""),
     }
 
-    # Store skills as a set to make overlap checks faster later.
     parsed_profile["skill_set"] = set(parsed_profile["extracted_skills"])
-
     return parsed_profile
+
+
+def load_candidate_profile(file_path: str | Path) -> Dict[str, Any]:
+    """
+    Load a candidate profile JSON file and return a normalized dictionary
+    that is easy to use for downstream scoring and ranking.
+    """
+    path = Path(file_path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Candidate profile file not found: {path}")
+
+    with path.open("r", encoding="utf-8") as f:
+        profile = json.load(f)
+
+    return normalize_candidate_profile(profile)
