@@ -101,14 +101,15 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
     return skill_score, matched_skills, required_matches
 
 
-def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str]]:
+def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], Optional[str]]:
     title_tokens = _meaningful_role_tokens(job["title"])
 
     if not profile["preferred_roles"]:
-        return 0.0, []
+        return 0.0, [], None
 
     best_score = 0.0
     best_overlap_tokens: List[str] = []
+    best_preferred_role: Optional[str] = None
 
     for preferred_role in profile["preferred_roles"]:
         role_tokens = _meaningful_role_tokens(preferred_role)
@@ -118,8 +119,9 @@ def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[f
         if score > best_score:
             best_score = score
             best_overlap_tokens = overlap_tokens
+            best_preferred_role = preferred_role
 
-    return best_score, best_overlap_tokens
+    return best_score, best_overlap_tokens, best_preferred_role
 
 
 def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> float:
@@ -186,7 +188,7 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
 def _generate_reasons(
     skill_score: float,
     role_score: float,
-    role_overlap_tokens: List[str],
+    best_preferred_role: Optional[str],
     location_score: float,
     matched_skills: List[str],
     blockers: List[str],
@@ -194,19 +196,19 @@ def _generate_reasons(
     reasons: List[str] = []
 
     if skill_score >= 0.35 and matched_skills:
-        reasons.append(f"Strong skill overlap in: {', '.join(matched_skills[:4])}")
+        reasons.append(f"Matched on key skills: {', '.join(matched_skills[:4])}")
 
-    if role_score >= 0.34 and role_overlap_tokens:
-        reasons.append(f"Preferred role alignment through: {', '.join(role_overlap_tokens[:3])}")
+    if role_score >= 0.34 and best_preferred_role:
+        reasons.append(f"Title aligns with preferred role: {best_preferred_role}")
 
     if location_score >= 1.0:
-        reasons.append("Location preference matches this opportunity")
+        reasons.append("Location matches a preferred target")
 
     if blockers:
-        reasons.append("This role has a blocking eligibility constraint")
+        reasons.append("Blocked by eligibility constraints in the posting")
 
     if not reasons:
-        reasons.append("This role was ranked mainly from baseline text and preference signals")
+        reasons.append("Limited match signals beyond the current baseline heuristics")
 
     return reasons[:3]
 
@@ -227,7 +229,7 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 
 def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
-    role_score, role_overlap_tokens = _compute_role_match(profile, job)
+    role_score, _, best_preferred_role = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
     blockers = _check_blocking_constraints(profile, job)
 
@@ -252,7 +254,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     reasons = _generate_reasons(
         skill_score=skill_score,
         role_score=role_score,
-        role_overlap_tokens=role_overlap_tokens,
+        best_preferred_role=best_preferred_role,
         location_score=location_score,
         matched_skills=matched_skills,
         blockers=blockers,
