@@ -61,3 +61,25 @@ Day 1 was mainly about setting up the project foundation. Although no applicatio
 - Update `README.md` and `docs/architecture/overview.md` so the documentation matches the current blocker logic.
 - Consider adding one more blocker-focused example if needed for demo clarity.
 - Decide whether the next major step should be feedback-based reranking or semantic retrieval.
+
+## Day 5
+
+Today I focused on improving InternLens from a working baseline into a more product-like recommendation tool.
+
+### What I changed
+- Cleaned up repo hygiene by fixing `.gitignore` behavior and removing tracked IDE artifacts.
+- Updated ranking to use **blocker-aware ordering** so actionable jobs stay above skipped jobs.
+- Unified candidate profile normalization for both file-based input and inline API payloads.
+- Improved explanation text to make recommendation reasons read more naturally.
+- Added **feedback-based reranking v1** using simple feedback signals such as `applied`, `saved`, and `skipped`.
+- Connected feedback reranking to both the local script flow and the FastAPI `/recommend` endpoint.
+- Updated README and architecture docs to reflect the latest ranking and reranking behavior.
+
+### Validation
+- Expanded tests and ended the session with **15 passing tests**.
+- Manually verified the `/recommend` endpoint with feedback input.
+
+### Next steps
+- Consider adding inline feedback payload support in the API.
+- Improve reranking explainability.
+- Decide whether to continue improving feedback reranking or move toward semantic retrieval.
