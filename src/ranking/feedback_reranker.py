@@ -15,6 +15,40 @@ FEEDBACK_WEIGHTS = {
     "skipped": -0.75,
 }
 
+ACTION_PRIORITY = {
+        "Apply Now": 0,
+        "Apply Later": 1,
+        "Skip": 2,
+    }
+
+# Reuse a small, explicit skill vocabulary so feedback similarity
+# focuses on meaningful signals instead of generic text tokens.
+KNOWN_SKILL_PHRASES = {
+    "python",
+    "pytorch",
+    "machine learning",
+    "data analysis",
+    "sql",
+    "aws",
+    "docker",
+    "deep learning",
+    "statistics",
+    "recommendation systems",
+    "kubernetes",
+}
+
+# Ignore generic title words so feedback similarity is driven more by
+# meaningful specialization words than by common role boilerplate.
+GENERIC_ROLE_TOKENS = {
+    "intern",
+    "engineer",
+    "scientist",
+    "software",
+    "developer",
+    "research",
+    "role",
+    "position",
+}
 
 def _normalize_text(text: str) -> str:
     """Normalize free text for simple token-based comparisons."""
@@ -27,17 +61,26 @@ def _tokenize_title(title: str) -> Set[str]:
 
 
 def _extract_job_skill_set(job: Dict[str, Any]) -> Set[str]:
-    """Extract lightweight skill-like tokens from job qualification fields."""
-    skills = set()
+    """
+    Extract a conservative skill set from the job record by matching
+    against a small known skill phrase vocabulary.
+    """
+    combined_text = " ".join(
+        [
+            str(job.get("title", "")),
+            str(job.get("description", "")),
+            str(job.get("min_qualifications", "")),
+            str(job.get("preferred_qualifications", "")),
+        ]
+    ).lower()
 
-    for field_name in ("min_qualifications", "preferred_qualifications"):
-        field_value = job.get(field_name, "")
-        if isinstance(field_value, str) and field_value.strip():
-            tokens = [token.strip(" ,.;:()[]") for token in field_value.lower().split()]
-            skills.update(token for token in tokens if token)
+    matched_skills = {
+        skill_phrase
+        for skill_phrase in KNOWN_SKILL_PHRASES
+        if skill_phrase in combined_text
+    }
 
-    return skills
-
+    return matched_skills
 
 def load_feedback_profile(file_path: str | Path) -> Dict[str, Any]:
     """Load and validate a simple feedback JSON file."""
@@ -95,7 +138,7 @@ def build_feedback_lookup(
         job = job_lookup[job_id]
         feedback_lookup[job_id] = {
             "feedback_label": event["feedback_label"],
-            "title_tokens": _tokenize_title(job["title"]),
+            "title_tokens": _meaningful_title_tokens(job["title"]),
             "skill_tokens": _extract_job_skill_set(job),
         }
 
@@ -110,8 +153,7 @@ def _safe_ratio(numerator: int, denominator: int) -> float:
 
 
 def _compute_similarity(current_job: Dict[str, Any], feedback_job: Dict[str, Any]) -> float:
-    """Estimate similarity between a current job and a feedback-tagged reference job."""
-    current_title_tokens = _tokenize_title(current_job["title"])
+    current_title_tokens = _meaningful_title_tokens(current_job["title"])
     current_skill_tokens = _extract_job_skill_set(current_job)
 
     title_overlap = current_title_tokens & feedback_job["title_tokens"]
@@ -120,8 +162,9 @@ def _compute_similarity(current_job: Dict[str, Any], feedback_job: Dict[str, Any
     title_score = _safe_ratio(len(title_overlap), max(len(feedback_job["title_tokens"]), 1))
     skill_score = _safe_ratio(len(skill_overlap), max(len(feedback_job["skill_tokens"]), 1))
 
-    # Title overlap matters a bit more because title usually captures the target role faster.
-    return (0.6 * title_score) + (0.4 * skill_score)
+    # Put slightly more weight on skill overlap because it is more stable
+    # than generic job title wording.
+    return (0.4 * title_score) + (0.6 * skill_score)
 
 
 def compute_feedback_adjustment(
@@ -141,12 +184,6 @@ def compute_feedback_adjustment(
         adjustment += similarity * label_weight * 15.0
 
     return round(adjustment, 2)
-
-ACTION_PRIORITY = {
-        "Apply Now": 0,
-        "Apply Later": 1,
-        "Skip": 2,
-    }
 
 def apply_feedback_reranking(
     ranked_jobs: List[Dict[str, Any]],
@@ -173,3 +210,10 @@ def apply_feedback_reranking(
             job["title"],
         ),
     )
+
+def _meaningful_title_tokens(title: str) -> Set[str]:
+    return {
+        token
+        for token in _tokenize_title(title)
+        if token and token not in GENERIC_ROLE_TOKENS
+    }

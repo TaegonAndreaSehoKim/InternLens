@@ -1,0 +1,188 @@
+[
+  {
+    "job_id": "job_002",
+    "company": "vision scale",
+    "title": "applied scientist intern",
+    "location": "remote",
+    "score": 77.5,
+    "action_label": "Apply Now",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "statistics",
+      "aws",
+      "recommendation systems",
+      "sql"
+    ],
+    "reasons": [
+      "Matched on key skills: data analysis, machine learning, python, pytorch",
+      "Title aligns with preferred role: applied scientist intern",
+      "Location matches a preferred target"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 1.0,
+      "location_score": 1.0
+    },
+    "feedback_adjustment": 0.0,
+    "reranked_score": 77.5
+  },
+  {
+    "job_id": "job_005",
+    "company": "insight labs",
+    "title": "machine learning engineer intern",
+    "location": "irvine, ca",
+    "score": 62.5,
+    "action_label": "Apply Later",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "sql",
+      "aws",
+      "deep learning",
+      "docker"
+    ],
+    "reasons": [
+      "Matched on key skills: data analysis, machine learning, python, pytorch",
+      "Title aligns with preferred role: machine learning engineer intern"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 1.0,
+      "location_score": 0.0
+    },
+    "feedback_adjustment": 1.12,
+    "reranked_score": 63.62
+  },
+  {
+    "job_id": "job_003",
+    "company": "data orbit",
+    "title": "data scientist intern",
+    "location": "los angeles, ca",
+    "score": 37.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "sql",
+      "statistics"
+    ],
+    "reasons": [
+      "Matched on key skills: data analysis, machine learning, python"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.625,
+      "role_score": 0.0,
+      "location_score": 0.0
+    },
+    "feedback_adjustment": 0.0,
+    "reranked_score": 37.5
+  },
+  {
+    "job_id": "job_004",
+    "company": "cloud forge",
+    "title": "backend software engineer intern",
+    "location": "seattle, wa",
+    "score": 11.25,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [
+      "aws",
+      "docker",
+      "kubernetes"
+    ],
+    "reasons": [
+      "Limited match signals beyond the current baseline heuristics"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.1875,
+      "role_score": 0.0,
+      "location_score": 0.0
+    },
+    "feedback_adjustment": 0.0,
+    "reranked_score": 11.25
+  },
+  {
+    "job_id": "job_001",
+    "company": "example ai",
+    "title": "machine learning intern",
+    "location": "san francisco, ca",
+    "score": 55.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "sql",
+      "aws",
+      "docker",
+      "recommendation systems"
+    ],
+    "reasons": [
+      "Matched on key skills: machine learning, python",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "Sponsorship is not available for this role"
+    ],
+    "component_scores": {
+      "skill_score": 0.5,
+      "role_score": 1.0,
+      "location_score": 0.0
+    },
+    "feedback_adjustment": 4.69,
+    "reranked_score": 59.69
+  },
+  {
+    "job_id": "job_006",
+    "company": "research frontier",
+    "title": "machine learning research engineer",
+    "location": "new york, ny",
+    "score": 75.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "deep learning",
+      "statistics"
+    ],
+    "reasons": [
+      "Matched on key skills: machine learning, python, pytorch",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.8333,
+      "role_score": 1.0,
+      "location_score": 0.0
+    },
+    "feedback_adjustment": 4.69,
+    "reranked_score": 79.69
+  }
+]
