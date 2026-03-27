@@ -127,3 +127,51 @@ def test_full_time_phd_job_triggers_multiple_blockers() -> None:
     assert "This role does not appear to be an internship" in result["blocking_issues"]
     assert "This role appears to require a PhD" in result["blocking_issues"]
     assert result["action_label"] == "Skip"
+
+def test_rank_jobs_prioritizes_action_labels_before_raw_score() -> None:
+    profile = {
+        "degree_level": "Master's",
+        "grad_date": "2027-12",
+        "preferred_roles": ["Machine Learning Engineer Intern", "Applied Scientist Intern"],
+        "preferred_locations": ["California", "Remote"],
+        "sponsorship_need": True,
+        "skill_set": {"python", "pytorch", "machine learning", "data analysis"},
+    }
+
+    jobs = [
+        {
+            "job_id": "high_fit_blocked",
+            "company": "research frontier",
+            "title": "machine learning research engineer",
+            "location": "new york, ny",
+            "description": "We are hiring a full-time machine learning research engineer to work on advanced modeling systems.",
+            "min_qualifications": "PhD in computer science, machine learning, Python",
+            "preferred_qualifications": "PyTorch, deep learning, statistics",
+            "posting_date": "2026-03-27",
+            "sponsorship_info": "Sponsorship available",
+            "employment_type": "Full-time",
+            "source": "manual",
+            "remote_status": "onsite",
+        },
+        {
+            "job_id": "medium_fit_open",
+            "company": "insight labs",
+            "title": "machine learning engineer intern",
+            "location": "irvine, ca",
+            "description": "Internship role for ML product modeling.",
+            "min_qualifications": "Python, PyTorch, machine learning",
+            "preferred_qualifications": "SQL, data analysis",
+            "posting_date": "2026-03-27",
+            "sponsorship_info": "Sponsorship available",
+            "employment_type": "Internship",
+            "source": "manual",
+            "remote_status": "onsite",
+        },
+    ]
+
+    ranked = rank_jobs(profile, jobs)
+
+    assert ranked[0]["job_id"] == "medium_fit_open"
+    assert ranked[0]["action_label"] in {"Apply Now", "Apply Later"}
+    assert ranked[1]["job_id"] == "high_fit_blocked"
+    assert ranked[1]["action_label"] == "Skip"

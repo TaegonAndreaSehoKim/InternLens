@@ -279,6 +279,22 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+ACTION_PRIORITY = {
+    "Apply Now": 0,
+    "Apply Later": 1,
+    "Skip": 2,
+}
+
+
+def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
+    return (
+        ACTION_PRIORITY.get(job["action_label"], 99),
+        len(job["blocking_issues"]),
+        -job["score"],
+        job["title"],
+    )
+
+
 def rank_jobs(profile: Dict[str, Any], jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     scored_jobs = [score_job(profile, job) for job in jobs]
-    return sorted(scored_jobs, key=lambda x: x["score"], reverse=True)
+    return sorted(scored_jobs, key=_ranking_sort_key)
