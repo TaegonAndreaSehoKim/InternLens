@@ -28,14 +28,16 @@ Normalized Profile + Jobs
         - blocker-aware ordering
                 |
                 v
-         Optional Feedback Reranker
+      Optional Feedback Reranker
+      - applied / saved / skipped signals
+      - similarity-based score adjustment
                 |
                 v
-     Ranked or Reranked Job Results
-          /         |         \
-         /          |          \
-        v           v           v
- Console Output   JSON/CSV    FastAPI /recommend
+        Final Ranked Job Results
+          /         |          \
+         /          |           \
+        v           v            v
+ Console Output   JSON/CSV   FastAPI /recommend
 ```
 
 ## Main modules
@@ -44,6 +46,7 @@ Normalized Profile + Jobs
 
   * loads and normalizes candidate profile data
   * builds a reusable `skill_set`
+  * keeps file-based and inline profile normalization consistent
 
 * `src/preprocessing/job_parser.py`
 
@@ -59,21 +62,22 @@ Normalized Profile + Jobs
 
 * `src/ranking/feedback_reranker.py`
 
-  * loads feedback event data
-  * computes lightweight similarity against previously labeled jobs
-  * applies feedback adjustments to reranked results
-  * preserves blocker-aware action ordering during reranking
+  * loads feedback events from JSON
+  * builds a lookup over known jobs referenced in feedback
+  * computes lightweight similarity-based score adjustments
+  * preserves recommendation bucket ordering during reranking
 
 * `scripts/run_baseline.py`
 
-  * runs baseline ranking locally
-  * optionally runs feedback-based reranking
+  * runs the ranking pipeline locally
+  * can run baseline-only or feedback-aware reranking
   * prints results and exports JSON/CSV outputs
 
 * `src/api/app.py`
 
   * exposes `/health` and `/recommend`
-  * supports both file-based and inline profile payload inputs
+  * supports file-based and inline profile inputs
+  * supports optional feedback-based reranking through `feedback_path`
 
 ## Current ranking logic
 
@@ -106,38 +110,60 @@ This separation is a deliberate design choice.
 
 A job can be a strong relevance match based on skills, role, and location, while still being a poor application target because of a hard constraint. Keeping blockers outside the numeric fit score makes the ranking behavior easier to explain and easier to extend.
 
-## Why blocker-aware ordering was added
-
-Raw fit score alone is not enough for an application strategy tool.
-
-InternLens now prioritizes recommendation buckets in this order:
+This design also makes it possible to keep ordering intuitive:
 
 1. **Apply Now**
 2. **Apply Later**
 3. **Skip**
 
-This keeps blocked or clearly low-priority jobs from rising above stronger actionable targets, even when they share many fit signals.
+Even when feedback reranking is applied, recommendation buckets stay stable and reranking only adjusts order within the policy-aware structure.
 
-## Feedback-based reranking v1
+## Feedback reranking design (v1)
 
-The current reranking layer is intentionally lightweight.
+The current reranker uses a lightweight feedback file with events such as:
 
-It uses simple feedback events such as `applied`, `saved`, and `skipped` to adjust ranking behavior based on prior user preferences.
+- `applied`
+- `saved`
+- `skipped`
 
-Current v1 design choices:
+It then:
 
-- feedback is loaded from a small JSON profile
-- similarity is based on conservative title and skill overlap
-- generic title words are filtered to reduce noisy matches
-- reranking adjusts score but still respects blocker-aware action ordering
+1. maps feedback events to known job postings
+2. extracts meaningful title tokens and a conservative skill phrase set
+3. computes similarity between the current job and previously labeled jobs
+4. applies small positive or negative adjustments based on feedback labels
+5. preserves blocker-aware recommendation ordering in the final output
 
-This allows the project to demonstrate a first personalization step without introducing heavy model complexity.
+This keeps the reranker simple, explainable, and safe for an early portfolio-oriented implementation.
+
+## API output behavior
+
+`/recommend` can now return either baseline-only or feedback-aware results.
+
+When feedback reranking is used, the response also includes:
+
+- `feedback_source`
+- `reranking_applied`
+- `feedback_adjustment`
+- `reranked_score`
+
+This makes it easier to inspect how personalization changes the ranking without hiding the original baseline score.
+
+## Current test coverage snapshot
+
+The current test suite covers:
+
+- baseline API health and recommendation flows
+- inline and file-based profile inputs
+- validation and file-not-found cases
+- blocker-aware ranking behavior
+- feedback file loading and lookup behavior
+- feedback-aware reranking fields and API responses
 
 ## Next evolution path
 
-1. improve feedback signal quality and reranking calibration
-2. add API-level support for optional feedback input
-3. improve explanation transparency for reranked results
-4. add semantic retrieval
-5. replace heuristic ranking with learning-to-rank
-6. add persistence and deployment
+1. improve result explanations and demo clarity
+2. expand feedback signal design and calibration
+3. add semantic retrieval
+4. replace heuristic ranking with learning-to-rank
+5. add persistence and deployment

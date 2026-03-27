@@ -4,17 +4,17 @@ InternLens is an internship application strategy optimizer that ranks job postin
 
 ## Why I built it
 
-I built this project after struggling to get past the resume screen for graduate-level summer internships. The goal was to create a system that helps prioritize where to apply by combining profile data, job requirements, ranking logic, and explainable decision signals.
+I built this project after struggling to get past the resume screen for graduate-level summer internships. The goal was to create a system that helps prioritize where to apply by combining profile data, job requirements, ranking logic, explainable decision signals, and lightweight personalization.
 
 ## What it does
 
 Given a candidate profile and a set of internship postings, InternLens:
 
 - parses candidate and job data
-- computes a baseline fit score
-- evaluates blocking constraints separately from fit
-- applies blocker-aware ranking order for final recommendation priority
-- optionally reranks jobs using lightweight user feedback signals
+- ranks jobs using a baseline scoring pipeline
+- separates **fit score** from **blocking constraints**
+- applies **blocker-aware ordering** so recommendation buckets stay intuitive
+- optionally applies **feedback-based reranking** using prior applied / saved / skipped signals
 - returns:
   - score
   - action label
@@ -22,12 +22,13 @@ Given a candidate profile and a set of internship postings, InternLens:
   - skill gaps
   - blocking issues
   - reasons
+  - optional reranking fields when feedback is used
 
 This makes it possible to distinguish between a role that is a good fit but blocked by eligibility constraints and a role that is simply a weak fit.
 
 ## Current ranking logic
 
-The current baseline fit score is computed from:
+The baseline fit score is computed from:
 
 - skill match
 - role match
@@ -35,13 +36,13 @@ The current baseline fit score is computed from:
 
 Blocking constraints are handled separately from the numeric fit score so that a posting can still be recognized as relevant even when the candidate cannot realistically apply.
 
-The final baseline ordering is blocker-aware. InternLens prioritizes:
+The final baseline ordering is recommendation-aware:
 
 1. **Apply Now**
 2. **Apply Later**
 3. **Skip**
 
-Within each action bucket, jobs are ordered using blocker count and score-based ranking signals.
+Within each recommendation bucket, InternLens uses blocker count and score to order results.
 
 ## Current blocker logic
 
@@ -56,25 +57,25 @@ Examples of eligibility-style checks currently covered include:
 - explicit PhD requirement mismatch
 - lightweight graduation timing mismatch checks
 
-## Feedback-based reranking v1
+## Feedback-based reranking (v1)
 
-InternLens now includes an optional feedback-based reranking layer.
+InternLens now supports an optional feedback reranking step.
 
-This reranker uses lightweight feedback events such as:
+When a feedback file is provided, the system uses prior job interaction signals such as:
 
 - `applied`
 - `saved`
 - `skipped`
 
-The current v1 behavior:
+The reranker computes a lightweight similarity signal using meaningful title tokens and a small known skill vocabulary, then adjusts the original score.
 
-- loads feedback from a small JSON profile
-- compares new jobs against previously seen jobs using title and skill similarity
-- boosts jobs that look more like positively marked jobs
-- penalizes jobs that look more like skipped jobs
-- preserves blocker-aware action ordering so reranking does not push blocked jobs above stronger actionable targets
+Important behavior:
 
-This feature is intentionally simple and explainable. It is designed as a practical first step toward personalization rather than a full learning-to-rank system.
+- reranking does **not** override blocker-aware recommendation ordering
+- feedback boosts are applied within the existing recommendation policy
+- API and script outputs expose:
+  - `feedback_adjustment`
+  - `reranked_score`
 
 ## Current features
 
@@ -84,12 +85,13 @@ This feature is intentionally simple and explainable. It is designed as a practi
 - skill alias normalization
 - role matching with generic token filtering
 - blocking constraint handling
-- blocker-aware ranking order
-- feedback-based reranking v1
+- blocker-aware ordering
+- feedback-based reranking
 - JSON / CSV result export
 - FastAPI endpoints (`/health`, `/recommend`)
 - inline profile payload support for `/recommend`
-- pytest coverage for ranking, reranking, and API behavior
+- optional `feedback_path` support for `/recommend`
+- pytest coverage for core API, ranking, and reranking behavior
 
 ## Project structure
 
@@ -126,6 +128,8 @@ python -m pytest -q
 
 ## Example API input
 
+### Baseline request
+
 ```json
 {
   "profile_data": {
@@ -157,17 +161,48 @@ python -m pytest -q
 }
 ```
 
+### Feedback-aware request
+
+```json
+{
+  "profile_path": "data/processed/candidate_profile_example.json",
+  "jobs_dir": "data/sample_jobs",
+  "feedback_path": "data/feedback/sample_feedback.json",
+  "top_k": 5
+}
+```
+
+## Example API response fields
+
+When feedback reranking is applied, `/recommend` also returns:
+
+- `feedback_source`
+- `reranking_applied`
+- `feedback_adjustment` for each job result
+- `reranked_score` for each job result
+
 ## Notes on the demo data
 
 The sample dataset includes blocker-oriented examples to make recommendation behavior easier to understand. In particular, `job_006` helps demonstrate how a posting can look relevant on fit signals but still be recommended as **Skip** because of blocker logic.
 
-The feedback sample file provides a simple personalization demo for reranking behavior without changing the baseline scorer.
+The sample feedback data demonstrates how previously applied, saved, and skipped jobs can slightly adjust ranking order without overriding hard eligibility constraints.
+
+## Current test coverage snapshot
+
+The current project test suite covers:
+
+- `/health`
+- `/recommend` with inline profile payloads
+- `/recommend` with profile file paths
+- `/recommend` with optional feedback reranking
+- missing feedback file handling
+- blocker-aware ranking behavior
+- feedback reranker loading and enrichment behavior
 
 ## Next steps
 
-- improve feedback signals and adjustment calibration
-- add API support for optional feedback-based reranking
-- improve explanation transparency for reranked results
+- improve explanation quality and recommendation transparency
+- expand feedback signal design beyond simple label weights
 - add semantic retrieval for better matching recall
 - replace heuristic ranking with learning-to-rank
 - add persistence and deployment
