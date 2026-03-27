@@ -1,0 +1,17 @@
+{
+  "profile_id": "seho_001",
+  "events": [
+    {
+      "job_id": "job_002",
+      "feedback_label": "applied"
+    },
+    {
+      "job_id": "job_005",
+      "feedback_label": "saved"
+    },
+    {
+      "job_id": "job_004",
+      "feedback_label": "skipped"
+    }
+  ]
+}
