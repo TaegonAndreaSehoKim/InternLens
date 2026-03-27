@@ -1,5 +1,31 @@
-fastapi
-uvicorn
-pydantic>=2
-pytest
-httpx
+# Python cache / build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / editor
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local env files
+.env
+.env.*
+
+# Optional: generated outputs
+# Keep these tracked if you want demo artifacts in the repo.
+# outputs/
