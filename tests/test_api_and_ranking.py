@@ -221,6 +221,7 @@ def test_recommend_endpoint_requires_profile_source() -> None:
     assert response.status_code == 422
     assert "Either profile_path or profile_data must be provided." in str(body)
 
+
 def test_recommend_endpoint_with_feedback_path_applies_reranking() -> None:
     payload = {
         "profile_path": "data/processed/candidate_profile_example.json",
@@ -239,6 +240,36 @@ def test_recommend_endpoint_with_feedback_path_applies_reranking() -> None:
     assert body["returned_jobs"] == 5
     assert "feedback_adjustment" in body["results"][0]
     assert "reranked_score" in body["results"][0]
+    assert "feedback_explanations" in body["results"][0]
+    assert isinstance(body["results"][0]["feedback_explanations"], list)
+
+
+def test_recommend_endpoint_feedback_response_includes_explanation_items() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "feedback_path": "data/feedback/sample_feedback.json",
+        "top_k": 6,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+
+    jobs_with_explanations = [
+        job for job in body["results"] if job["feedback_explanations"]
+    ]
+    assert len(jobs_with_explanations) > 0
+
+    explanation = jobs_with_explanations[0]["feedback_explanations"][0]
+    assert "source_job_id" in explanation
+    assert "source_job_title" in explanation
+    assert "feedback_label" in explanation
+    assert "similarity" in explanation
+    assert "adjustment" in explanation
+    assert "shared_title_tokens" in explanation
+    assert "shared_skill_tokens" in explanation
 
 
 def test_recommend_endpoint_with_missing_feedback_file_returns_404() -> None:
