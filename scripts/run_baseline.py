@@ -52,7 +52,13 @@ def _save_ranked_results_csv(ranked_jobs: List[Dict[str, Any]], output_path: Pat
 
     # Add reranking-specific columns only when they exist in the result rows.
     if ranked_jobs and "feedback_adjustment" in ranked_jobs[0]:
-        fieldnames.extend(["feedback_adjustment", "reranked_score"])
+        fieldnames.extend(
+            [
+                "feedback_adjustment",
+                "reranked_score",
+                "feedback_explanations",
+            ]
+        )
 
     with output_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -79,6 +85,10 @@ def _save_ranked_results_csv(ranked_jobs: List[Dict[str, Any]], output_path: Pat
             if "feedback_adjustment" in job:
                 row["feedback_adjustment"] = job["feedback_adjustment"]
                 row["reranked_score"] = job["reranked_score"]
+                row["feedback_explanations"] = json.dumps(
+                    job.get("feedback_explanations", []),
+                    ensure_ascii=False,
+                )
 
             writer.writerow(row)
 
@@ -96,6 +106,24 @@ def _print_ranked_results(ranked_jobs: List[Dict[str, Any]], title: str) -> None
         if "feedback_adjustment" in job:
             print(f"    Feedback Adjustment: {job['feedback_adjustment']}")
             print(f"    Reranked Score: {job['reranked_score']}")
+
+            explanations = job.get("feedback_explanations", [])
+            if explanations:
+                print("    Feedback Explanations:")
+                for explanation in explanations:
+                    print(
+                        "      - "
+                        f"{explanation['feedback_label']} -> "
+                        f"{explanation['source_job_title']} | "
+                        f"similarity={explanation['similarity']} | "
+                        f"adjustment={explanation['adjustment']}"
+                    )
+                    print(
+                        "        shared_title_tokens="
+                        f"{', '.join(explanation['shared_title_tokens']) if explanation['shared_title_tokens'] else 'None'}; "
+                        "shared_skill_tokens="
+                        f"{', '.join(explanation['shared_skill_tokens']) if explanation['shared_skill_tokens'] else 'None'}"
+                    )
 
         print(f"    Action: {job['action_label']}")
         print(
