@@ -26,7 +26,7 @@ from src.ranking.feedback_reranker import (
 app = FastAPI(
     title="InternLens API",
     description="Internship application strategy optimizer API",
-    version="0.3.0",
+    version="0.3.1",
 )
 
 
@@ -71,6 +71,16 @@ class RecommendRequest(BaseModel):
         return self
 
 
+class FeedbackExplanation(BaseModel):
+    source_job_id: str
+    source_job_title: str
+    feedback_label: str
+    similarity: float
+    adjustment: float
+    shared_title_tokens: List[str]
+    shared_skill_tokens: List[str]
+
+
 class JobResult(BaseModel):
     job_id: str
     company: str
@@ -87,6 +97,7 @@ class JobResult(BaseModel):
     # Expose reranking fields only when feedback-based reranking is applied.
     feedback_adjustment: Optional[float] = None
     reranked_score: Optional[float] = None
+    feedback_explanations: Optional[List[FeedbackExplanation]] = None
 
 
 class RecommendResponse(BaseModel):
