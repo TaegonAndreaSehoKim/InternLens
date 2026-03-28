@@ -59,7 +59,7 @@ Examples of eligibility-style checks currently covered include:
 
 ## Feedback-based reranking (v1)
 
-InternLens now supports an optional feedback reranking step.
+InternLens supports an optional feedback reranking step.
 
 When a feedback file is provided, the system uses prior job interaction signals such as:
 
@@ -73,9 +73,13 @@ Important behavior:
 
 - reranking does **not** override blocker-aware recommendation ordering
 - feedback boosts are applied within the existing recommendation policy
-- API and script outputs expose:
-  - `feedback_adjustment`
-  - `reranked_score`
+- the system now exposes lightweight explanation details showing:
+  - which prior feedback item influenced a result
+  - the feedback label used
+  - similarity strength
+  - score adjustment
+  - overlapping title tokens
+  - overlapping skill tokens
 
 ## Current features
 
@@ -87,6 +91,7 @@ Important behavior:
 - blocking constraint handling
 - blocker-aware ordering
 - feedback-based reranking
+- feedback explanation output for reranked jobs
 - JSON / CSV result export
 - FastAPI endpoints (`/health`, `/recommend`)
 - inline profile payload support for `/recommend`
@@ -101,6 +106,9 @@ InternLens/
 │   ├── feedback/
 │   ├── processed/
 │   └── sample_jobs/
+├── docs/
+│   ├── architecture/
+│   └── devlog/
 ├── outputs/
 ├── scripts/
 │   └── run_baseline.py
@@ -123,7 +131,7 @@ pip install -r requirements.txt
 python scripts/run_baseline.py
 python scripts/run_baseline.py --feedback-path data/feedback/sample_feedback.json
 uvicorn src.api.app:app --reload
-python -m pytest -q
+pytest -q
 ```
 
 ## Example API input
@@ -180,6 +188,21 @@ When feedback reranking is applied, `/recommend` also returns:
 - `reranking_applied`
 - `feedback_adjustment` for each job result
 - `reranked_score` for each job result
+- `feedback_explanations` for each reranked job result
+
+Each explanation item includes:
+
+- `source_job_id`
+- `source_job_title`
+- `feedback_label`
+- `similarity`
+- `adjustment`
+- `shared_title_tokens`
+- `shared_skill_tokens`
+
+## Local script output behavior
+
+When `run_baseline.py` is executed with `--feedback-path`, the reranked console output and exported CSV/JSON files also include feedback explanation details. This makes it easier to inspect why a role moved up or down without opening the API.
 
 ## Notes on the demo data
 
@@ -189,7 +212,7 @@ The sample feedback data demonstrates how previously applied, saved, and skipped
 
 ## Current test coverage snapshot
 
-The current project test suite covers:
+At this point in development, the project test suite covers:
 
 - `/health`
 - `/recommend` with inline profile payloads
@@ -198,11 +221,14 @@ The current project test suite covers:
 - missing feedback file handling
 - blocker-aware ranking behavior
 - feedback reranker loading and enrichment behavior
+- feedback explanation fields in both reranking logic and API responses
+
+Current status: **17 passing tests**
 
 ## Next steps
 
-- improve explanation quality and recommendation transparency
-- expand feedback signal design beyond simple label weights
+- add inline feedback payload support in the API
+- improve calibration of feedback weights and similarity rules
 - add semantic retrieval for better matching recall
 - replace heuristic ranking with learning-to-rank
 - add persistence and deployment

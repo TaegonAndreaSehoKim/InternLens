@@ -31,6 +31,7 @@ Normalized Profile + Jobs
       Optional Feedback Reranker
       - applied / saved / skipped signals
       - similarity-based score adjustment
+      - explanation generation
                 |
                 v
         Final Ranked Job Results
@@ -65,6 +66,7 @@ Normalized Profile + Jobs
   * loads feedback events from JSON
   * builds a lookup over known jobs referenced in feedback
   * computes lightweight similarity-based score adjustments
+  * generates compact explanation snippets for reranked jobs
   * preserves recommendation bucket ordering during reranking
 
 * `scripts/run_baseline.py`
@@ -72,12 +74,14 @@ Normalized Profile + Jobs
   * runs the ranking pipeline locally
   * can run baseline-only or feedback-aware reranking
   * prints results and exports JSON/CSV outputs
+  * surfaces feedback explanation details when reranking is enabled
 
 * `src/api/app.py`
 
   * exposes `/health` and `/recommend`
   * supports file-based and inline profile inputs
   * supports optional feedback-based reranking through `feedback_path`
+  * returns explanation-aware reranking fields in API responses
 
 ## Current ranking logic
 
@@ -132,13 +136,30 @@ It then:
 2. extracts meaningful title tokens and a conservative skill phrase set
 3. computes similarity between the current job and previously labeled jobs
 4. applies small positive or negative adjustments based on feedback labels
-5. preserves blocker-aware recommendation ordering in the final output
+5. generates explanation items for the strongest feedback contributors
+6. preserves blocker-aware recommendation ordering in the final output
 
 This keeps the reranker simple, explainable, and safe for an early portfolio-oriented implementation.
 
-## API output behavior
+## Explanation output design
 
-`/recommend` can now return either baseline-only or feedback-aware results.
+Each reranked result can now include a `feedback_explanations` field.
+
+Each explanation item contains:
+
+- source feedback job ID
+- source feedback job title
+- feedback label used for reranking
+- computed similarity
+- numeric adjustment contribution
+- overlapping title tokens
+- overlapping skill tokens
+
+This makes the personalization layer easier to inspect during demos and easier to debug during iteration.
+
+## API and output behavior
+
+`/recommend` can return either baseline-only or feedback-aware results.
 
 When feedback reranking is used, the response also includes:
 
@@ -146,8 +167,9 @@ When feedback reranking is used, the response also includes:
 - `reranking_applied`
 - `feedback_adjustment`
 - `reranked_score`
+- `feedback_explanations`
 
-This makes it easier to inspect how personalization changes the ranking without hiding the original baseline score.
+The local script flow mirrors this behavior by surfacing explanation details in console output and exported JSON/CSV artifacts.
 
 ## Current test coverage snapshot
 
@@ -159,11 +181,14 @@ The current test suite covers:
 - blocker-aware ranking behavior
 - feedback file loading and lookup behavior
 - feedback-aware reranking fields and API responses
+- explanation field presence in reranking and API results
+
+Current status: **17 passing tests**
 
 ## Next evolution path
 
-1. improve result explanations and demo clarity
-2. expand feedback signal design and calibration
+1. add inline feedback payload support
+2. improve explanation quality and score calibration
 3. add semantic retrieval
 4. replace heuristic ranking with learning-to-rank
 5. add persistence and deployment

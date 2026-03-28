@@ -83,3 +83,42 @@ Today I focused on improving InternLens from a working baseline into a more prod
 - Consider adding inline feedback payload support in the API.
 - Improve reranking explainability.
 - Decide whether to continue improving feedback reranking or move toward semantic retrieval.
+
+## Day 6
+
+Today I focused on making feedback-based personalization more transparent and easier to demo.
+
+### What I changed
+- Extended `feedback_reranker.py` so reranking now produces compact explanation items instead of only numeric score adjustments.
+- Added `feedback_explanations` to each reranked result, including:
+  - source feedback job ID
+  - source feedback job title
+  - feedback label
+  - similarity
+  - adjustment
+  - shared title tokens
+  - shared skill tokens
+- Updated the FastAPI response model so `/recommend` exposes explanation-aware reranking output.
+- Updated `run_baseline.py` so local console output and exported CSV/JSON files also include feedback explanation details.
+- Added new tests for explanation fields in both reranking logic and API responses.
+- Added `tests/conftest.py` so `pytest -q` works cleanly without requiring manual `PYTHONPATH` setup.
+- Updated project documentation to match the current reranking behavior.
+
+### Validation
+- Ran the local script with `--feedback-path` and confirmed explanation details appeared in reranked output.
+- Ran the full test suite and ended the session with **17 passing tests**.
+
+### Key decisions
+- Kept the explanation format lightweight and token-based instead of introducing heavier semantic similarity logic too early.
+- Preserved blocker-aware ordering so personalization remains visible but does not override recommendation policy.
+- Prioritized explainability and demo clarity over aggressive score optimization.
+
+### Problems encountered
+- `pytest` initially failed during test collection because the `src` package was not on the import path by default.
+- Documentation lagged behind the newly added explanation fields and needed another consistency pass.
+
+### Next steps
+- Add inline feedback payload support so reranking can be tested without a file dependency.
+- Revisit whether blocked jobs should receive capped feedback boosts within the `Skip` bucket.
+- Improve explanation phrasing further so API and console outputs read more naturally in demos.
+- Decide whether the next major milestone should be richer feedback calibration or semantic retrieval.
