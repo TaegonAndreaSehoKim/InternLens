@@ -52,3 +52,38 @@ def test_apply_feedback_reranking_adds_adjustment_fields() -> None:
     assert len(reranked) == len(ranked_jobs)
     assert "feedback_adjustment" in reranked[0]
     assert "reranked_score" in reranked[0]
+    assert "feedback_explanations" in reranked[0]
+    assert isinstance(reranked[0]["feedback_explanations"], list)
+
+
+def test_apply_feedback_reranking_includes_explanation_keys() -> None:
+    # Explanation rows should expose the source feedback and overlap details.
+    jobs = load_all_job_postings(JOBS_DIR)
+    profile = {
+        "degree_level": "master's",
+        "grad_date": "2027-12",
+        "preferred_roles": ["machine learning engineer intern", "applied scientist intern"],
+        "preferred_locations": ["california", "remote"],
+        "target_industries": ["ai", "tech"],
+        "sponsorship_need": True,
+        "extracted_skills": ["python", "pytorch", "machine learning", "data analysis"],
+        "skill_set": {"python", "pytorch", "machine learning", "data analysis"},
+    }
+    ranked_jobs = rank_jobs(profile, jobs)
+    feedback = load_feedback_profile(FEEDBACK_PATH)
+
+    reranked = apply_feedback_reranking(ranked_jobs, jobs, feedback)
+
+    jobs_with_explanations = [
+        job for job in reranked if job.get("feedback_explanations")
+    ]
+    assert len(jobs_with_explanations) > 0
+
+    explanation = jobs_with_explanations[0]["feedback_explanations"][0]
+    assert "source_job_id" in explanation
+    assert "source_job_title" in explanation
+    assert "feedback_label" in explanation
+    assert "similarity" in explanation
+    assert "adjustment" in explanation
+    assert "shared_title_tokens" in explanation
+    assert "shared_skill_tokens" in explanation
