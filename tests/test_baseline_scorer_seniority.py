@@ -323,3 +323,54 @@ def test_blocker_free_explicit_internship_without_relevance_signal_stays_skip() 
     assert result["blocking_issues"] == []
     assert result["matched_skills"] == []
     assert result["action_label"] == "Skip"
+
+def test_non_technical_intern_does_not_get_noisy_fallback_skill_matches() -> None:
+    # Non-technical internship titles should not inherit noisy ML/Python matches
+    # just because the description contains broad AI or tooling language.
+    profile = _build_profile()
+
+    job = {
+        "job_id": "marketing_ops_intern",
+        "company": "example",
+        "title": "Marketing Operations Intern (Summer 2026)",
+        "location": "Austin, US",
+        "description": "Work with Python dashboards and machine learning-enabled campaign tooling.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["matched_skills"] == []
+    assert result["action_label"] == "Skip"
+
+
+def test_technical_intern_still_uses_fallback_skill_matches() -> None:
+    # Technical titles should still benefit from title/description fallback matching.
+    profile = _build_profile()
+
+    job = {
+        "job_id": "data_engineer_intern",
+        "company": "example",
+        "title": "Data Engineer Intern (Summer 2026)",
+        "location": "Austin, US",
+        "description": "Use Python and data analysis to build internal data workflows.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+
+    result = score_job(profile, job)
+
+    assert "python" in result["matched_skills"]
+    assert "data analysis" in result["matched_skills"]
+    assert result["action_label"] == "Apply Later"

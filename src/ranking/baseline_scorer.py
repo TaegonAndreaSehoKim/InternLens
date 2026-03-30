@@ -57,6 +57,77 @@ ROLE_STOPWORDS = {
     "software",
 }
 
+TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
+    "engineer",
+    "engineering",
+    "developer",
+    "software",
+    "scientist",
+    "research",
+    "researcher",
+    "machine learning",
+    "ai",
+    "analytics",
+    "analytic",
+    "analyst",
+    "data",
+    "security",
+    "infrastructure",
+    "platform",
+    "automation",
+    "network",
+    "systems",
+]
+
+NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
+    "marketing",
+    "people",
+    "hr",
+    "human resources",
+    "sales",
+    "revenue",
+    "operations",
+    "enablement",
+    "audit",
+    "legal",
+    "tax",
+    "finance",
+    "account executive",
+    "partnerships",
+    "events",
+    "brand",
+    "product manager",
+    "program manager",
+]
+
+
+def _title_supports_fallback_skill_matching(title: str) -> bool:
+    """
+    Use title/description fallback skills only for roles that look technical,
+    data-oriented, research-oriented, or engineering-oriented.
+
+    This prevents generic internship postings such as marketing, people, or
+    sales roles from inheriting noisy ML/Python matches from broad descriptions.
+    """
+    normalized_title = _canonicalize_text(title.lower())
+
+    has_positive_signal = any(
+        keyword in normalized_title
+        for keyword in TECHNICAL_TITLE_FALLBACK_KEYWORDS
+    )
+    has_negative_signal = any(
+        keyword in normalized_title
+        for keyword in NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS
+    )
+
+    if has_positive_signal:
+        return True
+
+    if has_negative_signal:
+        return False
+
+    return False
+
 # Strong seniority indicators that should usually block internship recommendations.
 SENIORITY_TITLE_PATTERNS = [
     r"\bsenior\b",
@@ -238,7 +309,7 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
 
     Required/preferred qualifications remain the primary source of truth.
     Title/description are used only as fallback signals when qualification
-    fields are sparse or empty.
+    fields are sparse and the title looks technical enough to trust them.
     """
     candidate_skills = _normalize_candidate_skills(profile)
 
@@ -256,8 +327,6 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
 
     if has_structured_qualifications:
         # For curated/sample jobs, trust structured qualification fields first.
-        title_matches: List[str] = []
-        description_matches: List[str] = []
         matched_skills = sorted(set(required_matches + preferred_matches))
 
         required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
@@ -269,9 +338,14 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
             + (preferred_overlap_score * 0.25),
         )
     else:
-        # For sparse public postings, use title/description as fallback signals.
-        title_matches = sorted(candidate_skills & title_keywords)
-        description_matches = sorted(candidate_skills & description_keywords)
+        use_fallback = _title_supports_fallback_skill_matching(job["title"])
+
+        if use_fallback:
+            title_matches = sorted(candidate_skills & title_keywords)
+            description_matches = sorted(candidate_skills & description_keywords)
+        else:
+            title_matches = []
+            description_matches = []
 
         matched_skills = sorted(set(required_matches + preferred_matches + title_matches + description_matches))
 
@@ -476,7 +550,7 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 
     gaps = missing_required + [skill for skill in missing_preferred if skill not in missing_required]
 
-    if not has_structured_qualifications:
+    if not has_structured_qualifications and _title_supports_fallback_skill_matching(job["title"]):
         missing_title = sorted(title_keywords - candidate_skills)
         gaps += [skill for skill in missing_title if skill not in gaps]
 
