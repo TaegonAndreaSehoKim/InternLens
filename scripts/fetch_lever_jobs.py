@@ -77,13 +77,17 @@ def main() -> None:
     )
 
     print(f"Saved raw snapshot to: {raw_output_path}")
-    print(f"Saved {len(processed_paths)} processed jobs to: {PROJECT_ROOT / 'data' / 'processed' / 'jobs'}")
+    processed_output_dir = PROJECT_ROOT / "data" / "processed" / "jobs" / "lever" / args.site_name
+    print(f"Saved {len(processed_paths)} processed jobs to: {processed_output_dir}")
     print(f"Fetched {len(jobs)} jobs from Lever site '{args.site_name}'")
 
     if jobs:
         print(json.dumps(jobs[0], indent=2)[:2000])
     else:
-        print("No jobs returned. Check whether the site name is a valid Lever board token.")
+        if args.internship_only:
+            print("No internship-like jobs matched the current filter.")
+        else:
+            print("No jobs returned. Check whether the site name is a valid Lever board token.")
 
 
 if __name__ == "__main__":

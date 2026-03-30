@@ -130,6 +130,8 @@ def test_save_processed_lever_postings_writes_normalized_files(tmp_path: Path) -
     for path in saved_paths:
         assert path.exists()
         assert path.suffix == ".json"
+        assert "lever" in str(path)
+        assert "rws" in str(path)
 
     with saved_paths[0].open("r", encoding="utf-8") as f:
         payload = json.load(f)

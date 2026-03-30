@@ -123,8 +123,8 @@ def save_processed_lever_postings(
     *,
     project_root: Path,
 ) -> List[Path]:
-    # Normalize each Lever posting and save it as one processed JSON file.
-    output_dir = project_root / "data" / "processed" / "jobs"
+    # Normalize each Lever posting and save it under a source/site-specific folder.
+    output_dir = project_root / "data" / "processed" / "jobs" / "lever" / site_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     saved_paths: List[Path] = []
