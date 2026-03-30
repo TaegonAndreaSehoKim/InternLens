@@ -414,11 +414,18 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     bounded_score = max(0.0, min(1.0, raw_score))
     final_score = round(bounded_score * 100, 2)
 
+    has_explicit_internship = _has_explicit_internship_signal(job)
+
     if blockers:
         action_label = "Skip"
     elif final_score >= 70:
         action_label = "Apply Now"
     elif final_score >= 45:
+        action_label = "Apply Later"
+    elif has_explicit_internship:
+        # If the role is clearly an internship and there are no blockers,
+        # do not let it fall all the way to Skip just because the baseline
+        # heuristics are still sparse.
         action_label = "Apply Later"
     else:
         action_label = "Skip"

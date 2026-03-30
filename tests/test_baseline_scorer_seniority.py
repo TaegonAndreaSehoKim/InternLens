@@ -218,3 +218,28 @@ def test_rank_jobs_orders_blocked_roles_by_bucket() -> None:
         "non_intern_ml",
         "senior_role",
     ]
+
+def test_blocker_free_explicit_internship_gets_apply_later() -> None:
+    # A clear internship with no blockers should not remain Skip even if
+    # baseline fit signals are still sparse.
+    profile = _build_profile()
+
+    internship_job = {
+        "job_id": "true_intern",
+        "company": "example",
+        "title": "2026 Summer Intern, BS/MS, Software Engineering, Simulation",
+        "location": "Mountain View, CA",
+        "description": "Join our summer internship program building simulation systems.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "",
+    }
+
+    result = score_job(profile, internship_job)
+
+    assert result["blocking_issues"] == []
+    assert result["action_label"] == "Apply Later"
