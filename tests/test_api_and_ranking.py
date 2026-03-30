@@ -272,6 +272,91 @@ def test_recommend_endpoint_feedback_response_includes_explanation_items() -> No
     assert "shared_skill_tokens" in explanation
 
 
+def test_recommend_endpoint_with_inline_feedback_applies_reranking() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "feedback_data": {
+            "profile_id": "seho_001",
+            "events": [
+                {"job_id": "job_002", "feedback_label": "applied"},
+                {"job_id": "job_005", "feedback_label": "saved"},
+                {"job_id": "job_004", "feedback_label": "skipped"},
+            ],
+        },
+        "top_k": 5,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["feedback_source"] == "inline_feedback_payload"
+    assert body["reranking_applied"] is True
+    assert body["returned_jobs"] == 5
+    assert "feedback_adjustment" in body["results"][0]
+    assert "reranked_score" in body["results"][0]
+    assert "feedback_explanations" in body["results"][0]
+
+
+def test_recommend_endpoint_inline_feedback_response_includes_explanation_items() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "feedback_data": {
+            "profile_id": "seho_001",
+            "events": [
+                {"job_id": "job_002", "feedback_label": "applied"},
+                {"job_id": "job_005", "feedback_label": "saved"},
+                {"job_id": "job_004", "feedback_label": "skipped"},
+            ],
+        },
+        "top_k": 6,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+
+    jobs_with_explanations = [
+        job for job in body["results"] if job["feedback_explanations"]
+    ]
+    assert len(jobs_with_explanations) > 0
+
+    explanation = jobs_with_explanations[0]["feedback_explanations"][0]
+    assert "source_job_id" in explanation
+    assert "source_job_title" in explanation
+    assert "feedback_label" in explanation
+    assert "similarity" in explanation
+    assert "adjustment" in explanation
+    assert "shared_title_tokens" in explanation
+    assert "shared_skill_tokens" in explanation
+
+
+def test_recommend_endpoint_prefers_inline_feedback_over_feedback_path() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "feedback_path": "data/feedback/does_not_exist.json",
+        "feedback_data": {
+            "profile_id": "seho_001",
+            "events": [
+                {"job_id": "job_002", "feedback_label": "applied"},
+                {"job_id": "job_005", "feedback_label": "saved"},
+            ],
+        },
+        "top_k": 5,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["feedback_source"] == "inline_feedback_payload"
+    assert body["reranking_applied"] is True
+
+
 def test_recommend_endpoint_with_missing_feedback_file_returns_404() -> None:
     payload = {
         "profile_path": "data/processed/candidate_profile_example.json",
