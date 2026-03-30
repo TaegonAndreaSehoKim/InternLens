@@ -51,15 +51,29 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Show and export only jobs with no blocking issues.",
     )
+    parser.add_argument(
+        "--applyable-only",
+        action="store_true",
+        help="Show and export only jobs with action_label other than Skip.",
+    )
     return parser.parse_args()
 
 
-def _filter_results_for_output(results: List[Dict[str, Any]], eligible_only: bool) -> List[Dict[str, Any]]:
-    # Optionally keep only jobs that have no blocking issues.
-    if not eligible_only:
-        return results
+def _filter_results_for_output(
+    results: List[Dict[str, Any]],
+    eligible_only: bool,
+    applyable_only: bool,
+) -> List[Dict[str, Any]]:
+    # Optionally keep only jobs that pass the selected output filters.
+    filtered = results
 
-    return [job for job in results if not job.get("blocking_issues")]
+    if eligible_only:
+        filtered = [job for job in filtered if not job.get("blocking_issues")]
+
+    if applyable_only:
+        filtered = [job for job in filtered if job.get("action_label") != "Skip"]
+
+    return filtered
 
 
 def _truncate_results(results: List[Dict[str, Any]], top_k: int | None) -> List[Dict[str, Any]]:
@@ -223,13 +237,20 @@ def main() -> None:
         ranked_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
         output_prefix = "reranked_results"
 
-    visible_jobs = _filter_results_for_output(ranked_jobs, args.eligible_only)
+    visible_jobs = _filter_results_for_output(
+        ranked_jobs,
+        eligible_only=args.eligible_only,
+        applyable_only=args.applyable_only,
+    )
     visible_jobs = _truncate_results(visible_jobs, args.top_k)
 
     print("\n=== InternLens Baseline Ranking Results ===\n")
 
     if args.eligible_only:
         print("(eligible_only=True: showing only jobs with no blocking issues)\n")
+
+    if args.applyable_only:
+        print("(applyable_only=True: showing only jobs with action_label != Skip)\n")
 
     if not visible_jobs:
         print("No jobs matched the current output filter.")
@@ -239,6 +260,9 @@ def main() -> None:
 
     if args.eligible_only:
         output_prefix += "_eligible_only"
+
+    if args.applyable_only:
+        output_prefix += "_applyable_only"
 
     json_output_path = output_dir / f"{output_prefix}.json"
     csv_output_path = output_dir / f"{output_prefix}.csv"
