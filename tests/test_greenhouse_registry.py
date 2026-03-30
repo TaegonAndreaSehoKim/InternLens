@@ -27,7 +27,7 @@ def test_filter_internship_jobs_keeps_only_internship_like_postings() -> None:
         },
         {
             "title": "Data Analyst",
-            "content": "Summer internship working on analytics.",
+            "content": "This internship focuses on analytics.",
         },
     ]
 
@@ -36,6 +36,24 @@ def test_filter_internship_jobs_keeps_only_internship_like_postings() -> None:
     assert len(filtered) == 2
     assert filtered[0]["title"] == "Machine Learning Intern"
     assert filtered[1]["title"] == "Data Analyst"
+
+
+def test_filter_internship_jobs_ignores_international_false_positive() -> None:
+    # Do not match unrelated words such as "international".
+    jobs = [
+        {
+            "title": "International Tax Manager",
+            "content": "Global tax operations role.",
+        },
+        {
+            "title": "Data Engineer",
+            "content": "Build internal tooling for analytics.",
+        },
+    ]
+
+    filtered = registry_script._filter_internship_jobs(jobs)
+
+    assert filtered == []
 
 
 def test_load_registry_reads_valid_entries_and_skips_invalid_rows(tmp_path: Path) -> None:
@@ -148,8 +166,8 @@ def test_main_fetches_registry_entries_and_applies_filters(
         if board_token == "honehealth":
             return [
                 {
-                    "title": "Data Science Intern",
-                    "content": "Internship role",
+                    "title": "Data Science Role",
+                    "content": "This internship focuses on modeling.",
                 }
             ]
 

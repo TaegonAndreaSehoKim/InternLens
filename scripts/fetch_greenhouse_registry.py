@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -17,20 +18,41 @@ from src.ingestion.greenhouse_client import (
 )
 
 
+INTERNSHIP_TITLE_PATTERNS = [
+    r"\bintern\b",
+    r"\binternship\b",
+    r"\bco[- ]?op\b",
+]
+
+INTERNSHIP_CONTENT_PATTERNS = [
+    r"\bthis internship\b",
+    r"\binternship program\b",
+    r"\bsummer internship\b",
+    r"\bco[- ]?op program\b",
+    r"\bintern class\b",
+    r"\bintern cohort\b",
+]
+
+
+def _has_pattern_match(text: str, patterns: List[str]) -> bool:
+    # Return True when any regex pattern matches the given text.
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
 def _looks_like_internship(job: Dict[str, Any]) -> bool:
-    # Keep jobs that look like internships based on title or description text.
+    # Keep jobs that look like internships based on stronger title/content rules.
     title = str(job.get("title", "")).lower()
-    description = str(job.get("content", "")).lower()
-    combined = f"{title} {description}"
+    content = str(job.get("content", "")).lower()
 
-    internship_keywords = [
-        "intern",
-        "internship",
-        "summer intern",
-        "student intern",
-    ]
+    # Title matches are the strongest signal.
+    if _has_pattern_match(title, INTERNSHIP_TITLE_PATTERNS):
+        return True
 
-    return any(keyword in combined for keyword in internship_keywords)
+    # Description matches are allowed only for strong internship phrases.
+    if _has_pattern_match(content, INTERNSHIP_CONTENT_PATTERNS):
+        return True
+
+    return False
 
 
 def _filter_internship_jobs(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -113,7 +135,7 @@ def main() -> None:
         print("No registry entries to fetch.")
         return
 
-    total_raw_jobs = 0
+    total_filtered_jobs = 0
     total_processed_jobs = 0
 
     for entry in entries:
@@ -152,12 +174,12 @@ def main() -> None:
         if args.internship_only and not jobs:
             print("No internship-like jobs matched the current filter.")
 
-        total_raw_jobs += len(jobs)
+        total_filtered_jobs += len(jobs)
         total_processed_jobs += len(processed_paths)
         print()
 
     print("=== Registry fetch complete ===")
-    print(f"Total filtered jobs fetched: {total_raw_jobs}")
+    print(f"Total filtered jobs fetched: {total_filtered_jobs}")
     print(f"Total processed jobs saved: {total_processed_jobs}")
 
 
