@@ -1,0 +1,14 @@
+[
+  {
+    "site_name": "acds",
+    "active": true,
+    "internship_only": true,
+    "notes": "demo/eval source"
+  },
+  {
+    "site_name": "rws",
+    "active": true,
+    "internship_only": false,
+    "notes": "smoke-test source"
+  }
+]
