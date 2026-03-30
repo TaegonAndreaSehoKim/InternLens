@@ -9,7 +9,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from src.ingestion.lever_client import fetch_lever_postings
+from src.ingestion.lever_client import (
+    fetch_lever_postings,
+    save_raw_lever_snapshot,
+)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fetch public Lever job postings.")
@@ -26,7 +29,15 @@ def main() -> None:
         timeout=args.timeout,
     )
 
+    raw_output_path = save_raw_lever_snapshot(
+        args.site_name,
+        jobs,
+        project_root=PROJECT_ROOT,
+    )
+
+    print(f"Saved raw snapshot to: {raw_output_path}")
     print(f"Fetched {len(jobs)} jobs from Lever site '{args.site_name}'")
+
     if jobs:
         print(json.dumps(jobs[0], indent=2)[:2000])
     else:

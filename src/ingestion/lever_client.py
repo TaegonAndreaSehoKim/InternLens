@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timezone
 from html import unescape
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 
 import httpx
 
@@ -18,6 +19,24 @@ def _utc_now() -> datetime:
 def _utc_now_iso() -> str:
     return _utc_now().isoformat()
 
+def _utc_filename_timestamp() -> str:
+    return _utc_now().strftime("%Y%m%dT%H%M%SZ")
+
+
+def save_raw_lever_snapshot(
+    site_name: str,
+    postings: List[Dict[str, Any]],
+    *,
+    project_root: Path,
+) -> Path:
+    output_dir = project_root / "data" / "raw" / "lever" / site_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = output_dir / f"jobs_{_utc_filename_timestamp()}.json"
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(postings, f, indent=2, ensure_ascii=False)
+
+    return output_path
 
 def _normalize_whitespace(text: str) -> str:
     return " ".join(text.strip().split())
