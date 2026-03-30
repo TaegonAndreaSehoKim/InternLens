@@ -84,7 +84,7 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
 
 
 def load_all_job_postings(directory_path: str | Path) -> List[Dict[str, Any]]:
-    """Load all JSON job posting files from a directory."""
+    """Load all JSON job posting files from a directory tree."""
     directory = Path(directory_path)
 
     if not directory.exists():
@@ -92,8 +92,8 @@ def load_all_job_postings(directory_path: str | Path) -> List[Dict[str, Any]]:
 
     jobs: List[Dict[str, Any]] = []
 
-    # Use sorted order so tests and outputs remain deterministic.
-    for file_path in sorted(directory.glob("*.json")):
+    # Use recursive glob so crawled jobs under nested source/site folders are also loaded.
+    for file_path in sorted(directory.rglob("*.json")):
         jobs.append(load_job_posting(file_path))
 
     if not jobs:
