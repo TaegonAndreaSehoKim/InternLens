@@ -20,13 +20,14 @@ from src.ranking.baseline_scorer import rank_jobs
 from src.ranking.feedback_reranker import (
     apply_feedback_reranking,
     load_feedback_profile,
+    normalize_feedback_profile,
 )
 
 
 app = FastAPI(
     title="InternLens API",
     description="Internship application strategy optimizer API",
-    version="0.3.1",
+    version="0.3.2",
 )
 
 
@@ -42,6 +43,16 @@ class CandidateProfilePayload(BaseModel):
     extracted_skills: List[str] = Field(default_factory=list)
     years_of_experience: int = 0
     notes: str = ""
+
+
+class FeedbackEventPayload(BaseModel):
+    job_id: str
+    feedback_label: str
+
+
+class FeedbackProfilePayload(BaseModel):
+    profile_id: str
+    events: List[FeedbackEventPayload] = Field(default_factory=list)
 
 
 class RecommendRequest(BaseModel):
@@ -60,6 +71,10 @@ class RecommendRequest(BaseModel):
     feedback_path: Optional[str] = Field(
         default=None,
         description="Optional path to a feedback JSON file, relative to the project root.",
+    )
+    feedback_data: Optional[FeedbackProfilePayload] = Field(
+        default=None,
+        description="Optional inline feedback payload. If provided, this is used instead of feedback_path.",
     )
     top_k: int = Field(default=10, ge=1, le=100)
 
@@ -115,6 +130,11 @@ def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[s
     return normalize_candidate_profile(profile_data.model_dump())
 
 
+def _build_feedback_from_payload(feedback_data: FeedbackProfilePayload) -> Dict[str, Any]:
+    # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
+    return normalize_feedback_profile(feedback_data.model_dump())
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
@@ -137,12 +157,17 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         jobs = load_all_job_postings(jobs_dir)
         ranked_jobs = rank_jobs(profile, jobs)
 
-        # Apply optional feedback-based reranking only when a feedback file is provided.
+        # Apply optional feedback-based reranking only when feedback data is provided.
         reranking_applied = False
         feedback_source: Optional[str] = None
         final_jobs = ranked_jobs
 
-        if request.feedback_path is not None:
+        if request.feedback_data is not None:
+            feedback_profile = _build_feedback_from_payload(request.feedback_data)
+            final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
+            reranking_applied = True
+            feedback_source = "inline_feedback_payload"
+        elif request.feedback_path is not None:
             feedback_path = PROJECT_ROOT / request.feedback_path
             feedback_profile = load_feedback_profile(feedback_path)
             final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
