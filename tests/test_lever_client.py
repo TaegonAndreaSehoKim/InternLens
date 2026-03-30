@@ -1,5 +1,8 @@
-from src.ingestion.lever_client import _build_request_url, fetch_lever_postings
+from __future__ import annotations
+
+import json
 from pathlib import Path
+
 from src.ingestion.lever_client import (
     _build_request_url,
     fetch_lever_postings,
@@ -8,12 +11,15 @@ from src.ingestion.lever_client import (
     save_raw_lever_snapshot,
 )
 
+
 def test_build_request_url_appends_mode_json() -> None:
+    # The request URL should include the site name and JSON mode flag.
     url = _build_request_url("rws")
     assert url == "https://api.lever.co/v0/postings/rws?mode=json"
 
 
 def test_fetch_lever_postings_returns_list() -> None:
+    # Fetching a known Lever board should return a list payload.
     jobs = fetch_lever_postings("rws", limit=3, timeout=60)
 
     assert isinstance(jobs, list)
@@ -21,30 +27,13 @@ def test_fetch_lever_postings_returns_list() -> None:
 
 
 def test_fetch_lever_postings_items_are_dicts_when_present() -> None:
+    # Each returned posting should be a dictionary when results exist.
     jobs = fetch_lever_postings("rws", limit=3, timeout=60)
 
     if jobs:
         assert isinstance(jobs[0], dict)
         assert "id" in jobs[0]
 
-def test_save_raw_lever_snapshot_writes_json_file(tmp_path: Path) -> None:
-    postings = [
-        {"id": "job_123", "text": "Example Job"},
-        {"id": "job_456", "text": "Another Job"},
-    ]
-
-    output_path = save_raw_lever_snapshot(
-        "rws",
-        postings,
-        project_root=tmp_path,
-    )
-
-    assert output_path.exists()
-    assert output_path.suffix == ".json"
-    assert "data" in str(output_path)
-    assert "raw" in str(output_path)
-    assert "lever" in str(output_path)
-    assert "rws" in str(output_path)
 
 def test_normalize_lever_posting_maps_core_fields() -> None:
     # Verify that the main Lever fields are mapped into InternLens fields.
@@ -80,8 +69,57 @@ def test_normalize_lever_posting_maps_core_fields() -> None:
     assert normalized["application_url"] == "https://jobs.lever.co/example/abc123/apply"
     assert normalized["team"] == "TrainAI"
 
-from pathlib import Path
-import json
+
+def test_normalize_lever_posting_extracts_required_and_preferred_qualifications_from_description() -> None:
+    # Verify that qualification bullets can be separated from description text.
+    posting = {
+        "id": "abc123",
+        "text": "AI Data Specialist",
+        "descriptionPlain": (
+            "Help Shape the Future of AI\\n"
+            "What we're looking for:\\n"
+            "- English Proficiency: Fluent or advanced proficiency in English\\n"
+            "- AI & Data Capabilities (Preferred): Experience in machine learning tasks\\n"
+            "What We Offer\\n"
+            "- Flexible schedule\\n"
+        ),
+        "createdAt": 1741982801320,
+        "hostedUrl": "https://jobs.lever.co/example/abc123",
+        "applyUrl": "https://jobs.lever.co/example/abc123/apply",
+        "workplaceType": "remote",
+        "categories": {
+            "commitment": "Temporary/Contract",
+            "department": "RWS",
+            "location": "Florida",
+            "team": "TrainAI",
+        },
+    }
+
+    normalized = normalize_lever_posting(posting, "rws")
+
+    assert "English Proficiency" in normalized["min_qualifications"]
+    assert "AI & Data Capabilities" in normalized["preferred_qualifications"]
+
+
+def test_save_raw_lever_snapshot_writes_json_file(tmp_path: Path) -> None:
+    # Saving a raw snapshot should create one JSON file under the raw data directory.
+    postings = [
+        {"id": "job_123", "text": "Example Job"},
+        {"id": "job_456", "text": "Another Job"},
+    ]
+
+    output_path = save_raw_lever_snapshot(
+        "rws",
+        postings,
+        project_root=tmp_path,
+    )
+
+    assert output_path.exists()
+    assert output_path.suffix == ".json"
+    assert "data" in str(output_path)
+    assert "raw" in str(output_path)
+    assert "lever" in str(output_path)
+    assert "rws" in str(output_path)
 
 
 def test_save_processed_lever_postings_writes_normalized_files(tmp_path: Path) -> None:
