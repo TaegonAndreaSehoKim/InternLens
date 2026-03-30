@@ -1,210 +1,243 @@
-# InternLens Architecture Overview
+# InternLens Overview
 
-## High-level flow
+## Project summary
 
-```text
-Candidate Profile (JSON or API payload)
-                |
-                v
-        Profile Normalization
-                |
-                v
-     Normalized Candidate Profile
+InternLens is a practical internship search pipeline that connects three pieces of work:
 
-Job Postings (JSON directory)
-                |
-                v
-         Job Parsing / Cleanup
-                |
-                v
-        Normalized Job Records
+1. public job board ingestion
+2. candidate-profile-based ranking
+3. shortlist-oriented inspection through CLI and API
 
-Normalized Profile + Jobs
-                |
-                v
-        Baseline Ranking Engine
-        - fit scoring
-        - blocker checks
-        - blocker-aware ordering
-                |
-                v
-      Optional Feedback Reranker
-      - applied / saved / skipped signals
-      - file-based or inline input
-      - similarity-based score adjustment
-      - explanation generation
-                |
-                v
-        Final Ranked Job Results
-          /         |          \
-         /          |           \
-        v           v            v
- Console Output   JSON/CSV   FastAPI /recommend
-```
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop.
 
-## Main modules
+At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, and export shortlist-style results. The full test suite is currently passing with `68 passed`.
 
-* `src/preprocessing/profile_parser.py`
+---
 
-  * loads and normalizes candidate profile data
-  * builds a reusable `skill_set`
-  * keeps file-based and inline profile normalization consistent
+## Goals
 
-* `src/preprocessing/job_parser.py`
+The main goals of InternLens are:
 
-  * loads and normalizes job posting files
-  * prepares combined text fields for ranking and future retrieval
+- build a lightweight, understandable internship recommender
+- move beyond static toy data into real public job board ingestion
+- support iterative ranking improvements without breaking earlier behavior
+- expose results both as a scriptable CLI flow and as an API
+- maintain fast iteration through small, regression-tested changes
 
-* `src/ranking/baseline_scorer.py`
+This is not meant to be a production hiring platform yet. It is a clean, extensible foundation for future internship discovery and ranking work.
 
-  * computes baseline fit score
-  * separates fit score from blocking constraints
-  * applies blocker-aware ordering
-  * returns explanations, skill gaps, and component scores
+---
 
-* `src/ranking/feedback_reranker.py`
+## Architecture
 
-  * loads feedback events from JSON
-  * normalizes file-based and inline feedback through shared validation logic
-  * builds a lookup over known jobs referenced in feedback
-  * computes lightweight similarity-based score adjustments
-  * generates compact explanation snippets for reranked jobs
-  * preserves recommendation bucket ordering during reranking
+### 1. Ingestion layer
+InternLens currently supports:
 
-* `scripts/run_baseline.py`
+- Lever ingestion
+  - single-board fetch
+  - raw snapshot storage
+  - processed normalization
+  - registry-driven batch fetch
 
-  * runs the ranking pipeline locally
-  * can run baseline-only or feedback-aware reranking
-  * prints results and exports JSON/CSV outputs
-  * surfaces feedback explanation details when reranking is enabled
+- Greenhouse ingestion
+  - single-board fetch
+  - raw snapshot storage
+  - processed normalization
+  - registry-driven batch fetch
 
-* `src/api/app.py`
+The ingestion layer saves:
+- raw board snapshots for reproducibility
+- processed per-job JSON files for ranking
 
-  * exposes `/health` and `/recommend`
-  * supports file-based and inline profile inputs
-  * supports optional feedback-based reranking through `feedback_path`
-  * supports optional inline feedback through `feedback_data`
-  * prioritizes inline feedback when both feedback inputs are provided
-  * returns explanation-aware reranking fields in API responses
+This keeps collection and ranking decoupled, which makes debugging and iteration easier.
 
-## Current ranking logic
+---
 
-The baseline fit score is computed from:
+### 2. Preprocessing layer
+The preprocessing layer loads:
+- candidate profiles
+- processed job directories
 
-* skill match
-* role match
-* location match
+Candidate preferences such as role targets, graduation timing, sponsorship need, and extracted skills are turned into a baseline-friendly representation.
 
-The role-matching step reduces false positives by filtering overly generic title tokens, and skill matching includes lightweight alias normalization.
+The job parser supports recursively loading processed jobs from source-specific directories.
 
-## Current blocker logic
+---
 
-Blocking issues are evaluated separately from the numeric fit score so that a role can still be recognized as a strong fit even when the candidate cannot realistically apply.
+### 3. Ranking layer
+The ranking layer is currently heuristic and transparent.
 
-At the current stage, the blocker layer includes:
+It uses:
+- skill overlap
+- preferred role overlap
+- location match
+- internship bonus
+- blocker logic
 
-- sponsorship mismatch
-- expanded eligibility-style checks from job requirements
+Important ranking improvements added so far:
+- senior-role blocker
+- non-internship blocker
+- PhD blocker
+- internship-aware ordering
+- blocker-aware shortlist filters
+- fallback skill extraction for sparse public postings
+- reduced noisy fallback skill matching for non-technical internship titles
 
-Examples currently covered include:
+This makes the current baseline much more useful than a simple keyword scorer.
 
-- non-internship job type
-- explicit PhD requirement mismatch
-- lightweight graduation timing mismatch checks
+---
 
-## Why fit score and blockers are separated
+### 4. Output layer
+InternLens supports:
+- CLI-based ranking inspection
+- JSON export
+- CSV export
+- API recommendation endpoint
+- job detail endpoint
 
-This separation is a deliberate design choice.
+Recent CLI improvements:
+- `--eligible-only`
+- `--applyable-only`
 
-A job can be a strong relevance match based on skills, role, and location, while still being a poor application target because of a hard constraint. Keeping blockers outside the numeric fit score makes the ranking behavior easier to explain and easier to extend.
+These filters make it easier to inspect meaningful subsets rather than dumping the full ranked list.
 
-This design also makes it possible to keep ordering intuitive:
+---
 
-1. **Apply Now**
-2. **Apply Later**
-3. **Skip**
+## Current development status
 
-Even when feedback reranking is applied, recommendation buckets stay stable and reranking only adjusts order within the policy-aware structure.
+### What is working well
+- multi-source public job ingestion is working
+- registry-based batch fetching is working
+- processed schema generation is working
+- ranking is stable enough for demo use
+- tests are strong enough to support iterative changes safely
+- the CLI now supports shortlist-style filtering
+- API behavior remains stable after ranking refinements
 
-## Feedback reranking design (v1)
+### What was improved most recently
+Recent work focused on:
+- reducing ranking noise for public internship boards
+- improving Greenhouse location normalization using metadata
+- reducing noisy fallback skill matches for non-technical internships
+- making shortlist display easier to inspect
 
-The current reranker uses lightweight feedback events such as:
+The latest validation log shows:
+- `68 passed`
+- Cloudflare re-fetched with improved location extraction
+- Cloudflare shortlist reduced to a smaller, more relevant subset under `--applyable-only`
+- Waymo shortlist remains very small and focused under `--applyable-only`
 
-- `applied`
-- `saved`
-- `skipped`
+---
 
-These feedback signals can be provided either through a JSON file or directly as an inline API payload.
+## Example current behavior
 
-The reranker then:
+### Waymo
+The Waymo shortlist is now very narrow. Under applyable-only filtering, it effectively surfaces a single clearly relevant internship target rather than a noisy wall of blocked roles. That is a strong sign that blocker logic and internship prioritization are working.
 
-1. normalizes feedback through shared validation logic
-2. maps feedback events to known job postings
-3. extracts meaningful title tokens and a conservative skill phrase set
-4. computes similarity between the current job and previously labeled jobs
-5. applies small positive or negative adjustments based on feedback labels
-6. generates explanation items for the strongest feedback contributors
-7. preserves blocker-aware recommendation ordering in the final output
+### Cloudflare
+Cloudflare remains noisier than Waymo, but it is much more usable than before.
 
-This keeps the reranker simple, explainable, and safe for an early portfolio-oriented implementation.
+Recent visible shortlist examples include:
+- Data Analytics Intern
+- Data Engineer Intern
+- Business Analyst Intern
+- DCSC Automation Coordinator Intern
+- Network Deployment Engineer Intern
 
-## Explanation output design
+These now appear with real geographic locations such as:
+- Austin, US
+- London, UK
+- Singapore
 
-Each reranked result can now include a `feedback_explanations` field.
+instead of generic work-mode-only labels dominating the output.
 
-Each explanation item contains:
+---
 
-- source feedback job ID
-- source feedback job title
-- feedback label used for reranking
-- computed similarity
-- numeric adjustment contribution
-- overlapping title tokens
-- overlapping skill tokens
+## Why the project matters
 
-This makes the personalization layer easier to inspect during demos and easier to debug during iteration.
+InternLens now demonstrates a real iterative ML/IR-style workflow:
 
-## API and output behavior
+- collect external data
+- normalize it
+- design scoring logic
+- validate output behavior
+- add regression tests
+- refine precision over time
 
-`/recommend` can return either baseline-only or feedback-aware results.
+That makes it useful as:
+- a portfolio project
+- a search / ranking prototype
+- an internship recommender demo
+- a foundation for future retrieval and reranking work
 
-When feedback reranking is used, the response also includes:
+It also shows good engineering discipline:
+- reproducible raw snapshots
+- source-specific normalization
+- CLI utilities for debugging
+- API exposure
+- test-backed iteration
 
-- `feedback_source`
-- `reranking_applied`
-- `feedback_adjustment`
-- `reranked_score`
-- `feedback_explanations`
+---
 
-Feedback input can come from:
+## Main limitations
 
-- `feedback_path`
-- `feedback_data`
+The project still has important limitations.
 
-If both are provided, `feedback_data` is used.
+### Ranking limitations
+- the baseline is still heuristic
+- fallback skill extraction can still overgeneralize
+- some broad AI-adjacent or operations internships can remain in the shortlist
+- there is no learned relevance model yet
 
-The local script flow mirrors this behavior for file-based feedback by surfacing explanation details in console output and exported JSON/CSV artifacts.
+### Data limitations
+- public ATS data is inconsistent
+- work-mode and location fields vary by board
+- some postings duplicate across locations
+- structured qualification fields are often sparse
 
-## Current test coverage snapshot
+### Product limitations
+- shortlist filtering is useful, but still CLI-first
+- there is no polished front-end yet
+- deduplication and grouping are still basic
+- company normalization remains lightweight
 
-The current test suite covers:
+---
 
-- baseline API health and recommendation flows
-- inline and file-based profile inputs
-- validation and file-not-found cases
-- blocker-aware ranking behavior
-- feedback file loading and shared normalization behavior
-- feedback-aware reranking fields and API responses
-- explanation field presence in reranking and API results
-- inline feedback reranking behavior
-- inline feedback priority over file-based feedback input
+## Recommended next steps
 
-Current status: **21 passing tests**
+The strongest next steps are:
 
-## Next evolution path
+1. refine shortlist precision further
+   - reduce remaining non-core internship noise
+   - tighten relevance requirements for `Apply Later`
 
-1. improve explanation quality and score calibration
-2. decide whether blocked jobs should receive capped boosts inside the `Skip` bucket
-3. add semantic retrieval
-4. replace heuristic ranking with learning-to-rank
-5. add persistence and deployment
+2. improve normalization quality
+   - better company normalization
+   - better hybrid/in-office handling
+   - better deduplication across repeated multi-location postings
+
+3. strengthen retrieval/ranking sophistication
+   - embeddings or vector retrieval
+   - learned reranking
+   - feedback-aware personalization
+
+4. improve presentation
+   - cleaner API responses
+   - shortlist summaries
+   - possibly a thin front-end demo
+
+---
+
+## Bottom line
+
+InternLens is now a small but credible internship discovery system.
+
+It is no longer just a script that scores static sample jobs. It now supports:
+- real public ATS ingestion
+- processed data generation
+- blocker-aware internship ranking
+- shortlist filtering
+- API access
+- regression-tested iteration
+
+That makes the project demoable today and extensible tomorrow.

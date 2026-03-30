@@ -1,151 +1,287 @@
 # InternLens
 
-InternLens is an internship application strategy optimizer that ranks job postings by candidate fit and recommends **Apply Now**, **Apply Later**, or **Skip**.
+InternLens is a lightweight internship discovery and ranking pipeline for public job boards.
 
-## Why I built it
+It fetches internship postings from public ATS sources, normalizes them into a shared schema, ranks them against a candidate profile, and exposes the results through both a CLI workflow and a FastAPI service.
 
-I built this project after struggling to get past the resume screen for graduate-level summer internships. The goal was to create a system that helps prioritize where to apply by combining profile data, job requirements, ranking logic, explainable decision signals, and lightweight personalization.
+The project started as a simple baseline recommender on static sample jobs, but it now supports multi-source ingestion, registry-driven batch fetches, blocker-aware ranking, shortlist-oriented CLI filters, and regression-tested API behavior. Current validation status: the full test suite is passing (`68 passed`).
 
-## What it does
+---
 
-Given a candidate profile and a set of internship postings, InternLens:
+## What the project does
 
-- parses candidate and job data
-- ranks jobs using a baseline scoring pipeline
-- separates **fit score** from **blocking constraints**
-- applies **blocker-aware ordering** so recommendation buckets stay intuitive
-- optionally applies **feedback-based reranking** using prior applied / saved / skipped signals
-- supports both file-based and inline feedback inputs
-- returns:
-  - score
-  - action label
-  - matched skills
-  - skill gaps
-  - blocking issues
-  - reasons
-  - optional reranking fields when feedback is used
+InternLens supports the following end-to-end flow:
 
-This makes it possible to distinguish between a role that is a good fit but blocked by eligibility constraints and a role that is simply a weak fit.
+1. Fetch public job postings from ATS boards
+2. Save raw snapshots for reproducibility
+3. Normalize postings into a shared processed schema
+4. Load a candidate profile
+5. Score and rank postings using a baseline internship-focused heuristic
+6. Optionally rerank with feedback signals
+7. Inspect results from the CLI or API
 
-## Current ranking logic
+The current implementation is intentionally simple and transparent. It is designed to be easy to extend, easy to debug, and good enough for a demo-quality internship search workflow.
 
-The baseline fit score is computed from:
+---
 
-- skill match
-- role match
-- location match
+## Current capabilities
 
-Blocking constraints are handled separately from the numeric fit score so that a posting can still be recognized as relevant even when the candidate cannot realistically apply.
+### Ingestion
+- Lever single-board fetch
+- Lever raw snapshot saving
+- Lever processed job normalization
+- Lever registry-based batch fetch
+- Greenhouse single-board fetch
+- Greenhouse raw snapshot saving
+- Greenhouse processed job normalization
+- Greenhouse registry-based batch fetch
 
-The final baseline ordering is recommendation-aware:
+### Ranking
+- baseline scoring against a candidate profile
+- blocker-aware recommendations
+- senior-role blocker
+- non-internship blocker
+- PhD requirement blocker
+- explicit internship bonus
+- internship-focused ranking order
+- fallback skill extraction for sparse public postings
+- reduced noisy fallback matching for non-technical internship titles
 
-1. **Apply Now**
-2. **Apply Later**
-3. **Skip**
+### Output / usability
+- shortlist CLI workflow
+- `--eligible-only` filter
+- `--applyable-only` filter
+- JSON and CSV exports
+- API endpoint for `/recommend`
+- API endpoint for `/jobs/{id}`
 
-Within each recommendation bucket, InternLens uses blocker count and score to order results.
+### Validation
+- registry flow tests
+- ingestion client tests
+- ranking regression tests
+- CLI filtering tests
+- API tests
+- full suite currently passing: `68 passed`
 
-## Current blocker logic
-
-The current blocker layer includes:
-
-- sponsorship mismatch
-- expanded eligibility-style checks from job requirements
-
-Examples of eligibility-style checks currently covered include:
-
-- non-internship job type
-- explicit PhD requirement mismatch
-- lightweight graduation timing mismatch checks
-
-## Feedback-based reranking (v1)
-
-InternLens supports an optional feedback reranking step.
-
-When feedback is provided, the system uses prior job interaction signals such as:
-
-- `applied`
-- `saved`
-- `skipped`
-
-Feedback can be supplied in two ways:
-
-- `feedback_path` for file-based JSON input
-- `feedback_data` for inline API payload input
-
-The reranker computes a lightweight similarity signal using meaningful title tokens and a small known skill vocabulary, then adjusts the original score.
-
-Important behavior:
-
-- reranking does **not** override blocker-aware recommendation ordering
-- feedback boosts are applied within the existing recommendation policy
-- inline feedback takes priority over `feedback_path` if both are provided
-- the system exposes lightweight explanation details showing:
-  - which prior feedback item influenced a result
-  - the feedback label used
-  - similarity strength
-  - score adjustment
-  - overlapping title tokens
-  - overlapping skill tokens
-
-## Current features
-
-- candidate profile parsing
-- job posting parsing
-- baseline ranking engine
-- skill alias normalization
-- role matching with generic token filtering
-- blocking constraint handling
-- blocker-aware ordering
-- feedback-based reranking
-- feedback explanation output for reranked jobs
-- file-based and inline feedback support
-- JSON / CSV result export
-- FastAPI endpoints (`/health`, `/recommend`)
-- inline profile payload support for `/recommend`
-- optional `feedback_path` support for `/recommend`
-- optional `feedback_data` support for `/recommend`
-- pytest coverage for core API, ranking, and reranking behavior
+---
 
 ## Project structure
 
 ```text
 InternLens/
 ├── data/
-│   ├── feedback/
+│   ├── raw/
+│   │   ├── lever/
+│   │   └── greenhouse/
 │   ├── processed/
-│   └── sample_jobs/
-├── docs/
-│   ├── architecture/
-│   └── devlog/
+│   │   ├── jobs/
+│   │   └── candidate_profile_example.json
+│   ├── sample_jobs/
+│   └── source_registry/
+│       ├── lever_targets.json
+│       └── greenhouse_targets.json
 ├── outputs/
 ├── scripts/
+│   ├── fetch_lever_jobs.py
+│   ├── fetch_lever_registry.py
+│   ├── fetch_greenhouse_jobs.py
+│   ├── fetch_greenhouse_registry.py
 │   └── run_baseline.py
 ├── src/
-│   ├── api/
-│   │   └── app.py
+│   ├── ingestion/
 │   ├── preprocessing/
-│   └── ranking/
+│   ├── ranking/
+│   └── api/
 ├── tests/
-├── requirements.txt
 └── README.md
 ```
 
-## Run locally
+---
+
+## Supported sources
+
+### Lever
+InternLens can fetch public Lever postings by board token / site name.
+
+Examples already tested during development:
+- `acds`
+- `rws`
+
+### Greenhouse
+InternLens can fetch public Greenhouse postings by board token.
+
+Examples already tested during development:
+- `waymo`
+- `honehealth`
+- `cloudflare`
+
+Greenhouse normalization now uses metadata-based geographic location extraction when available, which improves location quality compared with relying only on generic work-mode labels like `Hybrid` or `In-Office`.
+
+---
+
+## Installation
+
+Create and activate a virtual environment, then install dependencies.
 
 ```bash
 python -m venv .venv
-.venv\Scripts\Activate.ps1
+.venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/run_baseline.py
-python scripts/run_baseline.py --feedback-path data/feedback/sample_feedback.json
-uvicorn src.api.app:app --reload
-pytest -q
 ```
 
-## Example API input
+If you do not yet have a `requirements.txt`, install the packages already used in the project environment.
 
-### Baseline request
+```bash
+pip install fastapi uvicorn httpx pytest pandas
+```
+
+Add any other packages your local project already depends on.
+
+---
+
+## Candidate profile format
+
+InternLens expects a processed candidate profile JSON file.
+
+Example fields:
+
+```json
+{
+  "profile_id": "seho_001",
+  "resume_text": "Graduate student with Python, PyTorch, machine learning, and data analysis experience.",
+  "degree_level": "Master's",
+  "grad_date": "2027-12",
+  "preferred_roles": [
+    "Machine Learning Engineer Intern",
+    "Applied Scientist Intern"
+  ],
+  "preferred_locations": ["California", "Remote"],
+  "target_industries": ["AI", "Tech"],
+  "sponsorship_need": true,
+  "extracted_skills": [
+    "Python",
+    "PyTorch",
+    "Machine Learning",
+    "Data Analysis"
+  ],
+  "years_of_experience": 1,
+  "notes": "Interested in recommendation and ranking systems"
+}
+```
+
+---
+
+## Job schema
+
+Processed jobs are normalized into a shared shape similar to:
+
+```json
+{
+  "job_id": "greenhouse_cloudflare_123456",
+  "source": "greenhouse",
+  "source_site": "cloudflare",
+  "source_job_id": "123456",
+  "company": "cloudflare",
+  "title": "Software Engineer Intern (Summer 2026)",
+  "location": "Austin, US",
+  "description": "...",
+  "min_qualifications": "",
+  "preferred_qualifications": "",
+  "posting_date": "2026-03-30",
+  "sponsorship_info": "",
+  "employment_type": "Internship",
+  "source_url": "https://...",
+  "application_url": "https://...",
+  "remote_status": "hybrid",
+  "team": "Engineering"
+}
+```
+
+Not every field is populated equally across sources. Public ATS data is noisy, so normalization is intentionally conservative.
+
+---
+
+## How to fetch postings
+
+### Fetch a single Lever board
+
+```bash
+python scripts/fetch_lever_jobs.py --site-name acds --limit 20 --timeout 60
+```
+
+### Fetch all active Lever registry targets
+
+```bash
+python scripts/fetch_lever_registry.py --only-active
+```
+
+### Fetch a single Greenhouse board
+
+```bash
+python scripts/fetch_greenhouse_jobs.py --board-token waymo --limit 50 --timeout 60
+python scripts/fetch_greenhouse_jobs.py --board-token cloudflare --limit 200 --timeout 60
+```
+
+### Fetch all active Greenhouse registry targets
+
+```bash
+python scripts/fetch_greenhouse_registry.py --only-active --internship-only
+```
+
+---
+
+## How to run the baseline ranker
+
+### Run on sample jobs
+
+```bash
+python scripts/run_baseline.py
+```
+
+### Run on a processed source directory
+
+```bash
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/waymo
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare
+```
+
+### Show only blocker-free jobs
+
+```bash
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/waymo --eligible-only
+```
+
+### Show only non-Skip recommendations
+
+```bash
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --applyable-only
+```
+
+### Combine filters for a shortlist-style view
+
+```bash
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --eligible-only --applyable-only
+```
+
+Current behavior from recent validation:
+- `waymo --applyable-only` surfaces a very small shortlist centered on a real target internship
+- `cloudflare --applyable-only` produces a narrower internship subset than before, with examples such as `Data Analytics Intern`, `Data Engineer Intern`, `Business Analyst Intern`, `Network Deployment Engineer Intern`, and `Marketing: AI Discoverability & Optimization Intern` in the visible shortlist.
+
+---
+
+## API usage
+
+Start the API server:
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+Main endpoints:
+- `POST /recommend`
+- `GET /jobs/{id}`
+
+### Example recommend request
 
 ```json
 {
@@ -158,10 +294,7 @@ pytest -q
       "Machine Learning Engineer Intern",
       "Applied Scientist Intern"
     ],
-    "preferred_locations": [
-      "California",
-      "Remote"
-    ],
+    "preferred_locations": ["California", "Remote"],
     "target_industries": ["AI", "Tech"],
     "sponsorship_need": true,
     "extracted_skills": [
@@ -178,95 +311,97 @@ pytest -q
 }
 ```
 
-### Feedback-aware request with file input
+---
 
-```json
-{
-  "profile_path": "data/processed/candidate_profile_example.json",
-  "jobs_dir": "data/sample_jobs",
-  "feedback_path": "data/feedback/sample_feedback.json",
-  "top_k": 5
-}
+## Ranking logic (baseline)
+
+The current baseline is heuristic-based and intentionally interpretable.
+
+### Positive signals
+- overlap with candidate skills
+- overlap with preferred roles
+- location match
+- explicit internship language
+- some fallback skill extraction from title/description when structured qualifications are sparse
+
+### Blocking signals
+- job does not appear to be an internship
+- role appears to be senior-level
+- role appears to require a PhD
+- graduation timing mismatch
+- sponsorship conflicts
+
+### Output labels
+- `Apply Now`
+- `Apply Later`
+- `Skip`
+
+These labels are not meant to be perfect hiring predictions. They are meant to provide a simple shortlist-oriented baseline that is easy to inspect and improve.
+
+---
+
+## Testing
+
+Run the full test suite:
+
+```bash
+pytest -q
 ```
 
-### Feedback-aware request with inline input
+Current status:
+- full test suite passing
+- `68 passed` as of the latest validation log
 
-```json
-{
-  "profile_path": "data/processed/candidate_profile_example.json",
-  "jobs_dir": "data/sample_jobs",
-  "feedback_data": {
-    "profile_id": "seho_001",
-    "events": [
-      {
-        "job_id": "job_002",
-        "feedback_label": "applied"
-      },
-      {
-        "job_id": "job_005",
-        "feedback_label": "saved"
-      },
-      {
-        "job_id": "job_004",
-        "feedback_label": "skipped"
-      }
-    ]
-  },
-  "top_k": 5
-}
+Useful targeted test commands:
+
+```bash
+pytest tests/test_greenhouse_client.py -q
+pytest tests/test_baseline_scorer_seniority.py -q
+pytest tests/test_run_baseline_cli.py -q
+pytest tests/test_api_and_ranking.py -q
 ```
 
-## Example API response fields
+---
 
-When feedback reranking is applied, `/recommend` also returns:
+## Known limitations
 
-- `feedback_source`
-- `reranking_applied`
-- `feedback_adjustment` for each job result
-- `reranked_score` for each job result
-- `feedback_explanations` for each reranked job result
+- ranking is still heuristic and not learned
+- fallback skill extraction can still overmatch broad terms in some postings
+- some non-core internships can still survive ranking if they resemble technical/data roles
+- company normalization is lightweight
+- location preference scoring can still be refined for hybrid/in-office jobs
+- duplicate-looking multi-location internships may still appear as separate postings
 
-Each explanation item includes:
+---
 
-- `source_job_id`
-- `source_job_title`
-- `feedback_label`
-- `similarity`
-- `adjustment`
-- `shared_title_tokens`
-- `shared_skill_tokens`
+## Why this project is useful
 
-## Local script output behavior
+InternLens now demonstrates more than a toy static recommender.
 
-When `run_baseline.py` is executed with `--feedback-path`, the reranked console output and exported CSV/JSON files also include feedback explanation details. This makes it easier to inspect why a role moved up or down without opening the API.
+It shows a realistic small-scale workflow for:
+- public internship ingestion
+- schema normalization
+- candidate-profile ranking
+- shortlist generation
+- API exposure
+- regression-tested iteration
 
-## Notes on the demo data
+That makes it a strong base for future work such as:
+- better profile extraction
+- vector or embedding-based retrieval
+- learned reranking
+- deduplication
+- company/role taxonomy normalization
+- personalized feedback loops
 
-The sample dataset includes blocker-oriented examples to make recommendation behavior easier to understand. In particular, `job_006` helps demonstrate how a posting can look relevant on fit signals but still be recommended as **Skip** because of blocker logic.
-
-The sample feedback data demonstrates how previously applied, saved, and skipped jobs can slightly adjust ranking order without overriding hard eligibility constraints.
-
-## Current test coverage snapshot
-
-At this point in development, the project test suite covers:
-
-- `/health`
-- `/recommend` with inline profile payloads
-- `/recommend` with profile file paths
-- `/recommend` with file-based feedback reranking
-- `/recommend` with inline feedback reranking
-- missing feedback file handling
-- blocker-aware ranking behavior
-- feedback reranker loading and normalization behavior
-- feedback explanation fields in both reranking logic and API responses
-- inline feedback priority behavior over `feedback_path`
-
-Current status: **21 passing tests**
+---
 
 ## Next steps
 
-- improve calibration of feedback weights and similarity rules
-- decide whether blocked jobs should receive capped boosts inside the `Skip` bucket
-- add semantic retrieval for better matching recall
-- replace heuristic ranking with learning-to-rank
-- add persistence and deployment
+Planned follow-up improvements:
+- reduce remaining ranking noise for broad non-core internships
+- refine hybrid/in-office location preference handling
+- improve deduplication for repeated internship postings
+- clean up company and team normalization
+- expand final demo documentation
+- prepare a more polished shortlist UX for the API layer
