@@ -171,6 +171,12 @@ def _has_description_internship_signal(job: Dict[str, Any]) -> bool:
     """
     return _has_pattern_match(job["description"], INTERNSHIP_DESCRIPTION_PATTERNS)
 
+def _has_any_internship_signal(job: Dict[str, Any]) -> bool:
+    """
+    Return True when the posting has either explicit or strong description-based
+    internship signals.
+    """
+    return _has_explicit_internship_signal(job) or _has_description_internship_signal(job)
 
 def _looks_like_senior_role(job: Dict[str, Any]) -> bool:
     """
@@ -187,16 +193,16 @@ def _looks_like_senior_role(job: Dict[str, Any]) -> bool:
 
 def _compute_internship_signal_bonus(job: Dict[str, Any]) -> float:
     """
-    Give a modest bonus to jobs that explicitly identify themselves as internships.
+    Give a stronger bonus to jobs that explicitly identify themselves as internships.
 
     This helps real internship postings surface above generic non-intern roles
     that happen to share location or title overlap.
     """
     if _has_explicit_internship_signal(job):
-        return 0.15
+        return 0.30
 
     if _has_description_internship_signal(job):
-        return 0.05
+        return 0.10
 
     return 0.0
 
@@ -291,7 +297,6 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     blockers: List[str] = []
 
     sponsorship_text = job["sponsorship_info"].lower()
-    employment_type = job["employment_type"].lower()
     combined_text = " ".join(
         [
             job["title"],
@@ -308,7 +313,8 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     if profile["sponsorship_need"] and "no sponsorship" in sponsorship_text:
         blockers.append("Sponsorship is not available for this role")
 
-    if "intern" not in employment_type and "intern" not in combined_text:
+    # Require explicit or strong internship evidence instead of a loose substring check.
+    if not _has_any_internship_signal(job):
         blockers.append("This role does not appear to be an internship")
 
     if _looks_like_senior_role(job):

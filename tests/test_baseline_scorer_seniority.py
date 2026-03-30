@@ -79,3 +79,67 @@ def test_explicit_internship_signal_adds_bonus_and_reason() -> None:
 
     assert internship_result["score"] > regular_result["score"]
     assert "Posting explicitly identifies this as an internship" in internship_result["reasons"]
+
+def test_non_intern_ml_role_is_blocked_even_if_title_matches() -> None:
+    # A strong ML title should still be blocked when the posting does not look like an internship.
+    profile = _build_profile()
+    job = {
+        "job_id": "non_intern_ml_role",
+        "company": "example",
+        "title": "Machine Learning Engineer - VLM/LLM Integration",
+        "location": "Mountain View, CA, USA",
+        "description": "Build production ML systems for multimodal models.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "",
+        "source": "manual",
+        "remote_status": "",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["action_label"] == "Skip"
+    assert "This role does not appear to be an internship" in result["blocking_issues"]
+
+
+def test_true_internship_surfaces_above_non_intern_ml_role() -> None:
+    # Explicit internship language should beat a non-intern ML role once the blocker is enforced.
+    profile = _build_profile()
+
+    internship_job = {
+        "job_id": "intern_role",
+        "company": "example",
+        "title": "2026 Summer Intern, BS/MS, Software Engineering, Simulation",
+        "location": "Mountain View, CA",
+        "description": "Join our summer internship program building simulation systems.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "",
+    }
+
+    non_intern_ml_job = {
+        "job_id": "non_intern_ml_role",
+        "company": "example",
+        "title": "Machine Learning Engineer - VLM/LLM Integration",
+        "location": "Mountain View, CA, USA",
+        "description": "Build production ML systems for multimodal models.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "",
+        "source": "manual",
+        "remote_status": "",
+    }
+
+    internship_result = score_job(profile, internship_job)
+    non_intern_result = score_job(profile, non_intern_ml_job)
+
+    assert "This role does not appear to be an internship" not in internship_result["blocking_issues"]
+    assert "This role does not appear to be an internship" in non_intern_result["blocking_issues"]
