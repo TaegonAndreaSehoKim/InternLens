@@ -323,16 +323,36 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
     """
     Check whether the job location matches one of the candidate's preferences.
 
-    v1 supports simple substring matching plus a special remote fallback.
+    v1 supports simple substring matching plus a stricter remote fallback.
+    Generic labels such as "In-Office" should not count as matching a preferred
+    geographic target like California.
     """
-    job_location = job["location"]
+    job_location = job["location"].lower().strip()
+    remote_status = job.get("remote_status", "").lower().strip()
+
+    generic_non_geographic_locations = {
+        "in-office",
+        "in office",
+        "onsite",
+        "on-site",
+        "office",
+    }
 
     for preferred_location in profile["preferred_locations"]:
-        if preferred_location in job_location:
+        preferred = preferred_location.lower().strip()
+
+        if preferred == "remote":
+            continue
+
+        if job_location in generic_non_geographic_locations:
+            continue
+
+        if preferred and preferred in job_location:
             return 1.0
 
-    if "remote" in job.get("remote_status", "") and any(
-        preferred == "remote" for preferred in profile["preferred_locations"]
+    if remote_status == "remote" and any(
+        preferred_location.lower().strip() == "remote"
+        for preferred_location in profile["preferred_locations"]
     ):
         return 1.0
 
