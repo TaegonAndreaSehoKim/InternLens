@@ -220,8 +220,8 @@ def test_rank_jobs_orders_blocked_roles_by_bucket() -> None:
     ]
 
 def test_blocker_free_explicit_internship_gets_apply_later() -> None:
-    # A clear internship with no blockers should not remain Skip even if
-    # baseline fit signals are still sparse.
+    # A clear internship with no blockers and some relevance signal should
+    # not remain Skip.
     profile = _build_profile()
 
     internship_job = {
@@ -229,7 +229,7 @@ def test_blocker_free_explicit_internship_gets_apply_later() -> None:
         "company": "example",
         "title": "2026 Summer Intern, BS/MS, Software Engineering, Simulation",
         "location": "Mountain View, CA",
-        "description": "Join our summer internship program building simulation systems.",
+        "description": "Join our summer internship program building Python machine learning simulation systems.",
         "min_qualifications": "",
         "preferred_qualifications": "",
         "posting_date": "2026-03-30",
@@ -242,6 +242,7 @@ def test_blocker_free_explicit_internship_gets_apply_later() -> None:
     result = score_job(profile, internship_job)
 
     assert result["blocking_issues"] == []
+    assert result["matched_skills"] != []
     assert result["action_label"] == "Apply Later"
 
 def test_skill_match_uses_title_and_description_signals() -> None:
@@ -297,3 +298,28 @@ def test_structured_qualifications_take_priority_over_title_description_fallback
     # flood matched_skills with title/description-only keywords.
     assert "statistics" not in result["matched_skills"]
     assert "recommendation systems" not in result["matched_skills"]
+
+def test_blocker_free_explicit_internship_without_relevance_signal_stays_skip() -> None:
+    # Explicit internship language alone should not promote unrelated roles.
+    profile = _build_profile()
+
+    internship_job = {
+        "job_id": "unrelated_intern",
+        "company": "example",
+        "title": "Sales Intern (Summer 2026)",
+        "location": "In-Office",
+        "description": "Join our summer internship program supporting sales operations and outreach.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "",
+    }
+
+    result = score_job(profile, internship_job)
+
+    assert result["blocking_issues"] == []
+    assert result["matched_skills"] == []
+    assert result["action_label"] == "Skip"

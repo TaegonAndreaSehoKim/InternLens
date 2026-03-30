@@ -485,6 +485,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     final_score = round(bounded_score * 100, 2)
 
     has_explicit_internship = _has_explicit_internship_signal(job)
+    has_relevance_signal = bool(matched_skills) or role_score >= 0.20
 
     if blockers:
         action_label = "Skip"
@@ -492,10 +493,9 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         action_label = "Apply Now"
     elif final_score >= 45:
         action_label = "Apply Later"
-    elif has_explicit_internship:
-        # If the role is clearly an internship and there are no blockers,
-        # do not let it fall all the way to Skip just because the baseline
-        # heuristics are still sparse.
+    elif has_explicit_internship and has_relevance_signal:
+        # A clear internship can still be Apply Later even when the baseline
+        # score is modest, but only if we see some role or skill relevance.
         action_label = "Apply Later"
     else:
         action_label = "Skip"
