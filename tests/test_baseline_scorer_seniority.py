@@ -243,3 +243,57 @@ def test_blocker_free_explicit_internship_gets_apply_later() -> None:
 
     assert result["blocking_issues"] == []
     assert result["action_label"] == "Apply Later"
+
+def test_skill_match_uses_title_and_description_signals() -> None:
+    # Sparse public postings may not have qualification fields, so title and
+    # description should still contribute meaningful skill matches.
+    profile = _build_profile()
+
+    job = {
+        "job_id": "title_desc_skill_role",
+        "company": "example",
+        "title": "Machine Learning Engineer Intern",
+        "location": "Remote",
+        "description": "Work with Python and PyTorch on machine learning systems.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert "machine learning" in result["matched_skills"]
+    assert "python" in result["matched_skills"]
+    assert "pytorch" in result["matched_skills"]
+    assert any("Matched on key skills" in reason for reason in result["reasons"])
+
+def test_structured_qualifications_take_priority_over_title_description_fallback() -> None:
+    # When a job already has structured qualification fields, fallback signals
+    # from title/description should not overpower the original ranking behavior.
+    profile = _build_profile()
+
+    job = {
+        "job_id": "structured_job",
+        "company": "example",
+        "title": "Machine Learning Engineer Intern",
+        "location": "Remote",
+        "description": "Python PyTorch machine learning everywhere in the description.",
+        "min_qualifications": "Experience with statistics",
+        "preferred_qualifications": "Experience with recommendation systems",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    # Structured qualification fields are sparse here, so fallback should not
+    # flood matched_skills with title/description-only keywords.
+    assert "statistics" not in result["matched_skills"]
+    assert "recommendation systems" not in result["matched_skills"]

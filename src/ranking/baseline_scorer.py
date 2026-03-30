@@ -20,6 +20,11 @@ SKILL_KEYWORDS = [
     "recommendation systems",
     "data analysis",
     "statistics",
+    "software engineering",
+    "simulation",
+    "computer vision",
+    "llm",
+    "vlm",
 ]
 
 # These aliases reduce false negatives when the same skill is written differently.
@@ -34,6 +39,12 @@ SKILL_ALIASES = {
     "recommendation system": "recommendation systems",
     "recommendation engine": "recommendation systems",
     "analytics": "data analysis",
+    "software engineer": "software engineering",
+    "software engineering intern": "software engineering",
+    "software development": "software engineering",
+    "cv": "computer vision",
+    "vision language model": "vlm",
+    "large language model": "llm",
 }
 
 # Generic words like "engineer" or "intern" do not help much for role matching.
@@ -130,6 +141,19 @@ def _normalize_candidate_skills(profile: Dict[str, Any]) -> Set[str]:
     """Normalize the candidate skill set before comparing it to job text."""
     return {_canonicalize_skill(skill) for skill in profile["skill_set"]}
 
+def _extract_job_skill_keywords(job: Dict[str, Any]) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
+    """
+    Extract skill keywords from multiple job fields.
+
+    We still trust qualifications the most, but title and description should
+    contribute lighter-weight signals so sparse postings are not invisible.
+    """
+    required_keywords = _extract_keywords_from_text(job["min_qualifications"])
+    preferred_keywords = _extract_keywords_from_text(job["preferred_qualifications"])
+    title_keywords = _extract_keywords_from_text(job["title"])
+    description_keywords = _extract_keywords_from_text(job["description"])
+
+    return required_keywords, preferred_keywords, title_keywords, description_keywords
 
 def _meaningful_role_tokens(text: str) -> Set[str]:
     """
@@ -209,26 +233,62 @@ def _compute_internship_signal_bonus(job: Dict[str, Any]) -> float:
 
 def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], List[str]]:
     """
-    Compare candidate skills with required/preferred job keywords.
+    Compare candidate skills with job keywords from qualifications, title,
+    and description.
 
-    Required skills get a larger weight than preferred skills.
+    Required/preferred qualifications remain the primary source of truth.
+    Title/description are used only as fallback signals when qualification
+    fields are sparse or empty.
     """
     candidate_skills = _normalize_candidate_skills(profile)
 
-    required_keywords = _extract_keywords_from_text(job["min_qualifications"])
-    preferred_keywords = _extract_keywords_from_text(job["preferred_qualifications"])
+    (
+        required_keywords,
+        preferred_keywords,
+        title_keywords,
+        description_keywords,
+    ) = _extract_job_skill_keywords(job)
+
+    has_structured_qualifications = bool(required_keywords or preferred_keywords)
 
     required_matches = sorted(candidate_skills & required_keywords)
     preferred_matches = sorted(candidate_skills & preferred_keywords)
-    matched_skills = sorted(set(required_matches + preferred_matches))
 
-    required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
-    preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
+    if has_structured_qualifications:
+        # For curated/sample jobs, trust structured qualification fields first.
+        title_matches: List[str] = []
+        description_matches: List[str] = []
+        matched_skills = sorted(set(required_matches + preferred_matches))
 
-    skill_score = min(1.0, required_overlap_score * 0.75 + preferred_overlap_score * 0.25)
+        required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
+        preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
+
+        skill_score = min(
+            1.0,
+            (required_overlap_score * 0.75)
+            + (preferred_overlap_score * 0.25),
+        )
+    else:
+        # For sparse public postings, use title/description as fallback signals.
+        title_matches = sorted(candidate_skills & title_keywords)
+        description_matches = sorted(candidate_skills & description_keywords)
+
+        matched_skills = sorted(set(required_matches + preferred_matches + title_matches + description_matches))
+
+        required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
+        preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
+        title_overlap_score = _safe_ratio(len(title_matches), len(title_keywords))
+        description_overlap_score = _safe_ratio(len(description_matches), len(description_keywords))
+
+        skill_score = min(
+            1.0,
+            (required_overlap_score * 0.50)
+            + (preferred_overlap_score * 0.20)
+            + (title_overlap_score * 0.20)
+            + (description_overlap_score * 0.10),
+        )
 
     return skill_score, matched_skills, required_matches
-
 
 def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], Optional[str]]:
     """
@@ -357,7 +417,7 @@ def _generate_reasons(
     """
     reasons: List[str] = []
 
-    if skill_score >= 0.35 and matched_skills:
+    if skill_score >= 0.15 and matched_skills:
         reasons.append(f"Matched on key skills: {', '.join(matched_skills[:4])}")
 
     if role_score >= 0.34 and best_preferred_role:
@@ -379,16 +439,26 @@ def _generate_reasons(
 
 
 def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
-    """Surface a few missing required/preferred skills for explanation output."""
+    """Surface a few missing skills for explanation output."""
     candidate_skills = _normalize_candidate_skills(profile)
 
-    required_keywords = _extract_keywords_from_text(job["min_qualifications"])
-    preferred_keywords = _extract_keywords_from_text(job["preferred_qualifications"])
+    (
+        required_keywords,
+        preferred_keywords,
+        title_keywords,
+        _description_keywords,
+    ) = _extract_job_skill_keywords(job)
+
+    has_structured_qualifications = bool(required_keywords or preferred_keywords)
 
     missing_required = sorted(required_keywords - candidate_skills)
     missing_preferred = sorted(preferred_keywords - candidate_skills)
 
     gaps = missing_required + [skill for skill in missing_preferred if skill not in missing_required]
+
+    if not has_structured_qualifications:
+        missing_title = sorted(title_keywords - candidate_skills)
+        gaps += [skill for skill in missing_title if skill not in gaps]
 
     return gaps[:4]
 
