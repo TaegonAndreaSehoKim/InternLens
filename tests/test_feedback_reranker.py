@@ -4,6 +4,7 @@ from src.ranking.feedback_reranker import (
     apply_feedback_reranking,
     build_feedback_lookup,
     load_feedback_profile,
+    normalize_feedback_profile,
 )
 
 JOBS_DIR = "data/sample_jobs"
@@ -17,6 +18,30 @@ def test_load_feedback_profile_reads_valid_events() -> None:
     assert feedback["profile_id"] == "seho_001"
     assert len(feedback["events"]) == 3
     assert feedback["events"][0]["feedback_label"] == "applied"
+
+
+def test_normalize_feedback_profile_normalizes_inline_payload() -> None:
+    # Inline feedback payloads should be normalized the same way as file-based input.
+    raw_feedback = {
+        "profile_id": " seho_001 ",
+        "events": [
+            {
+                "job_id": " job_002 ",
+                "feedback_label": " Applied ",
+            },
+            {
+                "job_id": "job_005",
+                "feedback_label": " SAVED ",
+            },
+        ],
+    }
+
+    normalized = normalize_feedback_profile(raw_feedback)
+
+    assert normalized["profile_id"] == "seho_001"
+    assert normalized["events"][0]["job_id"] == "job_002"
+    assert normalized["events"][0]["feedback_label"] == "applied"
+    assert normalized["events"][1]["feedback_label"] == "saved"
 
 
 def test_build_feedback_lookup_includes_known_jobs_only() -> None:
