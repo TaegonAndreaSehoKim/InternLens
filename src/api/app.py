@@ -125,6 +125,27 @@ class RecommendResponse(BaseModel):
     results: List[JobResult]
 
 
+class JobDetailResponse(BaseModel):
+    # Return one normalized job record through the API.
+    job_id: str
+    company: str
+    title: str
+    location: str
+    description: str
+    min_qualifications: str
+    preferred_qualifications: str
+    posting_date: str
+    sponsorship_info: str
+    employment_type: str
+    source: str
+    source_site: Optional[str] = None
+    source_job_id: Optional[str] = None
+    source_url: Optional[str] = None
+    application_url: Optional[str] = None
+    remote_status: Optional[str] = None
+    team: Optional[str] = None
+
+
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
     # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_candidate_profile(profile_data.model_dump())
@@ -192,4 +213,43 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         total_jobs_scored=len(final_jobs),
         returned_jobs=len(job_results),
         results=job_results,
+    )
+
+
+@app.get("/jobs/{job_id}", response_model=JobDetailResponse)
+def get_job(job_id: str, jobs_dir: str = "data/processed/jobs") -> JobDetailResponse:
+    # Read one job from the processed jobs directory tree.
+    jobs_dir_path = PROJECT_ROOT / jobs_dir
+
+    try:
+        jobs = load_all_job_postings(jobs_dir_path)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    job = next((item for item in jobs if item["job_id"] == job_id), None)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+
+    return JobDetailResponse(
+        job_id=job["job_id"],
+        company=job["company"],
+        title=job["title"],
+        location=job["location"],
+        description=job["description"],
+        min_qualifications=job["min_qualifications"],
+        preferred_qualifications=job["preferred_qualifications"],
+        posting_date=job["posting_date"],
+        sponsorship_info=job["sponsorship_info"],
+        employment_type=job["employment_type"],
+        source=job["source"],
+        source_site=job.get("source_site"),
+        source_job_id=job.get("source_job_id"),
+        source_url=job.get("source_url"),
+        application_url=job.get("application_url"),
+        remote_status=job.get("remote_status"),
+        team=job.get("team"),
     )

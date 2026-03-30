@@ -5,82 +5,67 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 
-def _normalize_text(text: str) -> str:
-    """Convert text to lowercase and collapse extra whitespace."""
-    return " ".join(text.lower().strip().split())
+REQUIRED_JOB_FIELDS = [
+    "job_id",
+    "company",
+    "title",
+    "location",
+    "description",
+    "min_qualifications",
+    "preferred_qualifications",
+    "posting_date",
+    "sponsorship_info",
+    "employment_type",
+    "source",
+]
 
 
-def _extract_text(value: Any) -> str:
-    """Safely convert a JSON value to a normalized string."""
+def _coerce_text(value: Any) -> str:
+    # Convert nullable values into normalized strings.
     if value is None:
         return ""
-    return _normalize_text(str(value))
+    return str(value).strip()
 
 
 def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
-    """
-    Load a single job posting JSON file and return a normalized dictionary
-    that can be used by the ranking pipeline.
-    """
+    # Load one job posting JSON file and preserve optional metadata fields.
     path = Path(file_path)
 
-    # Fail early if the job file path is invalid.
     if not path.exists():
         raise FileNotFoundError(f"Job posting file not found: {path}")
 
     with path.open("r", encoding="utf-8") as f:
-        job = json.load(f)
+        payload = json.load(f)
 
-    # These fields are required for the baseline scorer and API output.
-    required_fields = [
-        "job_id",
-        "company",
-        "title",
-        "location",
-        "description",
-        "min_qualifications",
-        "preferred_qualifications",
-        "posting_date",
-        "sponsorship_info",
-        "employment_type",
-        "source",
+    if not isinstance(payload, dict):
+        raise ValueError(f"Job posting JSON must be an object: {path}")
+
+    for field in REQUIRED_JOB_FIELDS:
+        if field not in payload:
+            raise ValueError(f"Missing required job field '{field}' in: {path}")
+
+    # Start from the original payload so optional fields such as source_site,
+    # source_job_id, source_url, application_url, remote_status, and team survive.
+    job: Dict[str, Any] = dict(payload)
+
+    # Normalize required text fields.
+    for field in REQUIRED_JOB_FIELDS:
+        job[field] = _coerce_text(payload.get(field, ""))
+
+    # Normalize common optional metadata fields when present.
+    optional_text_fields = [
+        "source_site",
+        "source_job_id",
+        "source_url",
+        "application_url",
+        "remote_status",
+        "team",
     ]
+    for field in optional_text_fields:
+        if field in payload:
+            job[field] = _coerce_text(payload.get(field, ""))
 
-    missing_fields = [field for field in required_fields if field not in job]
-    if missing_fields:
-        raise ValueError(f"Missing required job fields: {missing_fields}")
-
-    # Normalize the fields once here so downstream code can assume a stable schema.
-    parsed_job = {
-        "job_id": job["job_id"],
-        "company": _extract_text(job["company"]),
-        "title": _extract_text(job["title"]),
-        "location": _extract_text(job["location"]),
-        "description": _extract_text(job["description"]),
-        "min_qualifications": _extract_text(job["min_qualifications"]),
-        "preferred_qualifications": _extract_text(job["preferred_qualifications"]),
-        "posting_date": str(job["posting_date"]).strip(),
-        "sponsorship_info": _extract_text(job["sponsorship_info"]),
-        "employment_type": _extract_text(job["employment_type"]),
-        "source": _extract_text(job["source"]),
-        # Keep optional fields present so consumers do not need repeated .get() calls.
-        "salary_range": _extract_text(job.get("salary_range", "")),
-        "team": _extract_text(job.get("team", "")),
-        "remote_status": _extract_text(job.get("remote_status", "")),
-        "application_url": _extract_text(job.get("application_url", "")),
-    }
-
-    # This combined text is useful for future retrieval or richer heuristic matching.
-    parsed_job["combined_text"] = " ".join(
-        [
-            parsed_job["title"],
-            parsed_job["description"],
-            parsed_job["min_qualifications"],
-            parsed_job["preferred_qualifications"],
-        ]
-    ).strip()
-
-    return parsed_job
+    return job
 
 
 def load_all_job_postings(directory_path: str | Path) -> List[Dict[str, Any]]:
