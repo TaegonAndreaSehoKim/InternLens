@@ -30,6 +30,7 @@ Normalized Profile + Jobs
                 v
       Optional Feedback Reranker
       - applied / saved / skipped signals
+      - file-based or inline input
       - similarity-based score adjustment
       - explanation generation
                 |
@@ -64,6 +65,7 @@ Normalized Profile + Jobs
 * `src/ranking/feedback_reranker.py`
 
   * loads feedback events from JSON
+  * normalizes file-based and inline feedback through shared validation logic
   * builds a lookup over known jobs referenced in feedback
   * computes lightweight similarity-based score adjustments
   * generates compact explanation snippets for reranked jobs
@@ -81,6 +83,8 @@ Normalized Profile + Jobs
   * exposes `/health` and `/recommend`
   * supports file-based and inline profile inputs
   * supports optional feedback-based reranking through `feedback_path`
+  * supports optional inline feedback through `feedback_data`
+  * prioritizes inline feedback when both feedback inputs are provided
   * returns explanation-aware reranking fields in API responses
 
 ## Current ranking logic
@@ -124,20 +128,23 @@ Even when feedback reranking is applied, recommendation buckets stay stable and 
 
 ## Feedback reranking design (v1)
 
-The current reranker uses a lightweight feedback file with events such as:
+The current reranker uses lightweight feedback events such as:
 
 - `applied`
 - `saved`
 - `skipped`
 
-It then:
+These feedback signals can be provided either through a JSON file or directly as an inline API payload.
 
-1. maps feedback events to known job postings
-2. extracts meaningful title tokens and a conservative skill phrase set
-3. computes similarity between the current job and previously labeled jobs
-4. applies small positive or negative adjustments based on feedback labels
-5. generates explanation items for the strongest feedback contributors
-6. preserves blocker-aware recommendation ordering in the final output
+The reranker then:
+
+1. normalizes feedback through shared validation logic
+2. maps feedback events to known job postings
+3. extracts meaningful title tokens and a conservative skill phrase set
+4. computes similarity between the current job and previously labeled jobs
+5. applies small positive or negative adjustments based on feedback labels
+6. generates explanation items for the strongest feedback contributors
+7. preserves blocker-aware recommendation ordering in the final output
 
 This keeps the reranker simple, explainable, and safe for an early portfolio-oriented implementation.
 
@@ -169,7 +176,14 @@ When feedback reranking is used, the response also includes:
 - `reranked_score`
 - `feedback_explanations`
 
-The local script flow mirrors this behavior by surfacing explanation details in console output and exported JSON/CSV artifacts.
+Feedback input can come from:
+
+- `feedback_path`
+- `feedback_data`
+
+If both are provided, `feedback_data` is used.
+
+The local script flow mirrors this behavior for file-based feedback by surfacing explanation details in console output and exported JSON/CSV artifacts.
 
 ## Current test coverage snapshot
 
@@ -179,16 +193,18 @@ The current test suite covers:
 - inline and file-based profile inputs
 - validation and file-not-found cases
 - blocker-aware ranking behavior
-- feedback file loading and lookup behavior
+- feedback file loading and shared normalization behavior
 - feedback-aware reranking fields and API responses
 - explanation field presence in reranking and API results
+- inline feedback reranking behavior
+- inline feedback priority over file-based feedback input
 
-Current status: **17 passing tests**
+Current status: **21 passing tests**
 
 ## Next evolution path
 
-1. add inline feedback payload support
-2. improve explanation quality and score calibration
+1. improve explanation quality and score calibration
+2. decide whether blocked jobs should receive capped boosts inside the `Skip` bucket
 3. add semantic retrieval
 4. replace heuristic ranking with learning-to-rank
 5. add persistence and deployment

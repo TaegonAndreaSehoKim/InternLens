@@ -122,3 +122,36 @@ Today I focused on making feedback-based personalization more transparent and ea
 - Revisit whether blocked jobs should receive capped feedback boosts within the `Skip` bucket.
 - Improve explanation phrasing further so API and console outputs read more naturally in demos.
 - Decide whether the next major milestone should be richer feedback calibration or semantic retrieval.
+
+## Day 7
+
+Today I extended the personalization flow so feedback can be supplied directly through the API without requiring a separate file.
+
+### What I changed
+- Refactored feedback validation into shared normalization logic so file-based and inline feedback use the same rules.
+- Added `feedback_data` support to `/recommend` alongside the existing `feedback_path` option.
+- Added typed payload models for inline feedback events and feedback profiles.
+- Set the API to prioritize inline feedback when both `feedback_data` and `feedback_path` are provided.
+- Added tests for inline feedback normalization, inline reranking behavior, and input-priority handling.
+- Updated README, architecture notes, and dev log entries to reflect the new API behavior.
+
+### Validation
+- Manually verified inline feedback reranking through the API and confirmed:
+  - `feedback_source` returns `inline_feedback_payload`
+  - `reranking_applied` returns `true`
+  - reranked results include feedback explanations
+- Ran the full test suite and ended the session with **21 passing tests**.
+
+### Key decisions
+- Reused shared normalization instead of duplicating validation logic in the API layer.
+- Kept file-based feedback support fully backward compatible.
+- Treated inline feedback as the higher-priority source because it is the most explicit request payload.
+
+### Problems encountered
+- Documentation needed another update pass after the API contract changed.
+- Care was needed to keep behavior consistent across file-based and inline feedback flows.
+
+### Next steps
+- Improve feedback score calibration and explanation phrasing.
+- Decide whether blocked jobs should receive capped reranking boosts.
+- Evaluate whether the next milestone should be semantic retrieval or stronger learning-to-rank style scoring.

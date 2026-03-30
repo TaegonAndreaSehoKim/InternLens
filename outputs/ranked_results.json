@@ -19,46 +19,15 @@
       "sql"
     ],
     "reasons": [
-      "Strong skill overlap in: data analysis, machine learning, python, pytorch",
-      "Preferred role alignment through: applied",
-      "Location preference matches this opportunity"
+      "Matched on key skills: data analysis, machine learning, python, pytorch",
+      "Title aligns with preferred role: applied scientist intern",
+      "Location matches a preferred target"
     ],
     "blocking_issues": [],
     "component_scores": {
       "skill_score": 0.625,
       "role_score": 1.0,
       "location_score": 1.0
-    }
-  },
-  {
-    "job_id": "job_006",
-    "company": "research frontier",
-    "title": "machine learning research engineer",
-    "location": "new york, ny",
-    "score": 75.0,
-    "action_label": "Skip",
-    "matched_skills": [
-      "machine learning",
-      "python",
-      "pytorch"
-    ],
-    "skill_gaps": [
-      "deep learning",
-      "statistics"
-    ],
-    "reasons": [
-      "Strong skill overlap in: machine learning, python, pytorch",
-      "Preferred role alignment through: learning, machine",
-      "This role has a blocking eligibility constraint"
-    ],
-    "blocking_issues": [
-      "This role does not appear to be an internship",
-      "This role appears to require a PhD"
-    ],
-    "component_scores": {
-      "skill_score": 0.8333,
-      "role_score": 1.0,
-      "location_score": 0.0
     }
   },
   {
@@ -81,43 +50,12 @@
       "docker"
     ],
     "reasons": [
-      "Strong skill overlap in: data analysis, machine learning, python, pytorch",
-      "Preferred role alignment through: learning, machine"
+      "Matched on key skills: data analysis, machine learning, python, pytorch",
+      "Title aligns with preferred role: machine learning engineer intern"
     ],
     "blocking_issues": [],
     "component_scores": {
       "skill_score": 0.625,
-      "role_score": 1.0,
-      "location_score": 0.0
-    }
-  },
-  {
-    "job_id": "job_001",
-    "company": "example ai",
-    "title": "machine learning intern",
-    "location": "san francisco, ca",
-    "score": 55.0,
-    "action_label": "Skip",
-    "matched_skills": [
-      "machine learning",
-      "python"
-    ],
-    "skill_gaps": [
-      "sql",
-      "aws",
-      "docker",
-      "recommendation systems"
-    ],
-    "reasons": [
-      "Strong skill overlap in: machine learning, python",
-      "Preferred role alignment through: learning, machine",
-      "This role has a blocking eligibility constraint"
-    ],
-    "blocking_issues": [
-      "Sponsorship is not available for this role"
-    ],
-    "component_scores": {
-      "skill_score": 0.5,
       "role_score": 1.0,
       "location_score": 0.0
     }
@@ -139,7 +77,7 @@
       "statistics"
     ],
     "reasons": [
-      "Strong skill overlap in: data analysis, machine learning, python"
+      "Matched on key skills: data analysis, machine learning, python"
     ],
     "blocking_issues": [],
     "component_scores": {
@@ -164,12 +102,74 @@
       "kubernetes"
     ],
     "reasons": [
-      "This role was ranked mainly from baseline text and preference signals"
+      "Limited match signals beyond the current baseline heuristics"
     ],
     "blocking_issues": [],
     "component_scores": {
       "skill_score": 0.1875,
       "role_score": 0.0,
+      "location_score": 0.0
+    }
+  },
+  {
+    "job_id": "job_001",
+    "company": "example ai",
+    "title": "machine learning intern",
+    "location": "san francisco, ca",
+    "score": 55.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "sql",
+      "aws",
+      "docker",
+      "recommendation systems"
+    ],
+    "reasons": [
+      "Matched on key skills: machine learning, python",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "Sponsorship is not available for this role"
+    ],
+    "component_scores": {
+      "skill_score": 0.5,
+      "role_score": 1.0,
+      "location_score": 0.0
+    }
+  },
+  {
+    "job_id": "job_006",
+    "company": "research frontier",
+    "title": "machine learning research engineer",
+    "location": "new york, ny",
+    "score": 75.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "deep learning",
+      "statistics"
+    ],
+    "reasons": [
+      "Matched on key skills: machine learning, python, pytorch",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.8333,
+      "role_score": 1.0,
       "location_score": 0.0
     }
   }

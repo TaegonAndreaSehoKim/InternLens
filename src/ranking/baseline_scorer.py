@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Set, Tuple
-
 import re
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from typing import Optional
 
-
+# Curated baseline skill keywords used for lightweight heuristic matching.
 SKILL_KEYWORDS = [
     "python",
     "sql",
@@ -24,6 +22,7 @@ SKILL_KEYWORDS = [
     "statistics",
 ]
 
+# Map common aliases to a single canonical form to reduce obvious mismatch noise.
 SKILL_ALIASES = {
     "ml": "machine learning",
     "machine-learning": "machine learning",
@@ -37,6 +36,7 @@ SKILL_ALIASES = {
     "analytics": "data analysis",
 }
 
+# Ignore broad role words so title matching focuses on informative tokens.
 ROLE_STOPWORDS = {
     "intern",
     "internship",
@@ -47,43 +47,52 @@ ROLE_STOPWORDS = {
 }
 
 
-def _tokenize(text: str) -> set[str]:
+def _tokenize(text: str) -> Set[str]:
+    """Split normalized text into lowercase whitespace-delimited tokens."""
     return set(text.lower().split())
 
 
 def _safe_ratio(numerator: int, denominator: int) -> float:
+    """Return a safe ratio without raising on empty denominators."""
     if denominator == 0:
         return 0.0
     return numerator / denominator
 
 
 def _canonicalize_text(text: str) -> str:
+    """Replace known aliases inside free text before keyword extraction."""
     normalized = text.lower()
+    # Replace longer aliases first so partial overlaps do not interfere.
     for alias, canonical in sorted(SKILL_ALIASES.items(), key=lambda x: len(x[0]), reverse=True):
         normalized = normalized.replace(alias, canonical)
     return normalized
 
 
 def _canonicalize_skill(skill: str) -> str:
+    """Normalize a single skill string into its canonical baseline representation."""
     normalized = skill.lower().strip()
     return SKILL_ALIASES.get(normalized, normalized)
 
 
 def _extract_keywords_from_text(text: str) -> Set[str]:
+    """Return the subset of baseline keywords found in the given text."""
     canonical_text = _canonicalize_text(text)
     return {keyword for keyword in SKILL_KEYWORDS if keyword in canonical_text}
 
 
 def _normalize_candidate_skills(profile: Dict[str, Any]) -> Set[str]:
+    """Normalize all candidate skills so profile and job text use the same vocabulary."""
     return {_canonicalize_skill(skill) for skill in profile["skill_set"]}
 
 
 def _meaningful_role_tokens(text: str) -> Set[str]:
+    """Drop generic role words so title overlap is less noisy."""
     tokens = _tokenize(text)
     return {token for token in tokens if token not in ROLE_STOPWORDS}
 
 
 def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], List[str]]:
+    """Compute the baseline skill overlap score and expose matched skills for explanations."""
     candidate_skills = _normalize_candidate_skills(profile)
 
     required_keywords = _extract_keywords_from_text(job["min_qualifications"])
@@ -96,12 +105,14 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
     required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
     preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
 
+    # Weight required qualifications more heavily than preferred qualifications.
     skill_score = min(1.0, required_overlap_score * 0.75 + preferred_overlap_score * 0.25)
 
     return skill_score, matched_skills, required_matches
 
 
 def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], Optional[str]]:
+    """Find the best preferred-role alignment for the current job title."""
     title_tokens = _meaningful_role_tokens(job["title"])
 
     if not profile["preferred_roles"]:
@@ -125,12 +136,14 @@ def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[f
 
 
 def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> float:
+    """Return 1.0 when the job matches any preferred location, else 0.0."""
     job_location = job["location"]
 
     for preferred_location in profile["preferred_locations"]:
         if preferred_location in job_location:
             return 1.0
 
+    # Treat remote status as a separate path because the location field may not literally say remote.
     if "remote" in job.get("remote_status", "") and any(
         preferred == "remote" for preferred in profile["preferred_locations"]
     ):
@@ -140,6 +153,7 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
 
 
 def _extract_grad_year(grad_date: str) -> Optional[int]:
+    """Pull a four-digit graduation year from a free-form grad date field."""
     match = re.search(r"(20\d{2})", grad_date)
     if match:
         return int(match.group(1))
@@ -147,6 +161,7 @@ def _extract_grad_year(grad_date: str) -> Optional[int]:
 
 
 def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
+    """Detect hard blockers that should override a strong fit score."""
     blockers: List[str] = []
 
     sponsorship_text = job["sponsorship_info"].lower()
@@ -177,10 +192,19 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
         year_matches = re.findall(r"20\d{2}", combined_text)
         mentioned_years = {int(year) for year in year_matches}
 
+        # Keep this check lightweight: only flag timing when graduation language exists in the posting.
         if mentioned_years:
-            if grad_year not in mentioned_years and (grad_year - 1) not in mentioned_years and (grad_year + 1) not in mentioned_years:
-                if any(keyword in combined_text for keyword in ["graduate", "graduation", "graduating", "expected to graduate"]):
-                    blockers.append("Graduation timing may not match this role")
+            year_close_match = (
+                grad_year in mentioned_years
+                or (grad_year - 1) in mentioned_years
+                or (grad_year + 1) in mentioned_years
+            )
+            mentions_graduation = any(
+                keyword in combined_text
+                for keyword in ["graduate", "graduation", "graduating", "expected to graduate"]
+            )
+            if not year_close_match and mentions_graduation:
+                blockers.append("Graduation timing may not match this role")
 
     return blockers
 
@@ -193,6 +217,7 @@ def _generate_reasons(
     matched_skills: List[str],
     blockers: List[str],
 ) -> List[str]:
+    """Build short human-readable reasons for the recommendation output."""
     reasons: List[str] = []
 
     if skill_score >= 0.35 and matched_skills:
@@ -210,10 +235,12 @@ def _generate_reasons(
     if not reasons:
         reasons.append("Limited match signals beyond the current baseline heuristics")
 
+    # Limit the list so CLI and API responses stay concise.
     return reasons[:3]
 
 
 def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
+    """Return missing job skills that can be shown as gaps in the output."""
     candidate_skills = _normalize_candidate_skills(profile)
 
     required_keywords = _extract_keywords_from_text(job["min_qualifications"])
@@ -228,11 +255,13 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 
 
 def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
+    """Score a single job, assign an action label, and attach explanations."""
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
     blockers = _check_blocking_constraints(profile, job)
 
+    # Keep the baseline weighting scheme explicit so it is easy to tune later.
     raw_score = (
         skill_score * 0.60
         + role_score * 0.25
@@ -242,6 +271,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     bounded_score = max(0.0, min(1.0, raw_score))
     final_score = round(bounded_score * 100, 2)
 
+    # Hard blockers override otherwise-strong fit scores.
     if blockers:
         action_label = "Skip"
     elif final_score >= 70:
@@ -281,6 +311,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+# Final ranking priority is action-aware so realistic apply targets surface first.
 ACTION_PRIORITY = {
     "Apply Now": 0,
     "Apply Later": 1,
@@ -289,6 +320,7 @@ ACTION_PRIORITY = {
 
 
 def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
+    """Sort by action priority, then blockers, then descending score, then title."""
     return (
         ACTION_PRIORITY.get(job["action_label"], 99),
         len(job["blocking_issues"]),
@@ -298,5 +330,6 @@ def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
 
 
 def rank_jobs(profile: Dict[str, Any], jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Score every job and return a blocker-aware ranked list."""
     scored_jobs = [score_job(profile, job) for job in jobs]
     return sorted(scored_jobs, key=_ranking_sort_key)

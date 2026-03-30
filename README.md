@@ -15,6 +15,7 @@ Given a candidate profile and a set of internship postings, InternLens:
 - separates **fit score** from **blocking constraints**
 - applies **blocker-aware ordering** so recommendation buckets stay intuitive
 - optionally applies **feedback-based reranking** using prior applied / saved / skipped signals
+- supports both file-based and inline feedback inputs
 - returns:
   - score
   - action label
@@ -61,11 +62,16 @@ Examples of eligibility-style checks currently covered include:
 
 InternLens supports an optional feedback reranking step.
 
-When a feedback file is provided, the system uses prior job interaction signals such as:
+When feedback is provided, the system uses prior job interaction signals such as:
 
 - `applied`
 - `saved`
 - `skipped`
+
+Feedback can be supplied in two ways:
+
+- `feedback_path` for file-based JSON input
+- `feedback_data` for inline API payload input
 
 The reranker computes a lightweight similarity signal using meaningful title tokens and a small known skill vocabulary, then adjusts the original score.
 
@@ -73,7 +79,8 @@ Important behavior:
 
 - reranking does **not** override blocker-aware recommendation ordering
 - feedback boosts are applied within the existing recommendation policy
-- the system now exposes lightweight explanation details showing:
+- inline feedback takes priority over `feedback_path` if both are provided
+- the system exposes lightweight explanation details showing:
   - which prior feedback item influenced a result
   - the feedback label used
   - similarity strength
@@ -92,10 +99,12 @@ Important behavior:
 - blocker-aware ordering
 - feedback-based reranking
 - feedback explanation output for reranked jobs
+- file-based and inline feedback support
 - JSON / CSV result export
 - FastAPI endpoints (`/health`, `/recommend`)
 - inline profile payload support for `/recommend`
 - optional `feedback_path` support for `/recommend`
+- optional `feedback_data` support for `/recommend`
 - pytest coverage for core API, ranking, and reranking behavior
 
 ## Project structure
@@ -169,13 +178,40 @@ pytest -q
 }
 ```
 
-### Feedback-aware request
+### Feedback-aware request with file input
 
 ```json
 {
   "profile_path": "data/processed/candidate_profile_example.json",
   "jobs_dir": "data/sample_jobs",
   "feedback_path": "data/feedback/sample_feedback.json",
+  "top_k": 5
+}
+```
+
+### Feedback-aware request with inline input
+
+```json
+{
+  "profile_path": "data/processed/candidate_profile_example.json",
+  "jobs_dir": "data/sample_jobs",
+  "feedback_data": {
+    "profile_id": "seho_001",
+    "events": [
+      {
+        "job_id": "job_002",
+        "feedback_label": "applied"
+      },
+      {
+        "job_id": "job_005",
+        "feedback_label": "saved"
+      },
+      {
+        "job_id": "job_004",
+        "feedback_label": "skipped"
+      }
+    ]
+  },
   "top_k": 5
 }
 ```
@@ -217,18 +253,20 @@ At this point in development, the project test suite covers:
 - `/health`
 - `/recommend` with inline profile payloads
 - `/recommend` with profile file paths
-- `/recommend` with optional feedback reranking
+- `/recommend` with file-based feedback reranking
+- `/recommend` with inline feedback reranking
 - missing feedback file handling
 - blocker-aware ranking behavior
-- feedback reranker loading and enrichment behavior
+- feedback reranker loading and normalization behavior
 - feedback explanation fields in both reranking logic and API responses
+- inline feedback priority behavior over `feedback_path`
 
-Current status: **17 passing tests**
+Current status: **21 passing tests**
 
 ## Next steps
 
-- add inline feedback payload support in the API
 - improve calibration of feedback weights and similarity rules
+- decide whether blocked jobs should receive capped boosts inside the `Skip` bucket
 - add semantic retrieval for better matching recall
 - replace heuristic ranking with learning-to-rank
 - add persistence and deployment

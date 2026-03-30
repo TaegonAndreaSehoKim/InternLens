@@ -30,7 +30,8 @@
       "location_score": 1.0
     },
     "feedback_adjustment": 0.0,
-    "reranked_score": 77.5
+    "reranked_score": 77.5,
+    "feedback_explanations": []
   },
   {
     "job_id": "job_005",
@@ -62,7 +63,20 @@
       "location_score": 0.0
     },
     "feedback_adjustment": 1.12,
-    "reranked_score": 63.62
+    "reranked_score": 63.62,
+    "feedback_explanations": [
+      {
+        "source_job_id": "job_002",
+        "source_job_title": "applied scientist intern",
+        "feedback_label": "applied",
+        "similarity": 0.075,
+        "adjustment": 1.12,
+        "shared_title_tokens": [],
+        "shared_skill_tokens": [
+          "machine learning"
+        ]
+      }
+    ]
   },
   {
     "job_id": "job_003",
@@ -90,7 +104,8 @@
       "location_score": 0.0
     },
     "feedback_adjustment": 0.0,
-    "reranked_score": 37.5
+    "reranked_score": 37.5,
+    "feedback_explanations": []
   },
   {
     "job_id": "job_004",
@@ -117,7 +132,8 @@
       "location_score": 0.0
     },
     "feedback_adjustment": 0.0,
-    "reranked_score": 11.25
+    "reranked_score": 11.25,
+    "feedback_explanations": []
   },
   {
     "job_id": "job_001",
@@ -150,7 +166,34 @@
       "location_score": 0.0
     },
     "feedback_adjustment": 4.69,
-    "reranked_score": 59.69
+    "reranked_score": 59.69,
+    "feedback_explanations": [
+      {
+        "source_job_id": "job_005",
+        "source_job_title": "machine learning engineer intern",
+        "feedback_label": "saved",
+        "similarity": 0.475,
+        "adjustment": 3.56,
+        "shared_title_tokens": [
+          "learning",
+          "machine"
+        ],
+        "shared_skill_tokens": [
+          "machine learning"
+        ]
+      },
+      {
+        "source_job_id": "job_002",
+        "source_job_title": "applied scientist intern",
+        "feedback_label": "applied",
+        "similarity": 0.075,
+        "adjustment": 1.12,
+        "shared_title_tokens": [],
+        "shared_skill_tokens": [
+          "machine learning"
+        ]
+      }
+    ]
   },
   {
     "job_id": "job_006",
@@ -183,6 +226,33 @@
       "location_score": 0.0
     },
     "feedback_adjustment": 4.69,
-    "reranked_score": 79.69
+    "reranked_score": 79.69,
+    "feedback_explanations": [
+      {
+        "source_job_id": "job_005",
+        "source_job_title": "machine learning engineer intern",
+        "feedback_label": "saved",
+        "similarity": 0.475,
+        "adjustment": 3.56,
+        "shared_title_tokens": [
+          "learning",
+          "machine"
+        ],
+        "shared_skill_tokens": [
+          "machine learning"
+        ]
+      },
+      {
+        "source_job_id": "job_002",
+        "source_job_title": "applied scientist intern",
+        "feedback_label": "applied",
+        "similarity": 0.075,
+        "adjustment": 1.12,
+        "shared_title_tokens": [],
+        "shared_skill_tokens": [
+          "machine learning"
+        ]
+      }
+    ]
   }
 ]

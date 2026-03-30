@@ -15,9 +15,7 @@ def _normalize_text(text: str) -> str:
 
 
 def _normalize_list(values: List[str]) -> List[str]:
-    """
-    Normalize a list of strings and drop empty values.
-    """
+    """Normalize a list of strings and drop empty values."""
     normalized = []
     for value in values:
         if isinstance(value, str) and value.strip():
@@ -45,6 +43,7 @@ def normalize_candidate_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
     if missing_fields:
         raise ValueError(f"Missing required profile fields: {missing_fields}")
 
+    # Normalize the profile once so every downstream module sees consistent values.
     parsed_profile = {
         "profile_id": profile["profile_id"],
         "resume_text": profile["resume_text"],
@@ -59,6 +58,7 @@ def normalize_candidate_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
         "notes": profile.get("notes", ""),
     }
 
+    # This cached set makes repeated skill overlap checks cheaper and simpler.
     parsed_profile["skill_set"] = set(parsed_profile["extracted_skills"])
     return parsed_profile
 

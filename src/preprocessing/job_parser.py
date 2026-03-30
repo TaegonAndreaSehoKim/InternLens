@@ -6,17 +6,12 @@ from typing import Any, Dict, List
 
 
 def _normalize_text(text: str) -> str:
-    """
-    Convert text to lowercase and collapse extra whitespace.
-    """
+    """Convert text to lowercase and collapse extra whitespace."""
     return " ".join(text.lower().strip().split())
 
 
 def _extract_text(value: Any) -> str:
-    """
-    Safely convert a JSON value to a normalized string.
-    Return an empty string if the value is None.
-    """
+    """Safely convert a JSON value to a normalized string."""
     if value is None:
         return ""
     return _normalize_text(str(value))
@@ -29,15 +24,14 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
     """
     path = Path(file_path)
 
-    # Fail early if the file path is invalid.
+    # Fail early if the job file path is invalid.
     if not path.exists():
         raise FileNotFoundError(f"Job posting file not found: {path}")
 
-    # Read the JSON file.
     with path.open("r", encoding="utf-8") as f:
         job = json.load(f)
 
-    # These fields are required for the first baseline version.
+    # These fields are required for the baseline scorer and API output.
     required_fields = [
         "job_id",
         "company",
@@ -52,12 +46,11 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
         "source",
     ]
 
-    # Report missing required fields clearly.
     missing_fields = [field for field in required_fields if field not in job]
     if missing_fields:
         raise ValueError(f"Missing required job fields: {missing_fields}")
 
-    # Normalize all important text fields.
+    # Normalize the fields once here so downstream code can assume a stable schema.
     parsed_job = {
         "job_id": job["job_id"],
         "company": _extract_text(job["company"]),
@@ -70,14 +63,14 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
         "sponsorship_info": _extract_text(job["sponsorship_info"]),
         "employment_type": _extract_text(job["employment_type"]),
         "source": _extract_text(job["source"]),
-        # Optional fields default to an empty string.
+        # Keep optional fields present so consumers do not need repeated .get() calls.
         "salary_range": _extract_text(job.get("salary_range", "")),
         "team": _extract_text(job.get("team", "")),
         "remote_status": _extract_text(job.get("remote_status", "")),
         "application_url": _extract_text(job.get("application_url", "")),
     }
 
-    # Combine major text fields into one block for future search/retrieval use.
+    # This combined text is useful for future retrieval or richer heuristic matching.
     parsed_job["combined_text"] = " ".join(
         [
             parsed_job["title"],
@@ -91,22 +84,18 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
 
 
 def load_all_job_postings(directory_path: str | Path) -> List[Dict[str, Any]]:
-    """
-    Load all JSON job posting files from a directory.
-    """
+    """Load all JSON job posting files from a directory."""
     directory = Path(directory_path)
 
-    # Fail early if the directory does not exist.
     if not directory.exists():
         raise FileNotFoundError(f"Job directory not found: {directory}")
 
     jobs: List[Dict[str, Any]] = []
 
-    # Read all JSON files in sorted order for stable behavior.
+    # Use sorted order so tests and outputs remain deterministic.
     for file_path in sorted(directory.glob("*.json")):
         jobs.append(load_job_posting(file_path))
 
-    # Raise an error if no sample job files were found.
     if not jobs:
         raise ValueError(f"No job posting JSON files found in: {directory}")
 
