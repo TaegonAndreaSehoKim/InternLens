@@ -95,18 +95,10 @@ def _extract_job_skill_set(job: Dict[str, Any]) -> Set[str]:
     return matched_skills
 
 
-def load_feedback_profile(file_path: str | Path) -> Dict[str, Any]:
-    """Load and validate a simple feedback JSON file."""
-    path = Path(file_path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"Feedback file not found: {path}")
-
-    with path.open("r", encoding="utf-8") as f:
-        feedback = json.load(f)
-
+def normalize_feedback_profile(feedback: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate and normalize feedback data from either file or inline payload."""
     if "profile_id" not in feedback:
-        raise ValueError("Feedback file must include 'profile_id'.")
+        raise ValueError("Feedback data must include 'profile_id'.")
 
     events = feedback.get("events", [])
     if not isinstance(events, list):
@@ -132,6 +124,19 @@ def load_feedback_profile(file_path: str | Path) -> Dict[str, Any]:
         "profile_id": str(feedback["profile_id"]).strip(),
         "events": normalized_events,
     }
+
+
+def load_feedback_profile(file_path: str | Path) -> Dict[str, Any]:
+    """Load and validate a simple feedback JSON file."""
+    path = Path(file_path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Feedback file not found: {path}")
+
+    with path.open("r", encoding="utf-8") as f:
+        feedback = json.load(f)
+
+    return normalize_feedback_profile(feedback)
 
 
 def build_feedback_lookup(
