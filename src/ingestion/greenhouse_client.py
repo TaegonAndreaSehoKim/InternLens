@@ -81,11 +81,23 @@ def _extract_posting_date(updated_at: Any) -> str:
 
 
 def _extract_location(job: Dict[str, Any]) -> str:
-    # Prefer the top-level location name, then fall back to offices.
+    # Prefer Greenhouse metadata "Job Posting Location" because the top-level
+    # location field is often a work-mode label such as Hybrid or In-Office.
+    metadata_locations = _extract_metadata_values(job, "Job Posting Location")
+    if metadata_locations:
+        return " | ".join(metadata_locations)
+
     location = job.get("location", {})
     if isinstance(location, dict):
         location_name = _coerce_text(location.get("name", ""))
-        if location_name:
+        if location_name and location_name.lower() not in {
+            "hybrid",
+            "in-office",
+            "in office",
+            "onsite",
+            "on-site",
+            "remote",
+        }:
             return location_name
 
     offices = job.get("offices", [])
@@ -211,12 +223,13 @@ def normalize_greenhouse_job(
     # Normalize one Greenhouse job into the current InternLens processed schema.
     source_job_id = _coerce_text(job.get("id", ""))
     title = _coerce_text(job.get("title", ""))
+    work_mode_hint = _extract_work_mode_hint(job)
     location = _extract_location(job)
     description = _strip_html(job.get("content", ""))
     posting_date = _extract_posting_date(job.get("updated_at"))
     source_url = _coerce_text(job.get("absolute_url", ""))
     team = _extract_team(job)
-    remote_status = _infer_remote_status(location, description, title)
+    remote_status = _infer_remote_status(work_mode_hint or location, description, title)
 
     return {
         "job_id": f"greenhouse_{_slugify(board_token)}_{source_job_id}",
@@ -249,6 +262,11 @@ def save_processed_greenhouse_jobs(
     output_dir = project_root / "data" / "processed" / "jobs" / "greenhouse" / board_token
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Remove stale processed files from older fetches so reruns reflect only the
+    # latest normalization logic and latest board snapshot.
+    for existing_file in output_dir.glob("*.json"):
+        existing_file.unlink()
+
     saved_paths: List[Path] = []
 
     for job in jobs:
@@ -261,3 +279,48 @@ def save_processed_greenhouse_jobs(
         saved_paths.append(output_path)
 
     return saved_paths
+
+def _extract_metadata_values(job: Dict[str, Any], target_name: str) -> List[str]:
+    # Extract values from a Greenhouse metadata entry by name.
+    metadata = job.get("metadata", [])
+    if not isinstance(metadata, list):
+        return []
+
+    values: List[str] = []
+
+    for item in metadata:
+        if not isinstance(item, dict):
+            continue
+
+        name = _coerce_text(item.get("name", ""))
+        if name.lower() != target_name.lower():
+            continue
+
+        raw_value = item.get("value")
+
+        if isinstance(raw_value, list):
+            for value in raw_value:
+                normalized = _coerce_text(value)
+                if normalized:
+                    values.append(normalized)
+        else:
+            normalized = _coerce_text(raw_value)
+            if normalized:
+                values.append(normalized)
+
+    # Preserve order while removing duplicates.
+    deduped: List[str] = []
+    seen = set()
+    for value in values:
+        if value not in seen:
+            deduped.append(value)
+            seen.add(value)
+
+    return deduped
+
+def _extract_work_mode_hint(job: Dict[str, Any]) -> str:
+    # Read the top-level Greenhouse location field as a work-mode hint.
+    location = job.get("location", {})
+    if isinstance(location, dict):
+        return _coerce_text(location.get("name", ""))
+    return ""

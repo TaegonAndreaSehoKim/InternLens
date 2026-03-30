@@ -182,7 +182,7 @@ def test_infer_remote_status_treats_in_office_as_onsite() -> None:
 
 
 def test_normalize_greenhouse_job_keeps_in_office_roles_from_becoming_remote() -> None:
-    # Generic in-office locations should remain onsite after normalization.
+    # Generic in-office labels should not be treated as geographic locations.
     job = {
         "id": 999001,
         "title": "Software Engineer Intern (Summer 2026)",
@@ -196,6 +196,5 @@ def test_normalize_greenhouse_job_keeps_in_office_roles_from_becoming_remote() -
 
     normalized = normalize_greenhouse_job(job, "example")
 
-    assert normalized["location"] == "In-Office"
+    assert normalized["location"] == ""
     assert normalized["remote_status"] == "onsite"
-
