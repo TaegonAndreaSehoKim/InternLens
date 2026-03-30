@@ -4,7 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# Curated baseline skill keywords used for lightweight heuristic matching.
+# These are the core skill phrases the baseline scorer knows how to detect.
 SKILL_KEYWORDS = [
     "python",
     "sql",
@@ -22,7 +22,7 @@ SKILL_KEYWORDS = [
     "statistics",
 ]
 
-# Map common aliases to a single canonical form to reduce obvious mismatch noise.
+# These aliases reduce false negatives when the same skill is written differently.
 SKILL_ALIASES = {
     "ml": "machine learning",
     "machine-learning": "machine learning",
@@ -36,7 +36,7 @@ SKILL_ALIASES = {
     "analytics": "data analysis",
 }
 
-# Ignore broad role words so title matching focuses on informative tokens.
+# Generic words like "engineer" or "intern" do not help much for role matching.
 ROLE_STOPWORDS = {
     "intern",
     "internship",
@@ -46,53 +46,167 @@ ROLE_STOPWORDS = {
     "software",
 }
 
+# Strong seniority indicators that should usually block internship recommendations.
+SENIORITY_TITLE_PATTERNS = [
+    r"\bsenior\b",
+    r"\bsr\.?\b",
+    r"\bstaff\b",
+    r"\blead\b",
+    r"\bmanager\b",
+    r"\bdirector\b",
+    r"\bprincipal\b",
+    r"\bhead\b",
+    r"\bvp\b",
+    r"\bvice president\b",
+    r"\bchief\b",
+]
+
+# Explicit internship indicators.
+INTERNSHIP_TITLE_PATTERNS = [
+    r"\bintern\b",
+    r"\binternship\b",
+    r"\bco[- ]?op\b",
+    r"\bsummer intern\b",
+    r"\bstudent intern\b",
+]
+
+# We keep description-based internship matching stricter than title matching.
+INTERNSHIP_DESCRIPTION_PATTERNS = [
+    r"\bthis internship\b",
+    r"\binternship program\b",
+    r"\bsummer internship\b",
+    r"\bco[- ]?op program\b",
+    r"\bintern class\b",
+    r"\bintern cohort\b",
+]
+
+# Recommendation ordering should reflect strategy, not only raw fit score.
+ACTION_PRIORITY = {
+    "Apply Now": 0,
+    "Apply Later": 1,
+    "Skip": 2,
+}
+
 
 def _tokenize(text: str) -> Set[str]:
-    """Split normalized text into lowercase whitespace-delimited tokens."""
+    """Split lowercase text into unique whitespace tokens."""
     return set(text.lower().split())
 
 
 def _safe_ratio(numerator: int, denominator: int) -> float:
-    """Return a safe ratio without raising on empty denominators."""
+    """Avoid division-by-zero when overlap sets are empty."""
     if denominator == 0:
         return 0.0
     return numerator / denominator
 
 
 def _canonicalize_text(text: str) -> str:
-    """Replace known aliases inside free text before keyword extraction."""
+    """
+    Replace known aliases in free text so phrase matching becomes more stable.
+
+    Example:
+    - "ml" -> "machine learning"
+    - "torch" -> "pytorch"
+    """
     normalized = text.lower()
-    # Replace longer aliases first so partial overlaps do not interfere.
     for alias, canonical in sorted(SKILL_ALIASES.items(), key=lambda x: len(x[0]), reverse=True):
         normalized = normalized.replace(alias, canonical)
     return normalized
 
 
 def _canonicalize_skill(skill: str) -> str:
-    """Normalize a single skill string into its canonical baseline representation."""
+    """Normalize a single candidate skill into its canonical form."""
     normalized = skill.lower().strip()
     return SKILL_ALIASES.get(normalized, normalized)
 
 
 def _extract_keywords_from_text(text: str) -> Set[str]:
-    """Return the subset of baseline keywords found in the given text."""
+    """Extract known skill keywords from normalized text."""
     canonical_text = _canonicalize_text(text)
     return {keyword for keyword in SKILL_KEYWORDS if keyword in canonical_text}
 
 
 def _normalize_candidate_skills(profile: Dict[str, Any]) -> Set[str]:
-    """Normalize all candidate skills so profile and job text use the same vocabulary."""
+    """Normalize the candidate skill set before comparing it to job text."""
     return {_canonicalize_skill(skill) for skill in profile["skill_set"]}
 
 
 def _meaningful_role_tokens(text: str) -> Set[str]:
-    """Drop generic role words so title overlap is less noisy."""
+    """
+    Tokenize a role string and drop generic title words.
+
+    This makes role overlap more meaningful and reduces false positives.
+    """
     tokens = _tokenize(text)
     return {token for token in tokens if token not in ROLE_STOPWORDS}
 
 
+def _has_pattern_match(text: str, patterns: List[str]) -> bool:
+    """Return True when any regex pattern matches the given text."""
+    lowered = text.lower()
+    return any(re.search(pattern, lowered) for pattern in patterns)
+
+
+def _has_explicit_internship_signal(job: Dict[str, Any]) -> bool:
+    """
+    Detect explicit internship signals from the title or employment type.
+
+    We intentionally treat title/employment_type as stronger evidence than
+    general description text because descriptions may contain noisy boilerplate.
+    """
+    title = job["title"]
+    employment_type = job["employment_type"]
+
+    return _has_pattern_match(title, INTERNSHIP_TITLE_PATTERNS) or _has_pattern_match(
+        employment_type, INTERNSHIP_TITLE_PATTERNS
+    )
+
+
+def _has_description_internship_signal(job: Dict[str, Any]) -> bool:
+    """
+    Detect stronger internship phrases from the description text only.
+
+    This is kept stricter than title matching to reduce false positives in large
+    public boards such as Cloudflare or Waymo.
+    """
+    return _has_pattern_match(job["description"], INTERNSHIP_DESCRIPTION_PATTERNS)
+
+
+def _looks_like_senior_role(job: Dict[str, Any]) -> bool:
+    """
+    Flag obviously senior titles so they do not crowd out true internship targets.
+
+    If a role is explicitly labeled as an internship, we do not apply the
+    seniority blocker even if some unusual wording is present.
+    """
+    if _has_explicit_internship_signal(job):
+        return False
+
+    return _has_pattern_match(job["title"], SENIORITY_TITLE_PATTERNS)
+
+
+def _compute_internship_signal_bonus(job: Dict[str, Any]) -> float:
+    """
+    Give a modest bonus to jobs that explicitly identify themselves as internships.
+
+    This helps real internship postings surface above generic non-intern roles
+    that happen to share location or title overlap.
+    """
+    if _has_explicit_internship_signal(job):
+        return 0.15
+
+    if _has_description_internship_signal(job):
+        return 0.05
+
+    return 0.0
+
+
 def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], List[str]]:
-    """Compute the baseline skill overlap score and expose matched skills for explanations."""
+    """
+    Compare candidate skills with required/preferred job keywords.
+
+    Required skills get a larger weight than preferred skills.
+    """
     candidate_skills = _normalize_candidate_skills(profile)
 
     required_keywords = _extract_keywords_from_text(job["min_qualifications"])
@@ -105,14 +219,18 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
     required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
     preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
 
-    # Weight required qualifications more heavily than preferred qualifications.
     skill_score = min(1.0, required_overlap_score * 0.75 + preferred_overlap_score * 0.25)
 
     return skill_score, matched_skills, required_matches
 
 
 def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], Optional[str]]:
-    """Find the best preferred-role alignment for the current job title."""
+    """
+    Compare the job title to each preferred role and keep the best match.
+
+    We return the best preferred role string so explanation text can use the
+    full role instead of a single token like "applied" or "machine".
+    """
     title_tokens = _meaningful_role_tokens(job["title"])
 
     if not profile["preferred_roles"]:
@@ -136,14 +254,17 @@ def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[f
 
 
 def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> float:
-    """Return 1.0 when the job matches any preferred location, else 0.0."""
+    """
+    Check whether the job location matches one of the candidate's preferences.
+
+    v1 supports simple substring matching plus a special remote fallback.
+    """
     job_location = job["location"]
 
     for preferred_location in profile["preferred_locations"]:
         if preferred_location in job_location:
             return 1.0
 
-    # Treat remote status as a separate path because the location field may not literally say remote.
     if "remote" in job.get("remote_status", "") and any(
         preferred == "remote" for preferred in profile["preferred_locations"]
     ):
@@ -153,7 +274,7 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
 
 
 def _extract_grad_year(grad_date: str) -> Optional[int]:
-    """Pull a four-digit graduation year from a free-form grad date field."""
+    """Extract a four-digit graduation year from strings like '2027-12'."""
     match = re.search(r"(20\d{2})", grad_date)
     if match:
         return int(match.group(1))
@@ -161,7 +282,12 @@ def _extract_grad_year(grad_date: str) -> Optional[int]:
 
 
 def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
-    """Detect hard blockers that should override a strong fit score."""
+    """
+    Detect hard constraints that should override a strong fit score.
+
+    The key design choice is to keep blockers separate from fit scoring.
+    A job can still be relevant on paper while being unrealistic to apply to.
+    """
     blockers: List[str] = []
 
     sponsorship_text = job["sponsorship_info"].lower()
@@ -185,6 +311,9 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     if "intern" not in employment_type and "intern" not in combined_text:
         blockers.append("This role does not appear to be an internship")
 
+    if _looks_like_senior_role(job):
+        blockers.append("This role appears to be a senior-level position")
+
     if "phd" in combined_text and "phd" not in degree_level:
         blockers.append("This role appears to require a PhD")
 
@@ -192,9 +321,8 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
         year_matches = re.findall(r"20\d{2}", combined_text)
         mentioned_years = {int(year) for year in year_matches}
 
-        # Keep this check lightweight: only flag timing when graduation language exists in the posting.
         if mentioned_years:
-            year_close_match = (
+            close_year_match = (
                 grad_year in mentioned_years
                 or (grad_year - 1) in mentioned_years
                 or (grad_year + 1) in mentioned_years
@@ -203,7 +331,7 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
                 keyword in combined_text
                 for keyword in ["graduate", "graduation", "graduating", "expected to graduate"]
             )
-            if not year_close_match and mentions_graduation:
+            if mentions_graduation and not close_year_match:
                 blockers.append("Graduation timing may not match this role")
 
     return blockers
@@ -214,10 +342,13 @@ def _generate_reasons(
     role_score: float,
     best_preferred_role: Optional[str],
     location_score: float,
+    internship_bonus: float,
     matched_skills: List[str],
     blockers: List[str],
 ) -> List[str]:
-    """Build short human-readable reasons for the recommendation output."""
+    """
+    Build short, product-style explanation text for the recommendation output.
+    """
     reasons: List[str] = []
 
     if skill_score >= 0.35 and matched_skills:
@@ -225,6 +356,9 @@ def _generate_reasons(
 
     if role_score >= 0.34 and best_preferred_role:
         reasons.append(f"Title aligns with preferred role: {best_preferred_role}")
+
+    if internship_bonus > 0:
+        reasons.append("Posting explicitly identifies this as an internship")
 
     if location_score >= 1.0:
         reasons.append("Location matches a preferred target")
@@ -235,12 +369,11 @@ def _generate_reasons(
     if not reasons:
         reasons.append("Limited match signals beyond the current baseline heuristics")
 
-    # Limit the list so CLI and API responses stay concise.
     return reasons[:3]
 
 
 def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[str]:
-    """Return missing job skills that can be shown as gaps in the output."""
+    """Surface a few missing required/preferred skills for explanation output."""
     candidate_skills = _normalize_candidate_skills(profile)
 
     required_keywords = _extract_keywords_from_text(job["min_qualifications"])
@@ -255,23 +388,26 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 
 
 def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
-    """Score a single job, assign an action label, and attach explanations."""
+    """
+    Score one job, derive a recommendation label, and attach explanations.
+    """
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
+    internship_bonus = _compute_internship_signal_bonus(job)
     blockers = _check_blocking_constraints(profile, job)
 
-    # Keep the baseline weighting scheme explicit so it is easy to tune later.
+    # Fit score is intentionally separated from blockers.
     raw_score = (
-        skill_score * 0.60
-        + role_score * 0.25
-        + location_score * 0.15
+        (skill_score * 0.60)
+        + (role_score * 0.25)
+        + (location_score * 0.15)
+        + internship_bonus
     )
 
     bounded_score = max(0.0, min(1.0, raw_score))
     final_score = round(bounded_score * 100, 2)
 
-    # Hard blockers override otherwise-strong fit scores.
     if blockers:
         action_label = "Skip"
     elif final_score >= 70:
@@ -286,10 +422,10 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         role_score=role_score,
         best_preferred_role=best_preferred_role,
         location_score=location_score,
+        internship_bonus=internship_bonus,
         matched_skills=matched_skills,
         blockers=blockers,
     )
-
     skill_gaps = _generate_skill_gaps(profile, job)
 
     return {
@@ -307,20 +443,15 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
             "skill_score": round(skill_score, 4),
             "role_score": round(role_score, 4),
             "location_score": round(location_score, 4),
+            "internship_bonus": round(internship_bonus, 4),
         },
     }
 
 
-# Final ranking priority is action-aware so realistic apply targets surface first.
-ACTION_PRIORITY = {
-    "Apply Now": 0,
-    "Apply Later": 1,
-    "Skip": 2,
-}
-
-
 def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
-    """Sort by action priority, then blockers, then descending score, then title."""
+    """
+    Sort by recommendation priority first, then by blocker count, then by score.
+    """
     return (
         ACTION_PRIORITY.get(job["action_label"], 99),
         len(job["blocking_issues"]),
@@ -330,6 +461,6 @@ def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
 
 
 def rank_jobs(profile: Dict[str, Any], jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Score every job and return a blocker-aware ranked list."""
+    """Score all jobs and return them in final recommendation order."""
     scored_jobs = [score_job(profile, job) for job in jobs]
     return sorted(scored_jobs, key=_ranking_sort_key)
