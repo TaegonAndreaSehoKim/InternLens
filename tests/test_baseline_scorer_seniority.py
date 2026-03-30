@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from src.ranking.baseline_scorer import score_job
+from src.ranking.baseline_scorer import rank_jobs
 
 
 def _build_profile() -> dict:
@@ -143,3 +144,77 @@ def test_true_internship_surfaces_above_non_intern_ml_role() -> None:
 
     assert "This role does not appear to be an internship" not in internship_result["blocking_issues"]
     assert "This role does not appear to be an internship" in non_intern_result["blocking_issues"]
+
+def test_rank_jobs_orders_blocked_roles_by_bucket() -> None:
+    # Show blocker-free internships first, then PhD-blocked internships,
+    # then non-intern roles, then senior roles.
+    profile = _build_profile()
+
+    jobs = [
+        {
+            "job_id": "true_intern",
+            "company": "example",
+            "title": "2026 Summer Intern, BS/MS, Software Engineering, Simulation",
+            "location": "Mountain View, CA",
+            "description": "Join our summer internship program building simulation systems.",
+            "min_qualifications": "",
+            "preferred_qualifications": "",
+            "posting_date": "2026-03-30",
+            "sponsorship_info": "",
+            "employment_type": "Internship",
+            "source": "manual",
+            "remote_status": "",
+        },
+        {
+            "job_id": "phd_intern",
+            "company": "example",
+            "title": "2026 Intern, PhD, Machine Learning Engineer, Simulation",
+            "location": "Mountain View, CA",
+            "description": "Internship role for PhD candidates.",
+            "min_qualifications": "",
+            "preferred_qualifications": "",
+            "posting_date": "2026-03-30",
+            "sponsorship_info": "",
+            "employment_type": "Internship",
+            "source": "manual",
+            "remote_status": "",
+        },
+        {
+            "job_id": "non_intern_ml",
+            "company": "example",
+            "title": "Machine Learning Engineer - VLM/LLM Integration",
+            "location": "Mountain View, CA, USA",
+            "description": "Build production ML systems for multimodal models.",
+            "min_qualifications": "",
+            "preferred_qualifications": "",
+            "posting_date": "2026-03-30",
+            "sponsorship_info": "",
+            "employment_type": "",
+            "source": "manual",
+            "remote_status": "",
+        },
+        {
+            "job_id": "senior_role",
+            "company": "example",
+            "title": "Senior Machine Learning Engineer",
+            "location": "Remote",
+            "description": "Build production ML systems.",
+            "min_qualifications": "",
+            "preferred_qualifications": "",
+            "posting_date": "2026-03-30",
+            "sponsorship_info": "",
+            "employment_type": "",
+            "source": "manual",
+            "remote_status": "remote",
+        },
+    ]
+
+    ranked = rank_jobs(profile, jobs)
+    ranked_ids = [job["job_id"] for job in ranked]
+
+    assert ranked_ids == [
+        "true_intern",
+        "phd_intern",
+        "non_intern_ml",
+        "senior_role",
+    ]

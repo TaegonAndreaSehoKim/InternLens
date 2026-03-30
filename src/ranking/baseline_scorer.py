@@ -454,13 +454,58 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, float, str]:
+def _blocking_sort_bucket(job: Dict[str, Any]) -> int:
     """
-    Sort by recommendation priority first, then by blocker count, then by score.
+    Group blocked jobs into more useful buckets for display order.
+
+    Bucket order:
+    0 = no blockers
+    1 = internship-like roles blocked only by degree timing / PhD constraints
+    2 = roles blocked because they are not internships
+    3 = roles blocked because they are senior-level
+    4 = all other blocked roles
     """
+    blockers = job["blocking_issues"]
+
+    if not blockers:
+        return 0
+
+    blocker_text = " | ".join(blockers).lower()
+
+    has_non_intern = "does not appear to be an internship" in blocker_text
+    has_senior = "senior-level position" in blocker_text
+    has_phd = "require a phd" in blocker_text
+    has_grad_timing = "graduation timing may not match this role" in blocker_text
+
+    if (has_phd or has_grad_timing) and not has_non_intern and not has_senior:
+        return 1
+
+    if has_non_intern and not has_senior:
+        return 2
+
+    if has_senior:
+        return 3
+
+    return 4
+
+
+def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, int, float, float, str]:
+    """
+    Sort by recommendation priority, then blocker bucket, then blocker count,
+    then internship signal strength, then score.
+
+    This keeps:
+    - blocker-free internships first
+    - internship-like but blocked-by-PhD roles next
+    - obvious non-intern or senior roles lower
+    """
+    internship_bonus = float(job["component_scores"].get("internship_bonus", 0.0))
+
     return (
         ACTION_PRIORITY.get(job["action_label"], 99),
+        _blocking_sort_bucket(job),
         len(job["blocking_issues"]),
+        -internship_bonus,
         -job["score"],
         job["title"],
     )
