@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.ingestion.lever_client import (
     fetch_lever_postings,
+    save_processed_lever_postings,
     save_raw_lever_snapshot,
 )
 
@@ -35,7 +36,14 @@ def main() -> None:
         project_root=PROJECT_ROOT,
     )
 
+    processed_paths = save_processed_lever_postings(
+        args.site_name,
+        jobs,
+        project_root=PROJECT_ROOT,
+    )
+
     print(f"Saved raw snapshot to: {raw_output_path}")
+    print(f"Saved {len(processed_paths)} processed jobs to: {PROJECT_ROOT / 'data' / 'processed' / 'jobs'}")
     print(f"Fetched {len(jobs)} jobs from Lever site '{args.site_name}'")
 
     if jobs:

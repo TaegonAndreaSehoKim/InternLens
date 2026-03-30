@@ -57,7 +57,88 @@ def _build_request_url(site_name: str) -> str:
     normalized_site = site_name.strip()
     return f"{LEVER_POSTINGS_BASE_URL}/{normalized_site}?mode=json"
 
+def _extract_posting_date(created_at_ms: Any) -> str:
+    # Convert Lever millisecond timestamp into YYYY-MM-DD.
+    if created_at_ms in (None, ""):
+        return ""
 
+    try:
+        timestamp_ms = int(created_at_ms)
+        dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d")
+    except (TypeError, ValueError, OSError):
+        return ""
+
+
+def _extract_categories(posting: Dict[str, Any]) -> Dict[str, Any]:
+    # Safely return the categories object when present.
+    categories = posting.get("categories", {})
+    if isinstance(categories, dict):
+        return categories
+    return {}
+
+def normalize_lever_posting(
+    posting: Dict[str, Any],
+    site_name: str,
+) -> Dict[str, Any]:
+    # Normalize one Lever posting into the current InternLens processed schema.
+    categories = _extract_categories(posting)
+
+    source_job_id = _coerce_text(posting.get("id", ""))
+    title = _coerce_text(posting.get("text", ""))
+    company = _coerce_text(categories.get("department", "")) or site_name.strip()
+    location = _coerce_text(categories.get("location", "")) or _coerce_text(posting.get("country", ""))
+    description = _coerce_text(posting.get("descriptionPlain", "")) or _coerce_text(
+        posting.get("descriptionBodyPlain", "")
+    )
+    employment_type = _coerce_text(categories.get("commitment", ""))
+    remote_status = _coerce_text(posting.get("workplaceType", "")).lower()
+    posting_date = _extract_posting_date(posting.get("createdAt"))
+    source_url = _coerce_text(posting.get("hostedUrl", ""))
+    application_url = _coerce_text(posting.get("applyUrl", ""))
+
+    return {
+        "job_id": f"lever_{_slugify(site_name)}_{source_job_id}",
+        "source": "lever",
+        "source_site": site_name.strip(),
+        "source_job_id": source_job_id,
+        "company": company,
+        "title": title,
+        "location": location,
+        "description": description,
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": posting_date,
+        "sponsorship_info": "",
+        "employment_type": employment_type,
+        "source_url": source_url,
+        "application_url": application_url,
+        "remote_status": remote_status,
+        "team": _coerce_text(categories.get("team", "")),
+    }
+
+def save_processed_lever_postings(
+    site_name: str,
+    postings: List[Dict[str, Any]],
+    *,
+    project_root: Path,
+) -> List[Path]:
+    # Normalize each Lever posting and save it as one processed JSON file.
+    output_dir = project_root / "data" / "processed" / "jobs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    saved_paths: List[Path] = []
+
+    for posting in postings:
+        normalized = normalize_lever_posting(posting, site_name)
+        output_path = output_dir / f"{normalized['job_id']}.json"
+
+        with output_path.open("w", encoding="utf-8") as f:
+            json.dump(normalized, f, indent=2, ensure_ascii=False)
+
+        saved_paths.append(output_path)
+
+    return saved_paths
 
 def fetch_lever_postings(
     site_name: str,
