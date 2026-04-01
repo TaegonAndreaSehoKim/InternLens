@@ -2,39 +2,62 @@
 
 InternLens is a lightweight internship discovery and ranking pipeline for public job boards.
 
-It fetches internship postings from public ATS sources, normalizes them into a shared schema, ranks them against a candidate profile, and exposes the results through both a CLI workflow and a FastAPI service.
+It fetches public internship postings from ATS job boards, normalizes them into a shared schema, ranks them against a candidate profile, and exposes the results through both a CLI workflow and a FastAPI service.
 
-The project started as a simple baseline recommender on static sample jobs, but it now supports multi-source ingestion, registry-driven batch fetches, blocker-aware ranking, shortlist-oriented CLI filters, and regression-tested API behavior. Current validation status: the full test suite is passing (`68 passed`).
+The project started as a simple baseline recommender on static sample jobs, but it now supports multi-source ingestion, registry-driven batch fetches, blocker-aware ranking, shortlist-oriented CLI filters, and regression-tested API behavior.
+
+## Current status
+
+InternLens currently supports:
+- Lever ingestion
+- Greenhouse ingestion
+- raw snapshot saving
+- processed job normalization
+- registry-driven batch fetching
+- baseline ranking with internship blockers
+- shortlist-oriented CLI filters
+- API endpoints for recommendation and job detail lookup
+- regression-tested iteration
+
+Latest validation state:
+- full test suite passing
+- current total: `71 passed`
+- Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 
 ---
 
 ## What the project does
 
-InternLens supports the following end-to-end flow:
+InternLens supports the following flow:
 
 1. Fetch public job postings from ATS boards
 2. Save raw snapshots for reproducibility
-3. Normalize postings into a shared processed schema
+3. Normalize jobs into a shared processed schema
 4. Load a candidate profile
 5. Score and rank postings using a baseline internship-focused heuristic
 6. Optionally rerank with feedback signals
-7. Inspect results from the CLI or API
+7. Inspect results through the CLI or API
 
-The current implementation is intentionally simple and transparent. It is designed to be easy to extend, easy to debug, and good enough for a demo-quality internship search workflow.
+The current implementation is intentionally simple and transparent. It is designed to be easy to extend, easy to debug, and good enough for demo-quality internship search workflows.
 
 ---
 
-## Current capabilities
+## Core capabilities
 
 ### Ingestion
-- Lever single-board fetch
-- Lever raw snapshot saving
-- Lever processed job normalization
-- Lever registry-based batch fetch
-- Greenhouse single-board fetch
-- Greenhouse raw snapshot saving
-- Greenhouse processed job normalization
-- Greenhouse registry-based batch fetch
+
+#### Lever
+- single-board fetch
+- raw snapshot saving
+- processed job normalization
+- registry-based batch fetch
+
+#### Greenhouse
+- single-board fetch
+- raw snapshot saving
+- processed job normalization
+- registry-based batch fetch
+- metadata-aware geographic location extraction for boards that use generic work-mode labels such as `Hybrid` or `In-Office`
 
 ### Ranking
 - baseline scoring against a candidate profile
@@ -46,22 +69,24 @@ The current implementation is intentionally simple and transparent. It is design
 - internship-focused ranking order
 - fallback skill extraction for sparse public postings
 - reduced noisy fallback matching for non-technical internship titles
+- tighter shortlist precision for noisy public boards such as Cloudflare
 
 ### Output / usability
 - shortlist CLI workflow
-- `--eligible-only` filter
-- `--applyable-only` filter
-- JSON and CSV exports
+- `--eligible-only`
+- `--applyable-only`
+- JSON export
+- CSV export
 - API endpoint for `/recommend`
 - API endpoint for `/jobs/{id}`
 
 ### Validation
-- registry flow tests
 - ingestion client tests
+- registry flow tests
 - ranking regression tests
 - CLI filtering tests
 - API tests
-- full suite currently passing: `68 passed`
+- full suite currently passing: `71 passed`
 
 ---
 
@@ -80,6 +105,13 @@ InternLens/
 │   └── source_registry/
 │       ├── lever_targets.json
 │       └── greenhouse_targets.json
+├── docs/
+│   ├── architecture/
+│   │   ├── overview.md
+│   │   └── schema.md
+│   └── devlog/
+│       ├── week1.md
+│       └── week2.md
 ├── outputs/
 ├── scripts/
 │   ├── fetch_lever_jobs.py
@@ -88,11 +120,12 @@ InternLens/
 │   ├── fetch_greenhouse_registry.py
 │   └── run_baseline.py
 ├── src/
+│   ├── api/
 │   ├── ingestion/
 │   ├── preprocessing/
-│   ├── ranking/
-│   └── api/
+│   └── ranking/
 ├── tests/
+├── requirements.txt
 └── README.md
 ```
 
@@ -103,19 +136,19 @@ InternLens/
 ### Lever
 InternLens can fetch public Lever postings by board token / site name.
 
-Examples already tested during development:
+Examples used during development:
 - `acds`
 - `rws`
 
 ### Greenhouse
 InternLens can fetch public Greenhouse postings by board token.
 
-Examples already tested during development:
+Examples used during development:
 - `waymo`
 - `honehealth`
 - `cloudflare`
 
-Greenhouse normalization now uses metadata-based geographic location extraction when available, which improves location quality compared with relying only on generic work-mode labels like `Hybrid` or `In-Office`.
+Greenhouse normalization now prefers metadata-based geographic location when available. This improves output quality for boards where the top-level location is only a work-mode label.
 
 ---
 
@@ -129,13 +162,11 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-If you do not yet have a `requirements.txt`, install the packages already used in the project environment.
+If needed, install the packages already used in the project environment.
 
 ```bash
 pip install fastapi uvicorn httpx pytest pandas
 ```
-
-Add any other packages your local project already depends on.
 
 ---
 
@@ -143,7 +174,7 @@ Add any other packages your local project already depends on.
 
 InternLens expects a processed candidate profile JSON file.
 
-Example fields:
+Example:
 
 ```json
 {
@@ -171,9 +202,9 @@ Example fields:
 
 ---
 
-## Job schema
+## Processed job schema
 
-Processed jobs are normalized into a shared shape similar to:
+Processed jobs are normalized into a shared shape similar to this:
 
 ```json
 {
@@ -181,7 +212,7 @@ Processed jobs are normalized into a shared shape similar to:
   "source": "greenhouse",
   "source_site": "cloudflare",
   "source_job_id": "123456",
-  "company": "cloudflare",
+  "company": "Cloudflare",
   "title": "Software Engineer Intern (Summer 2026)",
   "location": "Austin, US",
   "description": "...",
@@ -197,7 +228,7 @@ Processed jobs are normalized into a shared shape similar to:
 }
 ```
 
-Not every field is populated equally across sources. Public ATS data is noisy, so normalization is intentionally conservative.
+Not every field is populated equally across sources. Public ATS data is noisy, so normalization remains intentionally conservative.
 
 ---
 
@@ -209,7 +240,7 @@ Not every field is populated equally across sources. Public ATS data is noisy, s
 python scripts/fetch_lever_jobs.py --site-name acds --limit 20 --timeout 60
 ```
 
-### Fetch all active Lever registry targets
+### Fetch active Lever registry targets
 
 ```bash
 python scripts/fetch_lever_registry.py --only-active
@@ -222,7 +253,7 @@ python scripts/fetch_greenhouse_jobs.py --board-token waymo --limit 50 --timeout
 python scripts/fetch_greenhouse_jobs.py --board-token cloudflare --limit 200 --timeout 60
 ```
 
-### Fetch all active Greenhouse registry targets
+### Fetch active Greenhouse registry targets
 
 ```bash
 python scripts/fetch_greenhouse_registry.py --only-active --internship-only
@@ -257,15 +288,20 @@ python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/waymo -
 python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --applyable-only
 ```
 
-### Combine filters for a shortlist-style view
+### Combine filters for shortlist-style inspection
 
 ```bash
 python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --eligible-only --applyable-only
 ```
 
-Current behavior from recent validation:
-- `waymo --applyable-only` surfaces a very small shortlist centered on a real target internship
-- `cloudflare --applyable-only` produces a narrower internship subset than before, with examples such as `Data Analytics Intern`, `Data Engineer Intern`, `Business Analyst Intern`, `Network Deployment Engineer Intern`, and `Marketing: AI Discoverability & Optimization Intern` in the visible shortlist.
+Recent validation examples:
+- Waymo applyable-only output is very small and focused.
+- Cloudflare applyable-only output is now much narrower than before and currently surfaces a shortlist centered on more relevant roles such as:
+  - Data Analytics Intern
+  - Business Analyst Intern, Revenue Operations (AI Innovation)
+  - DCSC Automation Coordinator Intern
+  - Network Deployment Engineer Intern
+  - Data Engineer Intern
 
 ---
 
@@ -274,7 +310,7 @@ Current behavior from recent validation:
 Start the API server:
 
 ```bash
-uvicorn src.api.main:app --reload
+uvicorn src.api.app:app --reload
 ```
 
 Main endpoints:
@@ -313,7 +349,7 @@ Main endpoints:
 
 ---
 
-## Ranking logic (baseline)
+## Baseline ranking logic
 
 The current baseline is heuristic-based and intentionally interpretable.
 
@@ -322,10 +358,10 @@ The current baseline is heuristic-based and intentionally interpretable.
 - overlap with preferred roles
 - location match
 - explicit internship language
-- some fallback skill extraction from title/description when structured qualifications are sparse
+- limited fallback skill extraction from title/description when structured qualifications are sparse and the title looks technical enough to trust
 
 ### Blocking signals
-- job does not appear to be an internship
+- role does not appear to be an internship
 - role appears to be senior-level
 - role appears to require a PhD
 - graduation timing mismatch
@@ -336,23 +372,19 @@ The current baseline is heuristic-based and intentionally interpretable.
 - `Apply Later`
 - `Skip`
 
-These labels are not meant to be perfect hiring predictions. They are meant to provide a simple shortlist-oriented baseline that is easy to inspect and improve.
+These labels are not intended as perfect hiring predictions. They are intended to provide a shortlist-oriented baseline that is transparent and easy to improve.
 
 ---
 
 ## Testing
 
-Run the full test suite:
+Run the full suite:
 
 ```bash
 pytest -q
 ```
 
-Current status:
-- full test suite passing
-- `68 passed` as of the latest validation log
-
-Useful targeted test commands:
+Useful targeted runs:
 
 ```bash
 pytest tests/test_greenhouse_client.py -q
@@ -361,15 +393,19 @@ pytest tests/test_run_baseline_cli.py -q
 pytest tests/test_api_and_ranking.py -q
 ```
 
+Current status:
+- full test suite passing
+- current total: `71 passed`
+
 ---
 
 ## Known limitations
 
-- ranking is still heuristic and not learned
-- fallback skill extraction can still overmatch broad terms in some postings
-- some non-core internships can still survive ranking if they resemble technical/data roles
-- company normalization is lightweight
-- location preference scoring can still be refined for hybrid/in-office jobs
+- ranking is still heuristic, not learned
+- fallback skill extraction can still overgeneralize in some postings
+- some broad AI-adjacent or operations internships may still survive ranking if they resemble technical/data roles
+- company normalization remains lightweight
+- hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
 
 ---
@@ -400,8 +436,8 @@ That makes it a strong base for future work such as:
 
 Planned follow-up improvements:
 - reduce remaining ranking noise for broad non-core internships
-- refine hybrid/in-office location preference handling
+- continue refining hybrid/in-office location preference handling
 - improve deduplication for repeated internship postings
-- clean up company and team normalization
-- expand final demo documentation
-- prepare a more polished shortlist UX for the API layer
+- improve company and team normalization
+- polish shortlist summaries in the API layer
+- prepare cleaner demo outputs and documentation

@@ -1,90 +1,109 @@
-# Week 2 - Day 1 Dev Log
+# Week 2 Devlog
 
-## Summary
+## Day 8 — Precision/Location Cleanup and Output Usability
 
-Today focused on improving ranking precision, Greenhouse normalization quality, and shortlist usability.
+### Focus
+Improve public-board ranking usability and reduce noisy shortlist behavior, especially on Greenhouse sources.
 
-The project remains stable after these changes, and the current validation state is `68 passed`.
+### What was done
+- Tightened baseline internship ranking logic.
+- Added and refined blocker-aware shortlist behavior.
+- Added CLI output filters:
+  - `--eligible-only`
+  - `--applyable-only`
+- Improved Greenhouse normalization so geographic location could come from metadata instead of only generic work-mode labels such as `Hybrid` or `In-Office`.
+- Prevented stale Greenhouse processed files from mixing old and new normalized outputs across reruns.
+- Re-fetched and re-evaluated Cloudflare data after normalization updates.
 
----
+### Result
+- The shortlist output became much easier to inspect.
+- Location quality improved from generic labels toward real geographic values like `Austin, US`, `London, UK`, and `Singapore`.
+- Cloudflare shortlist quality improved noticeably, though some non-core internships still remained.
+- Full test suite was stable at **68 passed** at the end of this stage.
 
-## Completed today
-
-### 1. Ranking refinement
-- reduced noisy fallback skill matching for non-technical internship titles
-- kept fallback skill matching for technical, research, engineering, and data-oriented roles
-- preserved ranking stability through regression tests
-
-### 2. Greenhouse location normalization
-- improved geographic location extraction using Greenhouse metadata
-- reduced dependence on generic work-mode labels such as `Hybrid` and `In-Office`
-- cleaned stale processed Greenhouse outputs before writing new normalized files
-
-### 3. CLI shortlist usability
-- confirmed `--eligible-only` behavior
-- confirmed `--applyable-only` behavior
-- verified combined shortlist-style filtering for public board outputs
-
-### 4. Real-board validation
-- re-fetched Cloudflare postings
-- re-ran ranking after normalization updates
-- verified that shortlist outputs are narrower and easier to inspect than before
+### Key takeaway
+Week 2 started with a shift from “make it run” to “make the output usable.” The system became much more demo-friendly after shortlist filtering and location cleanup.
 
 ---
 
-## Validation
+## Day 9 — Recovery / No Development Day
 
-### Tests
-- `pytest tests/test_baseline_scorer_seniority.py -q` passed
-- `pytest tests/test_greenhouse_client.py -q` passed
-- full test suite passed
-- current total: `68 passed`
+### Status
+- No feature development.
+- No code changes.
+- No ranking or ingestion updates.
 
-### Output checks
-- Waymo shortlist remains very focused
-- Cloudflare shortlist now shows more meaningful geographic location values such as:
-  - Austin, US
-  - London, UK
-  - Singapore
-- Cloudflare applyable-only output is smaller and more interpretable than previous runs
+### Notes
+This was an intentional pause day to recover and keep pacing sustainable.
+
+### Outcome
+Project state was preserved as-is from the previous day, with the latest stable checkpoint ready for continuation.
 
 ---
 
-## Current project state
+## Day 10 — Cloudflare Shortlist Precision Improvement
 
-InternLens now supports:
-- Lever ingestion
-- Greenhouse ingestion
+### Focus
+Reduce noisy fallback skill matches so non-technical internship titles stop surviving the shortlist too easily.
+
+### Main problem at the start of the day
+Cloudflare shortlist still contained several broad non-core internships that were inheriting noisy fallback matches from title/description heuristics.
+Examples included roles in people/HR/marketing/product areas that were still being promoted because of broad AI, Python, or analytics wording.
+
+### What was changed
+- Refined fallback skill logic in `baseline_scorer.py`.
+- Strengthened title-based gating so fallback title/description skill matching is used more conservatively.
+- Added stronger separation between:
+  - technical/data/research/engineering internship titles
+  - non-technical internship titles
+- Preserved strong behavior for technical roles such as:
+  - Data Analytics Intern
+  - Data Engineer Intern
+  - Business Analyst Intern
+  - Research / Security / Network-oriented internships
+- Added regression tests for these new ranking rules.
+
+### Validation
+- `pytest tests/test_baseline_scorer_seniority.py -q` → **14 passed**
+- `pytest -q` → **71 passed**
+
+### Result
+Cloudflare shortlist under `--applyable-only` became much tighter.
+The visible shortlist reduced to a compact set centered on more relevant roles:
+- Data Analytics Intern (Summer 2026)
+- Business Analyst Intern, Revenue Operations (AI Innovation) (Summer 2026)
+- DCSC Automation Coordinator Intern
+- Network Deployment Engineer Intern (Summer 2026)
+- Data Engineer Intern (Summer 2026)
+
+### Why this matters
+This was one of the biggest quality jumps so far.
+The system moved closer to a real shortlist generator instead of a broad “internship dump.”
+
+---
+
+## Week 2 Snapshot (through Day 10)
+
+### Current project state
+InternLens currently supports:
+- multi-source public ATS ingestion
+  - Lever
+  - Greenhouse
 - raw snapshot saving
-- processed job normalization
-- registry-driven batch fetch
-- blocker-aware ranking
-- shortlist-oriented CLI output filters
-- API endpoints for recommendation and job detail lookup
-- stable regression-tested iteration
+- processed schema normalization
+- registry-driven batch fetching
+- baseline ranking with blockers
+- shortlist-oriented CLI filters
+- API endpoints:
+  - `/recommend`
+  - `/jobs/{id}`
 
----
+### Quality checkpoint
+- Latest full test status: **71 passed**
+- Cloudflare shortlist precision improved significantly
+- Waymo shortlist remains highly focused under shortlist filters
 
-## Remaining follow-up
-
-### Ranking
-- reduce remaining non-core internship noise
-- further tighten relevance criteria for `Apply Later`
-
-### Normalization
-- continue refining hybrid/in-office location handling
-- improve company and team normalization
-- improve deduplication for repeated internship postings
-
-### Product / docs
-- update docs to reflect week 2 progress
-- prepare cleaner final demo examples
-- continue improving shortlist readability
-
----
-
-## Outcome
-
-Today’s work moved the project from “works technically” toward “looks cleaner in a demo.”
-
-The ranking is still heuristic, but the system now behaves much more like a practical internship discovery pipeline instead of a toy scorer over sample jobs.
+### Remaining follow-up ideas
+- Continue reducing remaining fallback-skill noise for edge-case internship titles.
+- Refactor `baseline_scorer.py` so policy logic is split more cleanly.
+- Polish docs and final demo flow.

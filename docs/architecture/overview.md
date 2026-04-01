@@ -2,22 +2,19 @@
 
 ## Project summary
 
-InternLens is a practical internship search pipeline that connects three pieces of work:
+InternLens is a practical internship search pipeline that connects three core pieces of work:
 
 1. public job board ingestion
 2. candidate-profile-based ranking
 3. shortlist-oriented inspection through CLI and API
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop.
-
-At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, and export shortlist-style results. The full test suite is currently passing with `68 passed`.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, and export shortlist-style results. The current validation state is `71 passed`.
 
 ---
 
 ## Goals
 
 The main goals of InternLens are:
-
 - build a lightweight, understandable internship recommender
 - move beyond static toy data into real public job board ingestion
 - support iterative ranking improvements without breaking earlier behavior
@@ -33,17 +30,18 @@ This is not meant to be a production hiring platform yet. It is a clean, extensi
 ### 1. Ingestion layer
 InternLens currently supports:
 
-- Lever ingestion
-  - single-board fetch
-  - raw snapshot storage
-  - processed normalization
-  - registry-driven batch fetch
+#### Lever ingestion
+- single-board fetch
+- raw snapshot storage
+- processed normalization
+- registry-driven batch fetch
 
-- Greenhouse ingestion
-  - single-board fetch
-  - raw snapshot storage
-  - processed normalization
-  - registry-driven batch fetch
+#### Greenhouse ingestion
+- single-board fetch
+- raw snapshot storage
+- processed normalization
+- registry-driven batch fetch
+- metadata-aware geographic location extraction for boards that use work-mode labels such as `Hybrid` or `In-Office`
 
 The ingestion layer saves:
 - raw board snapshots for reproducibility
@@ -82,6 +80,7 @@ Important ranking improvements added so far:
 - blocker-aware shortlist filters
 - fallback skill extraction for sparse public postings
 - reduced noisy fallback skill matching for non-technical internship titles
+- tighter shortlist precision for noisy public boards
 
 This makes the current baseline much more useful than a simple keyword scorer.
 
@@ -114,18 +113,19 @@ These filters make it easier to inspect meaningful subsets rather than dumping t
 - the CLI now supports shortlist-style filtering
 - API behavior remains stable after ranking refinements
 
-### What was improved most recently
+### What improved most recently
 Recent work focused on:
 - reducing ranking noise for public internship boards
 - improving Greenhouse location normalization using metadata
 - reducing noisy fallback skill matches for non-technical internships
 - making shortlist display easier to inspect
+- tightening Cloudflare shortlist precision so non-core internship roles drop out more often
 
-The latest validation log shows:
-- `68 passed`
+The latest validation state shows:
+- `71 passed`
 - Cloudflare re-fetched with improved location extraction
-- Cloudflare shortlist reduced to a smaller, more relevant subset under `--applyable-only`
-- Waymo shortlist remains very small and focused under `--applyable-only`
+- Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
+- Waymo shortlist remains very small and focused under applyable-only filtering
 
 ---
 
@@ -139,10 +139,10 @@ Cloudflare remains noisier than Waymo, but it is much more usable than before.
 
 Recent visible shortlist examples include:
 - Data Analytics Intern
-- Data Engineer Intern
-- Business Analyst Intern
+- Business Analyst Intern, Revenue Operations (AI Innovation)
 - DCSC Automation Coordinator Intern
 - Network Deployment Engineer Intern
+- Data Engineer Intern
 
 These now appear with real geographic locations such as:
 - Austin, US
@@ -156,7 +156,6 @@ instead of generic work-mode-only labels dominating the output.
 ## Why the project matters
 
 InternLens now demonstrates a real iterative ML/IR-style workflow:
-
 - collect external data
 - normalize it
 - design scoring logic
@@ -181,12 +180,10 @@ It also shows good engineering discipline:
 
 ## Main limitations
 
-The project still has important limitations.
-
 ### Ranking limitations
 - the baseline is still heuristic
-- fallback skill extraction can still overgeneralize
-- some broad AI-adjacent or operations internships can remain in the shortlist
+- fallback skill extraction can still overgeneralize in some postings
+- some broad AI-adjacent or operations internships may still remain in the shortlist
 - there is no learned relevance model yet
 
 ### Data limitations
