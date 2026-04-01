@@ -65,18 +65,35 @@ TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
     "scientist",
     "research",
     "researcher",
-    "machine learning",
-    "ai",
+    "data",
     "analytics",
     "analytic",
     "analyst",
-    "data",
     "security",
+    "network",
     "infrastructure",
     "platform",
     "automation",
-    "network",
     "systems",
+    "machine learning",
+    "ai",
+]
+
+STRONG_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
+    "data",
+    "analytics",
+    "analytic",
+    "analyst",
+    "engineer",
+    "engineering",
+    "developer",
+    "software",
+    "scientist",
+    "research",
+    "researcher",
+    "security",
+    "network",
+    "automation",
 ]
 
 NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
@@ -98,6 +115,9 @@ NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
     "brand",
     "product manager",
     "program manager",
+    "customer success",
+    "recruiter",
+    "talent",
 ]
 
 
@@ -106,8 +126,8 @@ def _title_supports_fallback_skill_matching(title: str) -> bool:
     Use title/description fallback skills only for roles that look technical,
     data-oriented, research-oriented, or engineering-oriented.
 
-    This prevents generic internship postings such as marketing, people, or
-    sales roles from inheriting noisy ML/Python matches from broad descriptions.
+    Negative business/people/marketing signals should usually override weak
+    AI-flavored wording such as "AI Innovation".
     """
     normalized_title = _canonicalize_text(title.lower())
 
@@ -115,16 +135,27 @@ def _title_supports_fallback_skill_matching(title: str) -> bool:
         keyword in normalized_title
         for keyword in TECHNICAL_TITLE_FALLBACK_KEYWORDS
     )
+    has_strong_positive_signal = any(
+        keyword in normalized_title
+        for keyword in STRONG_TECHNICAL_TITLE_FALLBACK_KEYWORDS
+    )
     has_negative_signal = any(
         keyword in normalized_title
         for keyword in NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS
     )
 
-    if has_positive_signal:
+    # Strong technical titles like Data Engineer / Security Engineer /
+    # Business Analyst / Research Engineer should still get fallback support.
+    if has_strong_positive_signal:
         return True
 
+    # Non-technical titles should not inherit noisy ML/Python matches from
+    # broad descriptions or AI-innovation wording.
     if has_negative_signal:
         return False
+
+    if has_positive_signal:
+        return True
 
     return False
 
