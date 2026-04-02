@@ -14,15 +14,24 @@ InternLens currently supports:
 - raw snapshot saving
 - processed job normalization
 - registry-driven batch fetching
+- one-command corpus refresh across Lever and Greenhouse registries
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
 - regression-tested iteration
 
+Current architecture planning also includes a long-term source acquisition strategy centered on:
+- company seeds
+- source discovery
+- source validation
+- source scoring
+- scheduled corpus refresh
+
 Latest validation state:
 - full test suite passing
-- current total: `71 passed`
+- current total: `76 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
+- GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
 ---
 
@@ -86,7 +95,9 @@ The current implementation is intentionally simple and transparent. It is design
 - ranking regression tests
 - CLI filtering tests
 - API tests
-- full suite currently passing: `71 passed`
+- deduplication cleanup tests
+- full suite currently passing: `76 passed`
+- GitHub Actions workflow for automated `pytest -q`
 
 ---
 
@@ -104,11 +115,14 @@ InternLens/
 │   ├── sample_jobs/
 │   └── source_registry/
 │       ├── lever_targets.json
-│       └── greenhouse_targets.json
+│       ├── greenhouse_targets.json
+│       ├── company_seeds.example.json
+│       └── discovered_sources.example.json
 ├── docs/
 │   ├── architecture/
 │   │   ├── overview.md
-│   │   └── schema.md
+│   │   ├── schema.md
+│   │   └── source_acquisition_strategy.md
 │   └── devlog/
 │       ├── week1.md
 │       └── week2.md
@@ -259,6 +273,24 @@ python scripts/fetch_greenhouse_jobs.py --board-token cloudflare --limit 200 --t
 python scripts/fetch_greenhouse_registry.py --only-active --internship-only
 ```
 
+### Refresh the full internal job corpus
+
+```bash
+python scripts/refresh_job_corpus.py
+```
+
+Useful options:
+
+```bash
+python scripts/refresh_job_corpus.py --greenhouse-only
+python scripts/refresh_job_corpus.py --lever-only
+python scripts/refresh_job_corpus.py --include-inactive
+python scripts/refresh_job_corpus.py --greenhouse-all-jobs
+```
+
+This command is the preferred entry point for keeping the internal recommendation corpus fresh.
+It runs both registry flows, saves raw snapshots, and updates processed jobs in one pass.
+
 ---
 
 ## How to run the baseline ranker
@@ -395,7 +427,9 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `71 passed`
+- current total: `76 passed`
+- GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
+- GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
 ---
 
@@ -407,6 +441,7 @@ Current status:
 - company normalization remains lightweight
 - hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
+- source discovery is not automated yet; the current refresh system still depends on known registries
 
 ---
 
@@ -439,5 +474,6 @@ Planned follow-up improvements:
 - continue refining hybrid/in-office location preference handling
 - improve deduplication for repeated internship postings
 - improve company and team normalization
+- add company-seed-based source discovery and validation
 - polish shortlist summaries in the API layer
 - prepare cleaner demo outputs and documentation

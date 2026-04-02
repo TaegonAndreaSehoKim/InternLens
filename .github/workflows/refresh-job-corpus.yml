@@ -1,0 +1,36 @@
+name: refresh-job-corpus
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 14 * * *"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: check out repository
+        uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: refresh processed job corpus
+        run: python scripts/refresh_job_corpus.py
+
+      - name: upload refreshed corpus artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: refreshed-job-corpus
+          path: |
+            data/raw
+            data/processed/jobs

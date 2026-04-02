@@ -63,7 +63,16 @@ def test_recommend_endpoint_with_inline_profile_returns_ranked_results() -> None
     assert body["total_jobs_scored"] == len(jobs)
     assert body["returned_jobs"] == 5
     assert len(body["results"]) == 5
+    assert "overview" in body
+    assert body["overview"]["total_apply_now"] >= 0
+    assert isinstance(body["overview"]["top_locations"], list)
     assert body["results"][0]["title"] == "applied scientist intern"
+    assert body["results"][0]["recommendation"] == "apply_now"
+    assert body["results"][0]["fit_level"] in {"strong", "moderate", "weak"}
+    assert body["results"][0]["eligibility_status"] == "eligible"
+    assert isinstance(body["results"][0]["summary"], str)
+    assert isinstance(body["results"][0]["why_apply"], list)
+    assert isinstance(body["results"][0]["watchouts"], list)
 
 
 def test_example_ai_job_has_sponsorship_blocker() -> None:
@@ -206,6 +215,7 @@ def test_recommend_endpoint_with_profile_path_returns_ranked_results() -> None:
     assert body["returned_jobs"] == 3
     assert len(body["results"]) == 3
     assert body["results"][0]["action_label"] == "Apply Now"
+    assert body["overview"]["highlighted_titles"] != []
 
 
 def test_recommend_endpoint_requires_profile_source() -> None:
@@ -242,6 +252,7 @@ def test_recommend_endpoint_with_feedback_path_applies_reranking() -> None:
     assert "reranked_score" in body["results"][0]
     assert "feedback_explanations" in body["results"][0]
     assert isinstance(body["results"][0]["feedback_explanations"], list)
+    assert isinstance(body["results"][0]["summary"], str)
 
 
 def test_recommend_endpoint_feedback_response_includes_explanation_items() -> None:
@@ -297,6 +308,7 @@ def test_recommend_endpoint_with_inline_feedback_applies_reranking() -> None:
     assert "feedback_adjustment" in body["results"][0]
     assert "reranked_score" in body["results"][0]
     assert "feedback_explanations" in body["results"][0]
+    assert "application_link" in body["results"][0]
 
 
 def test_recommend_endpoint_inline_feedback_response_includes_explanation_items() -> None:

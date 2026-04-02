@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -16,7 +17,12 @@ from src.preprocessing.profile_parser import (
     load_candidate_profile,
     normalize_candidate_profile,
 )
-from src.ranking.baseline_scorer import rank_jobs
+from src.ranking.baseline_scorer import (
+    _has_description_internship_signal,
+    _has_explicit_internship_signal,
+    _looks_like_senior_role,
+    rank_jobs,
+)
 from src.ranking.feedback_reranker import (
     apply_feedback_reranking,
     load_feedback_profile,
@@ -108,11 +114,29 @@ class JobResult(BaseModel):
     reasons: List[str]
     blocking_issues: List[str]
     component_scores: Dict[str, float]
+    recommendation: str
+    fit_level: str
+    eligibility_status: str
+    summary: str
+    why_apply: List[str]
+    watchouts: List[str]
+    application_link: Optional[str] = None
 
     # Expose reranking fields only when feedback-based reranking is applied.
     feedback_adjustment: Optional[float] = None
     reranked_score: Optional[float] = None
     feedback_explanations: Optional[List[FeedbackExplanation]] = None
+
+
+class RecommendOverview(BaseModel):
+    total_apply_now: int
+    total_apply_later: int
+    total_skip: int
+    total_eligible: int
+    total_blocked: int
+    top_locations: List[str]
+    common_blockers: List[str]
+    highlighted_titles: List[str]
 
 
 class RecommendResponse(BaseModel):
@@ -122,6 +146,7 @@ class RecommendResponse(BaseModel):
     reranking_applied: bool
     total_jobs_scored: int
     returned_jobs: int
+    overview: RecommendOverview
     results: List[JobResult]
 
 
@@ -144,6 +169,11 @@ class JobDetailResponse(BaseModel):
     application_url: Optional[str] = None
     remote_status: Optional[str] = None
     team: Optional[str] = None
+    short_description: str
+    internship_signals: List[str]
+    possible_requirements: List[str]
+    possible_blockers: List[str]
+    application_link: Optional[str] = None
 
 
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
@@ -154,6 +184,183 @@ def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[s
 def _build_feedback_from_payload(feedback_data: FeedbackProfilePayload) -> Dict[str, Any]:
     # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_feedback_profile(feedback_data.model_dump())
+
+
+def _recommendation_code(action_label: str) -> str:
+    return action_label.lower().replace(" ", "_")
+
+
+def _fit_level(score: float) -> str:
+    if score >= 70:
+        return "strong"
+    if score >= 40:
+        return "moderate"
+    return "weak"
+
+
+def _eligibility_status(blocking_issues: List[str]) -> str:
+    return "blocked" if blocking_issues else "eligible"
+
+
+def _application_link(job: Dict[str, Any]) -> Optional[str]:
+    return str(job.get("application_url") or job.get("source_url") or "") or None
+
+
+def _build_watchouts(job: Dict[str, Any]) -> List[str]:
+    watchouts: List[str] = []
+
+    for blocker in job.get("blocking_issues", []):
+        watchouts.append(blocker)
+
+    if not watchouts:
+        skill_gaps = job.get("skill_gaps", [])
+        if skill_gaps:
+            watchouts.append(f"Skill gaps to review: {', '.join(skill_gaps[:3])}")
+
+    return watchouts[:3]
+
+
+def _build_user_summary(job: Dict[str, Any]) -> str:
+    fit_level = _fit_level(float(job.get("score", 0)))
+    eligibility_status = _eligibility_status(job.get("blocking_issues", []))
+    reasons = job.get("reasons", [])
+
+    if eligibility_status == "blocked":
+        if reasons:
+            return f"{fit_level.capitalize()} fit, but currently blocked: {reasons[0]}"
+        return f"{fit_level.capitalize()} fit, but currently blocked by posting constraints."
+
+    if reasons:
+        return f"{fit_level.capitalize()} fit for this internship search: {reasons[0]}"
+
+    return f"{fit_level.capitalize()} fit based on the current baseline signals."
+
+
+def _enrich_job_result(job: Dict[str, Any]) -> Dict[str, Any]:
+    enriched = dict(job)
+    enriched["recommendation"] = _recommendation_code(job["action_label"])
+    enriched["fit_level"] = _fit_level(float(job["score"]))
+    enriched["eligibility_status"] = _eligibility_status(job.get("blocking_issues", []))
+    enriched["summary"] = _build_user_summary(job)
+    enriched["why_apply"] = list(job.get("reasons", []))[:3]
+    enriched["watchouts"] = _build_watchouts(job)
+    enriched["application_link"] = _application_link(job)
+    return enriched
+
+
+def _top_locations(jobs: List[Dict[str, Any]]) -> List[str]:
+    location_counts = Counter(
+        job["location"]
+        for job in jobs
+        if str(job.get("location", "")).strip()
+    )
+    return [location for location, _count in location_counts.most_common(3)]
+
+
+def _common_blockers(jobs: List[Dict[str, Any]]) -> List[str]:
+    blocker_counts = Counter(
+        blocker
+        for job in jobs
+        for blocker in job.get("blocking_issues", [])
+    )
+    return [blocker for blocker, _count in blocker_counts.most_common(3)]
+
+
+def _highlighted_titles(jobs: List[Dict[str, Any]]) -> List[str]:
+    highlighted = [
+        job["title"]
+        for job in jobs
+        if job.get("action_label") != "Skip"
+    ]
+    return highlighted[:3]
+
+
+def _build_recommend_overview(jobs: List[Dict[str, Any]]) -> RecommendOverview:
+    action_counts = Counter(job.get("action_label", "") for job in jobs)
+    total_blocked = sum(1 for job in jobs if job.get("blocking_issues"))
+    total_eligible = len(jobs) - total_blocked
+
+    return RecommendOverview(
+        total_apply_now=action_counts.get("Apply Now", 0),
+        total_apply_later=action_counts.get("Apply Later", 0),
+        total_skip=action_counts.get("Skip", 0),
+        total_eligible=total_eligible,
+        total_blocked=total_blocked,
+        top_locations=_top_locations(jobs),
+        common_blockers=_common_blockers(jobs),
+        highlighted_titles=_highlighted_titles(jobs),
+    )
+
+
+def _short_description(description: str, *, max_length: int = 220) -> str:
+    normalized = " ".join(str(description or "").split())
+    if len(normalized) <= max_length:
+        return normalized
+    return normalized[: max_length - 3].rstrip() + "..."
+
+
+def _internship_signals(job: Dict[str, Any]) -> List[str]:
+    signals: List[str] = []
+
+    if _has_explicit_internship_signal(job):
+        signals.append("Explicit internship wording in title or employment type")
+    if _has_description_internship_signal(job):
+        signals.append("Internship program wording in description")
+    if str(job.get("remote_status", "")).strip():
+        signals.append(f"Work mode: {job['remote_status']}")
+    if str(job.get("team", "")).strip():
+        signals.append(f"Team: {job['team']}")
+
+    return signals[:4]
+
+
+def _extract_requirement_items(job: Dict[str, Any]) -> List[str]:
+    combined_parts = [
+        str(job.get("min_qualifications", "")),
+        str(job.get("preferred_qualifications", "")),
+    ]
+    normalized = "\n".join(part for part in combined_parts if part.strip())
+
+    raw_items = [
+        item.strip(" -")
+        for item in normalized.replace("\r", "\n").split("\n")
+        if item.strip()
+    ]
+    if raw_items:
+        return raw_items[:4]
+
+    description = " ".join(str(job.get("description", "")).split())
+    sentences = [
+        sentence.strip()
+        for sentence in description.split(".")
+        if sentence.strip()
+    ]
+    return sentences[:2]
+
+
+def _possible_posting_blockers(job: Dict[str, Any]) -> List[str]:
+    blockers: List[str] = []
+    combined_text = " ".join(
+        [
+            str(job.get("title", "")),
+            str(job.get("description", "")),
+            str(job.get("min_qualifications", "")),
+            str(job.get("preferred_qualifications", "")),
+            str(job.get("employment_type", "")),
+            str(job.get("sponsorship_info", "")),
+        ]
+    ).lower()
+
+    if not (_has_explicit_internship_signal(job) or _has_description_internship_signal(job)):
+        blockers.append("This posting may not be an internship")
+    if _looks_like_senior_role(job):
+        blockers.append("This posting looks senior-level")
+    if "phd" in combined_text:
+        blockers.append("This posting may require a PhD")
+    if "no sponsorship" in combined_text:
+        blockers.append("This posting states sponsorship is not available")
+
+    return blockers[:4]
 
 
 @app.get("/health")
@@ -203,7 +410,8 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
     top_results = final_jobs[: request.top_k]
-    job_results = [JobResult(**job) for job in top_results]
+    enriched_results = [_enrich_job_result(job) for job in top_results]
+    job_results = [JobResult(**job) for job in enriched_results]
 
     return RecommendResponse(
         profile_source=profile_source,
@@ -212,6 +420,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         reranking_applied=reranking_applied,
         total_jobs_scored=len(final_jobs),
         returned_jobs=len(job_results),
+        overview=_build_recommend_overview(final_jobs),
         results=job_results,
     )
 
@@ -255,4 +464,9 @@ def get_job(job_id: str, jobs_dir: str = "data/processed/jobs") -> JobDetailResp
         application_url=job.get("application_url"),
         remote_status=job.get("remote_status"),
         team=job.get("team"),
+        short_description=_short_description(job.get("description", "")),
+        internship_signals=_internship_signals(job),
+        possible_requirements=_extract_requirement_items(job),
+        possible_blockers=_possible_posting_blockers(job),
+        application_link=_application_link(job),
     )

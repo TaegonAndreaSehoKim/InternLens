@@ -56,6 +56,11 @@ def test_get_job_endpoint_returns_nested_crawled_job_details(tmp_path: Path) -> 
     assert body["source_site"] == "rws"
     assert body["title"] == "Machine Learning Intern"
     assert body["application_url"] == "https://jobs.lever.co/rws/001/apply"
+    assert body["application_link"] == "https://jobs.lever.co/rws/001/apply"
+    assert isinstance(body["short_description"], str)
+    assert isinstance(body["internship_signals"], list)
+    assert isinstance(body["possible_requirements"], list)
+    assert isinstance(body["possible_blockers"], list)
 
 
 def test_get_job_endpoint_returns_404_for_missing_job(tmp_path: Path) -> None:

@@ -1,0 +1,44 @@
+[
+  {
+    "company": "Waymo",
+    "homepage_url": "https://waymo.com",
+    "careers_url": "https://careers.withwaymo.com/",
+    "priority": 10,
+    "industries": ["autonomous driving", "ai", "robotics"],
+    "target_roles": [
+      "software engineering",
+      "machine learning",
+      "data"
+    ],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value technical internship source"
+  },
+  {
+    "company": "Cloudflare",
+    "homepage_url": "https://www.cloudflare.com",
+    "careers_url": "https://www.cloudflare.com/careers/jobs/",
+    "priority": 8,
+    "industries": ["security", "networking", "cloud"],
+    "target_roles": [
+      "software engineering",
+      "security",
+      "data"
+    ],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "strong technical source but can be noisy"
+  },
+  {
+    "company": "Hone Health",
+    "homepage_url": "https://www.honehealth.com",
+    "careers_url": "https://boards.greenhouse.io/honehealth",
+    "priority": 6,
+    "industries": ["healthtech"],
+    "target_roles": [
+      "data science",
+      "analytics",
+      "software engineering"
+    ],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "example smaller source for discovery validation"
+  }
+]

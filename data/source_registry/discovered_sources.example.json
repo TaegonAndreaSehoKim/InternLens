@@ -1,0 +1,41 @@
+[
+  {
+    "company": "Waymo",
+    "source_type": "greenhouse",
+    "source_identifier": "waymo",
+    "careers_url": "https://careers.withwaymo.com/",
+    "discovery_url": "https://boards.greenhouse.io/waymo",
+    "discovered_at": "2026-04-02T10:00:00Z",
+    "discovery_method": "manual_seed_scan",
+    "status": "validated",
+    "validation_notes": "fetch succeeded and returned active jobs",
+    "source_score": 0.92,
+    "internship_likelihood": 0.85
+  },
+  {
+    "company": "Cloudflare",
+    "source_type": "greenhouse",
+    "source_identifier": "cloudflare",
+    "careers_url": "https://www.cloudflare.com/careers/jobs/",
+    "discovery_url": "https://boards.greenhouse.io/cloudflare",
+    "discovered_at": "2026-04-02T10:05:00Z",
+    "discovery_method": "careers_page_scan",
+    "status": "candidate",
+    "validation_notes": "discovered but not yet revalidated for current internship quality",
+    "source_score": 0.63,
+    "internship_likelihood": 0.54
+  },
+  {
+    "company": "RWS",
+    "source_type": "lever",
+    "source_identifier": "rws",
+    "careers_url": "https://jobs.lever.co/rws",
+    "discovery_url": "https://jobs.lever.co/rws",
+    "discovered_at": "2026-04-02T10:07:00Z",
+    "discovery_method": "manual_seed_scan",
+    "status": "active",
+    "validation_notes": "fetch succeeded and source already participates in refresh",
+    "source_score": 0.58,
+    "internship_likelihood": 0.34
+  }
+]

@@ -103,17 +103,27 @@ def _load_registry(registry_path: Path) -> List[Dict[str, Any]]:
     return entries
 
 
-def main() -> None:
-    args = _parse_args()
-    registry_path = PROJECT_ROOT / args.registry_path
+def run_registry_fetch(
+    *,
+    registry_path: Path,
+    timeout: float,
+    limit: int | None,
+    only_active: bool,
+    project_root: Path,
+) -> Dict[str, Any]:
+    # Fetch all requested Lever registry entries and return a compact summary.
     entries = _load_registry(registry_path)
 
-    if args.only_active:
+    if only_active:
         entries = [entry for entry in entries if entry["active"]]
 
     if not entries:
         print("No registry entries to fetch.")
-        return
+        return {
+            "entries_fetched": 0,
+            "total_filtered_jobs": 0,
+            "total_processed_jobs": 0,
+        }
 
     total_raw_jobs = 0
     total_processed_jobs = 0
@@ -126,14 +136,14 @@ def main() -> None:
 
         jobs = fetch_lever_postings(
             site_name,
-            limit=args.limit,
-            timeout=args.timeout,
+            limit=limit,
+            timeout=timeout,
         )
 
         raw_output_path = save_raw_lever_snapshot(
             site_name,
             jobs,
-            project_root=PROJECT_ROOT,
+            project_root=project_root,
         )
 
         if internship_only:
@@ -142,13 +152,13 @@ def main() -> None:
         processed_paths = save_processed_lever_postings(
             site_name,
             jobs,
-            project_root=PROJECT_ROOT,
+            project_root=project_root,
         )
 
         print(f"Saved raw snapshot to: {raw_output_path}")
         print(
             f"Saved {len(processed_paths)} processed jobs to: "
-            f"{PROJECT_ROOT / 'data' / 'processed' / 'jobs' / 'lever' / site_name}"
+            f"{project_root / 'data' / 'processed' / 'jobs' / 'lever' / site_name}"
         )
 
         if internship_only and not jobs:
@@ -161,6 +171,24 @@ def main() -> None:
     print("=== Registry fetch complete ===")
     print(f"Total filtered jobs fetched: {total_raw_jobs}")
     print(f"Total processed jobs saved: {total_processed_jobs}")
+
+    return {
+        "entries_fetched": len(entries),
+        "total_filtered_jobs": total_raw_jobs,
+        "total_processed_jobs": total_processed_jobs,
+    }
+
+
+def main() -> None:
+    args = _parse_args()
+    registry_path = PROJECT_ROOT / args.registry_path
+    run_registry_fetch(
+        registry_path=registry_path,
+        timeout=args.timeout,
+        limit=args.limit,
+        only_active=args.only_active,
+        project_root=PROJECT_ROOT,
+    )
 
 
 if __name__ == "__main__":
