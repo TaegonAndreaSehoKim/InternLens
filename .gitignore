@@ -26,6 +26,9 @@ Thumbs.db
 .env
 .env.*
 
+# Local agent guidance
+AGENTS.md
+
 # Optional: generated outputs
 # Keep these tracked if you want demo artifacts in the repo.
 # outputs/

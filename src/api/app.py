@@ -222,7 +222,10 @@ def get_job(job_id: str, jobs_dir: str = "data/processed/jobs") -> JobDetailResp
     jobs_dir_path = PROJECT_ROOT / jobs_dir
 
     try:
-        jobs = load_all_job_postings(jobs_dir_path)
+        jobs = load_all_job_postings(
+            jobs_dir_path,
+            suppress_duplicate_content=False,
+        )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
