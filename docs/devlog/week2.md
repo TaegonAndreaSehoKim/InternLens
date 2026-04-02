@@ -107,3 +107,36 @@ InternLens currently supports:
 - Continue reducing remaining fallback-skill noise for edge-case internship titles.
 - Refactor `baseline_scorer.py` so policy logic is split more cleanly.
 - Polish docs and final demo flow.
+
+---
+
+## Day 11-12 - Dedupe, API Summaries, and Corpus Refresh
+
+### Focus
+Stabilize the processed job corpus, make recommendation output easier to consume, and add a repeatable refresh path for Lever and Greenhouse data.
+
+### What was done
+- Added duplicate suppression in job loading so legacy flat processed files no longer distort ranking results.
+- Added `scripts/cleanup_processed_jobs.py` and removed older duplicate processed files from the root of `data/processed/jobs`.
+- Expanded `/recommend` to return user-facing summaries such as:
+  - overview counts
+  - fit and eligibility labels
+  - short recommendation summaries
+  - `why_apply` and `watchouts`
+- Expanded `/jobs/{id}` with short description, internship signals, possible requirements, blocker hints, and application link fields.
+- Added `.github/workflows/python-tests.yml` to run `pytest -q` in CI.
+- Added `scripts/refresh_job_corpus.py` plus `.github/workflows/refresh-job-corpus.yml` for scheduled or manual Lever/Greenhouse corpus refresh.
+- Documented the long-term source acquisition plan in `docs/architecture/source_acquisition_strategy.md`.
+- Added example seed and discovered-source files under `data/source_registry/`.
+
+### Validation
+- `pytest -q` -> **79 passed**
+
+### Result
+- The corpus is safer to load end-to-end without duplicate inflation.
+- The API moved closer to a user-facing contract instead of a debug-first engine response.
+- Lever and Greenhouse refresh now have a single orchestration entry point and a basic scheduled workflow.
+- Source acquisition direction is now documented clearly enough to guide the next discovery implementation.
+
+### Key takeaway
+This stage shifted the project from "prototype pieces that work" toward "a backend pipeline that can be refreshed, explained, and evolved." The remaining gap is no longer core ingestion or ranking plumbing; it is source discovery and a user-facing recommendation flow built on top of the refreshed corpus.
