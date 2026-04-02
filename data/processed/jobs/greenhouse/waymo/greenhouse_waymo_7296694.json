@@ -1,0 +1,19 @@
+{
+  "job_id": "greenhouse_waymo_7296694",
+  "source": "greenhouse",
+  "source_site": "waymo",
+  "source_job_id": "7296694",
+  "company": "waymo",
+  "title": "2026 Summer Intern, MS/PhD, ML Runtime and Deployment",
+  "location": "Mountain View, CA, USA",
+  "description": "Waymo is an autonomous driving technology company with the mission to be the world's most trusted driver. Since its start as the Google Self-Driving Car Project in 2009, Waymo has focused on building the Waymo Driver—The World's Most Experienced Driver™—to improve access to mobility while saving thousands of lives now lost to traffic crashes. The Waymo Driver powers Waymo’s fully autonomous ride-hail service and can also be applied to a range of vehicle platforms and product use cases. The Waymo Driver has provided over ten million rider-only trips, enabled by its experience autonomously driving over 100 million miles on public roads and tens of billions in simulation across 15+ U.S. states. The ML Runtime and Deployment Team supports and facilitates the fast deployment and execution of neural nets on specialized hardware used in the car and at scale for simulation in data centers. The team builds the infrastructure for easy model launches and optimizes the performance of the onboard software through system-wide performance tunings, model-level optimization as well as hardware-software co-play on specialized accelerators. Waymo interns partner with leaders in the industry on projects that create impact to the company. We believe learning is a two-way street: applying your knowledge while providing you with opportunities to expand your skill-set. Interns are an important part of our culture and our recruiting pipeline. Join us at Waymo for a fun and rewarding internship! You will: Collaborate closely with the Training, Onboard, and modeling teams to define prototype requirements. Learn and leverage existing Waymo machine learning infrastructure wherever feasible &nbsp; You have: Currently pursuing a MS or PhD degree in Computer Science, Electrical Engineering, Machine Learning, or related technical fields. Experience coding in C++ and/or Python Experience in ML frameworks. i.e. JAX, TensorFlow &nbsp; We prefer: Experience with machine learning deployment life cycle including export, serialization, and inference &nbsp; The expected hourly rate for this full-time position is listed below. Interns are also eligible to participate in the Company's generous benefits programs, subject to eligibility requirements. &nbsp; Note: This will be a hybrid onsite internship position. We will accept resumes on a rolling basis until the role is filled. To be in consideration for multiple roles, you will need to apply to each one individually - please apply to the top 3 roles you are interested in. The expected hourly rate for this full-time position is listed below. Interns are also eligible to participate in the Company’s generous benefits programs, subject to eligibility requirements. Hourly Masters Pay $70 &mdash; $70 USD The expected hourly rate for this full-time position is listed below. Interns are also eligible to participate in the Company’s generous benefits programs, subject to eligibility requirements. Hourly PhD Pay $85 &mdash; $85 USD",
+  "min_qualifications": "",
+  "preferred_qualifications": "",
+  "posting_date": "2026-03-24",
+  "sponsorship_info": "",
+  "employment_type": "",
+  "source_url": "https://careers.withwaymo.com/jobs?gh_jid=7296694",
+  "application_url": "https://careers.withwaymo.com/jobs?gh_jid=7296694",
+  "remote_status": "onsite",
+  "team": "Pipeline (N/A)"
+}

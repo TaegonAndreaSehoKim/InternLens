@@ -1,0 +1,19 @@
+{
+  "job_id": "greenhouse_waymo_7254796",
+  "source": "greenhouse",
+  "source_site": "waymo",
+  "source_job_id": "7254796",
+  "company": "waymo",
+  "title": "2026 Summer Intern, PhD, Machine Learning Engineer, Simulation",
+  "location": "London, UK",
+  "description": "Waymo is an autonomous driving technology company with the mission to be the world's most trusted driver. Since its start as the Google Self-Driving Car Project in 2009, Waymo has focused on building the Waymo Driver—The World's Most Experienced Driver™—to improve access to mobility while saving thousands of lives now lost to traffic crashes. The Waymo Driver powers Waymo’s fully autonomous ride-hail service and can also be applied to a range of vehicle platforms and product use cases. The Waymo Driver has provided over ten million rider-only trips, enabled by its experience autonomously driving over 100 million miles on public roads and tens of billions in simulation across 15+ U.S. states. The Waymo Simulation team builds state-of-the-art simulations of realistic environments for testing and training the Waymo Driver, which is Waymo's autonomous driving technology. They develop industry-leading simulation solutions using advanced machine learning algorithms to measure and enhance the performance of the Waymo Driver. Waymo interns work with leaders in the industry on projects that deliver significant impact to the company. We believe learning is a two-way street: applying your knowledge while providing you with opportunities to expand your skillset. Interns are an important part of our culture and our recruiting pipeline. Join us at Waymo for a fun and rewarding internship! This internship will be based on-site in London, UK. You will: Advance the realism and capabilities of Waymo's simulation environments by contributing to existing projects using cutting-edge AI models, including Generative AI for sensor data, Multimodal models for world understanding, and Reinforcement Learning for agent controllability. Implement novel research ideas into existing projects and run training and evaluation experiments . You Have: Currently pursuing a Ph.D. in Computer Science, Machine Learning, Electrical Engineering, or a related technical discipline. Python coding Deep Learning experience with frameworks like TensorFlow, Jax or PyTorch We Prefer: Hands-on experience with attention mechanisms, diffusion and / or autoregressive architectures, applied to vision language models, large language models, etc. Experience with autonomous driving and / or robotics. The expected annual pay for this full-time position is listed below. Interns are also eligible to participate in the Company’s generous benefits programs, subject to eligibility requirements. PhD Pay £80,000 &mdash; £80,000 GBP",
+  "min_qualifications": "",
+  "preferred_qualifications": "",
+  "posting_date": "2026-03-24",
+  "sponsorship_info": "",
+  "employment_type": "",
+  "source_url": "https://careers.withwaymo.com/jobs?gh_jid=7254796",
+  "application_url": "https://careers.withwaymo.com/jobs?gh_jid=7254796",
+  "remote_status": "onsite",
+  "team": "Pipeline (N/A)"
+}

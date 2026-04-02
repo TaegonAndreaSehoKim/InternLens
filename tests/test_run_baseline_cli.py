@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from scripts.run_baseline import _filter_results_for_output, _truncate_results
-
+from src.ingestion.greenhouse_client import (
+    _build_jobs_url,
+    _extract_location,
+    fetch_greenhouse_jobs,
+    normalize_greenhouse_job,
+    save_processed_greenhouse_jobs,
+    save_raw_greenhouse_snapshot,
+)
 
 def test_filter_results_for_output_keeps_all_when_no_filters_are_enabled() -> None:
     # When no output filters are enabled, all ranked jobs should remain visible.
@@ -83,3 +90,45 @@ def test_truncate_results_applies_top_k_after_filtering() -> None:
     visible_jobs = _truncate_results(jobs, top_k=2)
 
     assert [job["job_id"] for job in visible_jobs] == ["job_1", "job_2"]
+
+def test_extract_location_prefers_greenhouse_metadata_job_posting_location() -> None:
+    # Geographic location should come from metadata when the top-level field is
+    # only a work-mode label such as Hybrid.
+    job = {
+        "location": {"name": "Hybrid"},
+        "metadata": [
+            {
+                "name": "Job Posting Location",
+                "value": ["London, UK"],
+            }
+        ],
+        "offices": [],
+    }
+
+    assert _extract_location(job) == "London, UK"
+
+
+def test_normalize_greenhouse_job_uses_metadata_location_and_work_mode_hint() -> None:
+    # Normalization should preserve the real geographic location while deriving
+    # remote status from the generic work-mode label.
+    job = {
+        "id": 999002,
+        "title": "Software Engineer Intern (Summer 2026)",
+        "updated_at": "2026-03-30T10:55:28-05:00",
+        "location": {"name": "Hybrid"},
+        "metadata": [
+            {
+                "name": "Job Posting Location",
+                "value": ["London, UK"],
+            }
+        ],
+        "absolute_url": "https://boards.greenhouse.io/example/jobs/999002",
+        "content": "Internship role working on developer tools.",
+        "departments": [],
+        "offices": [],
+    }
+
+    normalized = normalize_greenhouse_job(job, "example")
+
+    assert normalized["location"] == "London, UK"
+    assert normalized["remote_status"] == "hybrid"

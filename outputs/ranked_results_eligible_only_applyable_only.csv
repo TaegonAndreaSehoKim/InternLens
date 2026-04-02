@@ -1,0 +1,6 @@
+job_id,company,title,location,score,action_label,blocking_issues,matched_skills,skill_gaps,reasons,skill_score,role_score,location_score,internship_bonus,feedback_adjustment,reranked_score,feedback_explanations
+greenhouse_cloudflare_7668989,cloudflare,Data Analytics Intern (Summer 2026),"Austin, US",44.4,Apply Later,,data analysis | python,,"Matched on key skills: data analysis, python | Posting explicitly identifies this as an internship",0.24,0.0,0.0,0.3,,,
+greenhouse_cloudflare_7761468,cloudflare,"Business Analyst Intern, Revenue Operations (AI Innovation) (Summer 2026)","Austin, US",33.0,Apply Later,,data analysis,,Posting explicitly identifies this as an internship,0.05,0.0,0.0,0.3,,,
+greenhouse_cloudflare_7751595,cloudflare,DCSC Automation Coordinator Intern,"London, UK",33.0,Apply Later,,machine learning | python,,Posting explicitly identifies this as an internship,0.05,0.0,0.0,0.3,,,
+greenhouse_cloudflare_7714657,cloudflare,Network Deployment Engineer Intern (Summer 2026),Singapore,33.0,Apply Later,,python,,Posting explicitly identifies this as an internship,0.05,0.0,0.0,0.3,,,
+greenhouse_cloudflare_7374706,cloudflare,Data Engineer Intern (Summer 2026),"Austin, US",31.71,Apply Later,,data analysis | python,,Posting explicitly identifies this as an internship,0.0286,0.0,0.0,0.3,,,

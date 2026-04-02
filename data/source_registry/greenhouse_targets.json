@@ -11,7 +11,7 @@
   },
   {
     "board_token": "cloudflare",
-    "active": true,
-    "notes": "intern source"
+    "active": false,
+    "notes": "too noisy for current internship filter"
   }
 ]

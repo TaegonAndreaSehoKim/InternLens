@@ -1,166 +1,1260 @@
 [
   {
-    "job_id": "job_002",
-    "company": "vision scale",
-    "title": "applied scientist intern",
-    "location": "remote",
-    "score": 77.5,
-    "action_label": "Apply Now",
-    "matched_skills": [
-      "data analysis",
-      "machine learning",
-      "python",
-      "pytorch"
-    ],
-    "skill_gaps": [
-      "statistics",
-      "aws",
-      "recommendation systems",
-      "sql"
-    ],
-    "reasons": [
-      "Matched on key skills: data analysis, machine learning, python, pytorch",
-      "Title aligns with preferred role: applied scientist intern",
-      "Location matches a preferred target"
-    ],
-    "blocking_issues": [],
-    "component_scores": {
-      "skill_score": 0.625,
-      "role_score": 1.0,
-      "location_score": 1.0
-    }
-  },
-  {
-    "job_id": "job_005",
-    "company": "insight labs",
-    "title": "machine learning engineer intern",
-    "location": "irvine, ca",
-    "score": 62.5,
+    "job_id": "greenhouse_waymo_7249409",
+    "company": "waymo",
+    "title": "2026 Summer Intern, BS/MS, Software Engineering, Simulation",
+    "location": "Mountain View, CA",
+    "score": 33.0,
     "action_label": "Apply Later",
     "matched_skills": [
       "data analysis",
       "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "simulation",
+      "software engineering"
+    ],
+    "reasons": [
+      "Posting explicitly identifies this as an internship"
+    ],
+    "blocking_issues": [],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7252833",
+    "company": "waymo",
+    "title": "2026 Intern, PhD, Machine Learning Engineer, Simulation",
+    "location": "Mountain View, CA",
+    "score": 63.57,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
       "python",
       "pytorch"
     ],
     "skill_gaps": [
-      "sql",
-      "aws",
-      "deep learning",
-      "docker"
+      "simulation"
     ],
     "reasons": [
-      "Matched on key skills: data analysis, machine learning, python, pytorch",
-      "Title aligns with preferred role: machine learning engineer intern"
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
     ],
-    "blocking_issues": [],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
     "component_scores": {
-      "skill_score": 0.625,
+      "skill_score": 0.1429,
       "role_score": 1.0,
-      "location_score": 0.0
+      "location_score": 0.0,
+      "internship_bonus": 0.3
     }
   },
   {
-    "job_id": "job_003",
-    "company": "data orbit",
-    "title": "data scientist intern",
-    "location": "los angeles, ca",
-    "score": 37.5,
+    "job_id": "greenhouse_waymo_7254796",
+    "company": "waymo",
+    "title": "2026 Summer Intern, PhD, Machine Learning Engineer, Simulation",
+    "location": "London, UK",
+    "score": 63.25,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "simulation"
+    ],
+    "reasons": [
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.1375,
+      "role_score": 1.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7296694",
+    "company": "waymo",
+    "title": "2026 Summer Intern, MS/PhD, ML Runtime and Deployment",
+    "location": "Mountain View, CA, USA",
+    "score": 45.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: machine learning, python",
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.25,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7318472",
+    "company": "waymo",
+    "title": "2026 Summer Intern, MS/PhD, DUE ML",
+    "location": "London, England, United Kingdom",
+    "score": 43.71,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: machine learning, python, pytorch",
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.2286,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7368864",
+    "company": "waymo",
+    "title": "2026 Summer Intern, PhD, Software Engineer, Predictive Planner ML/DL",
+    "location": "Mountain View, CA, USA",
+    "score": 38.57,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.1429,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7235071",
+    "company": "waymo",
+    "title": "2026 Summer Intern, PhD, Perception",
+    "location": "Mountain View, California, USA",
+    "score": 33.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7340164",
+    "company": "waymo",
+    "title": "2026 Summer Intern, MS/PhD, Compute, Compiler",
+    "location": "Mountain View, CA, USA",
+    "score": 30.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Posting explicitly identifies this as an internship",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.3
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7707980",
+    "company": "waymo",
+    "title": "Machine Learning Engineer - VLM/LLM Integration",
+    "location": "Mountain View, CA, USA; New York, NY, US; Seattle, WA, US",
+    "score": 46.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "llm",
+      "vlm"
+    ],
+    "reasons": [
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.1,
+      "role_score": 1.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7698498",
+    "company": "waymo",
+    "title": "Software Engineer, Machine Learning Tooling",
+    "location": "Taipei, Taiwan; Hsinchu, Taiwan",
+    "score": 33.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.1333,
+      "role_score": 1.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7407179",
+    "company": "waymo",
+    "title": "Field Safety Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7426754",
+    "company": "waymo",
+    "title": "Fullstack Engineer - Waymo Applications and Tools",
+    "location": "Mountain View, CA, USA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7683884",
+    "company": "waymo",
+    "title": "Signal Integrity Engineer",
+    "location": "Mountain View, CA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7656843",
+    "company": "waymo",
+    "title": "ASIC Design Verification Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 18.6,
     "action_label": "Skip",
     "matched_skills": [
       "data analysis",
       "machine learning",
       "python"
     ],
-    "skill_gaps": [
-      "sql",
-      "statistics"
-    ],
+    "skill_gaps": [],
     "reasons": [
-      "Matched on key skills: data analysis, machine learning, python"
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
     ],
-    "blocking_issues": [],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
     "component_scores": {
-      "skill_score": 0.625,
+      "skill_score": 0.06,
       "role_score": 0.0,
-      "location_score": 0.0
+      "location_score": 1.0,
+      "internship_bonus": 0.0
     }
   },
   {
-    "job_id": "job_004",
-    "company": "cloud forge",
-    "title": "backend software engineer intern",
-    "location": "seattle, wa",
-    "score": 11.25,
+    "job_id": "greenhouse_waymo_7430215",
+    "company": "waymo",
+    "title": "Silicon Emulation Architect",
+    "location": "Mountain View, CA, USA",
+    "score": 18.0,
     "action_label": "Skip",
     "matched_skills": [
+      "data analysis",
       "python"
     ],
-    "skill_gaps": [
-      "aws",
-      "docker",
-      "kubernetes"
-    ],
+    "skill_gaps": [],
     "reasons": [
-      "Limited match signals beyond the current baseline heuristics"
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
     ],
-    "blocking_issues": [],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
     "component_scores": {
-      "skill_score": 0.1875,
+      "skill_score": 0.05,
       "role_score": 0.0,
-      "location_score": 0.0
+      "location_score": 1.0,
+      "internship_bonus": 0.0
     }
   },
   {
-    "job_id": "job_001",
-    "company": "example ai",
-    "title": "machine learning intern",
-    "location": "san francisco, ca",
-    "score": 55.0,
+    "job_id": "greenhouse_waymo_7532414",
+    "company": "waymo",
+    "title": "Software Engineer, Test Automation Infrastructure",
+    "location": "San Francisco, CA, US; Mountain View, CA, US",
+    "score": 18.0,
     "action_label": "Skip",
     "matched_skills": [
       "machine learning",
       "python"
     ],
     "skill_gaps": [
-      "sql",
-      "aws",
-      "docker",
-      "recommendation systems"
+      "software engineering"
     ],
     "reasons": [
-      "Matched on key skills: machine learning, python",
-      "Title aligns with preferred role: machine learning engineer intern",
+      "Location matches a preferred target",
       "Blocked by eligibility constraints in the posting"
     ],
     "blocking_issues": [
-      "Sponsorship is not available for this role"
+      "This role does not appear to be an internship"
     ],
     "component_scores": {
-      "skill_score": 0.5,
-      "role_score": 1.0,
-      "location_score": 0.0
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
     }
   },
   {
-    "job_id": "job_006",
-    "company": "research frontier",
-    "title": "machine learning research engineer",
-    "location": "new york, ny",
-    "score": 75.0,
+    "job_id": "greenhouse_waymo_7436001",
+    "company": "waymo",
+    "title": "Sourcing Process Owner (Source-to-Pay)",
+    "location": "Remote, US",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7510381",
+    "company": "waymo",
+    "title": "Systems Engineer, Networks",
+    "location": "Mountain View, CA, US",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7702392",
+    "company": "waymo",
+    "title": "Systems Test Engineer, Commercialization Test Automation",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7665361",
+    "company": "waymo",
+    "title": "UX Designer, Design System",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7593435",
+    "company": "waymo",
+    "title": "Hardware Test Development Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7684041",
+    "company": "waymo",
+    "title": "Product Quality Engineer",
+    "location": "Mountain View, CA, US",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7697642",
+    "company": "waymo",
+    "title": "Risk Management Engineer",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7456161",
+    "company": "waymo",
+    "title": "Software Quality Ops Scenarios Specialist",
+    "location": "Mountain View, CA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7456195",
+    "company": "waymo",
+    "title": "Software Quality Ops Scenarios Specialist",
+    "location": "Mountain View, CA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7466529",
+    "company": "waymo",
+    "title": "Software Engineer, Bulk/Interactive Inference",
+    "location": "Mountain View, CA, USA",
+    "score": 16.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7438172",
+    "company": "waymo",
+    "title": "Analysis Infra SWE",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435297",
+    "company": "waymo",
+    "title": "Claims Advocate",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435420",
+    "company": "waymo",
+    "title": "Functional Safety Engineer",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7409556",
+    "company": "waymo",
+    "title": "Mechanical Engineer, Vehicle Engineering",
+    "location": "Mountain View, CA, USA ; Novi, MI, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7461103",
+    "company": "waymo",
+    "title": "Onboard Infrastructure Software Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435909",
+    "company": "waymo",
+    "title": "SAP Finance IT Business Analyst",
+    "location": "Mountain View, California, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7554830",
+    "company": "waymo",
+    "title": "Software Engineer, GPU",
+    "location": "Mountain View, CA, USA; New York, NY, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7572411",
+    "company": "waymo",
+    "title": "Systems Engineer, Power Systems (Low Voltage)",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7684945",
+    "company": "waymo",
+    "title": "Vehicle Planning & Buy-Sell Operations",
+    "location": "Mountain View (US-MTV-RLS1)",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7682770",
+    "company": "waymo",
+    "title": "Administrative Business Partner",
+    "location": "Mountain View, CA, USA",
+    "score": 3.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7420989",
+    "company": "waymo",
+    "title": "Construction Project Executive - EMEA - OPs",
+    "location": "London, United Kingdom, UK",
+    "score": 3.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7724801",
+    "company": "waymo",
+    "title": "Field Safety Engineer, Japan / \u30d5\u30a3\u30fc\u30eb\u30c9\u30fb\u30bb\u30fc\u30d5\u30c6\u30a3\u30fb\u30a8\u30f3\u30b8\u30cb\u30a2\uff08\u65e5\u672c\uff09",
+    "location": "Tokyo, Japan",
+    "score": 3.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7360365",
+    "company": "waymo",
+    "title": "Silicon Emulation Engineer",
+    "location": "Taipei, Taiwan; Hsinchu, Taiwan",
+    "score": 3.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7480724",
+    "company": "waymo",
+    "title": "Backend Engineer - Mapping Tools",
+    "location": "Warsaw, Masovian Voivodeship, Poland",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7507066",
+    "company": "waymo",
+    "title": "Hardware Development Engineer, Test",
+    "location": "Taipei, Taiwan; Hsinchu, Taiwan",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7708010",
+    "company": "waymo",
+    "title": "Software Engineer, System-on-Chip (SoC) Simulation",
+    "location": "Taipei, Taiwan; Hsinchu, Taiwan",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "simulation",
+      "software engineering"
+    ],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7596990",
+    "company": "waymo",
+    "title": "Software Engineer, Full Stack",
+    "location": "Warsaw, Masovian Voivodeship",
+    "score": 1.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7458393",
+    "company": "waymo",
+    "title": "Software Quality Operations Specialist",
+    "location": "London, UK",
+    "score": 1.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7597035",
+    "company": "waymo",
+    "title": "Software Quality Operations Specialist / \u30bd\u30d5\u30c8\u30a6\u30a7\u30a2\u54c1\u8cea\u904b\u7528",
+    "location": "Tokyo, Japan",
+    "score": 1.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7430505",
+    "company": "waymo",
+    "title": "Backend Software Engineer, Driver Validation",
+    "location": "Warsaw, Poland",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7724345",
+    "company": "waymo",
+    "title": "Emergency Services Liaison, Japan & Asia / \u7dca\u6025\u30b5\u30fc\u30d3\u30b9\u30fb\u30ea\u30a8\u30be\u30f3 (\u65e5\u672c\u30fb\u30a2\u30b8\u30a2\u62c5\u5f53)",
+    "location": "Tokyo, Japan",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7589892",
+    "company": "waymo",
+    "title": "Manufacturing Design Engineer (Japanese Bilingual)",
+    "location": "Phoenix, Arizona, USA",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7369144",
+    "company": "waymo",
+    "title": "Regulatory Counsel",
+    "location": "London, England, United Kingdom",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7467839",
+    "company": "waymo",
+    "title": "Applied Research Scientist, 3D Object Detection (PhD New Grad)",
+    "location": "Mountain View, CA USA; San Francisco, CA USA;",
+    "score": 43.0,
     "action_label": "Skip",
     "matched_skills": [
       "machine learning",
       "python",
       "pytorch"
     ],
-    "skill_gaps": [
-      "deep learning",
-      "statistics"
-    ],
+    "skill_gaps": [],
     "reasons": [
-      "Matched on key skills: machine learning, python, pytorch",
-      "Title aligns with preferred role: machine learning engineer intern",
+      "Title aligns with preferred role: applied scientist intern",
+      "Location matches a preferred target",
       "Blocked by eligibility constraints in the posting"
     ],
     "blocking_issues": [
@@ -168,9 +1262,2587 @@
       "This role appears to require a PhD"
     ],
     "component_scores": {
-      "skill_score": 0.8333,
+      "skill_score": 0.05,
       "role_score": 1.0,
-      "location_score": 0.0
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7488508",
+    "company": "waymo",
+    "title": "Applied Research Scientist, Perception LLM/VLM (PhD, New Grad)",
+    "location": "Mountain View, CA USA; San Francisco, CA USA;",
+    "score": 42.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "llm",
+      "vlm"
+    ],
+    "reasons": [
+      "Title aligns with preferred role: applied scientist intern",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 1.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7309064",
+    "company": "waymo",
+    "title": "Research Scientist, Prediction & Planning",
+    "location": "Mountain View, CA USA; New York, NY USA; San Francisco, CA USA;",
+    "score": 17.57,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0429,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7531397",
+    "company": "waymo",
+    "title": "Software Engineer, Multiverse",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 17.4,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.04,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7584859",
+    "company": "waymo",
+    "title": "Research Scientist / Computer Vision Researcher, Map Scalability",
+    "location": "Mountain View, CA, US; San Francisco, CA, US; New York, NY, US",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "computer vision"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7469425",
+    "company": "waymo",
+    "title": "Research Scientist, RL for Autonomous Planning & World Modeling",
+    "location": "Mountain View, CA, USA; Remote US",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7587455",
+    "company": "waymo",
+    "title": "Software Engineer, Sensor/Imaging",
+    "location": "Mountain View, CA, US; San Francisco, CA, US",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7558429",
+    "company": "waymo",
+    "title": "Software Engineer, Backend",
+    "location": "Warsaw, Masovian Voivodeship, Poland",
+    "score": 2.4,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.04,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7719332",
+    "company": "waymo",
+    "title": "Staff Machine Learning Engineer, Tech Lead Active Learning",
+    "location": "Mountain View, CA, USA",
+    "score": 55.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: machine learning, python",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Location matches a preferred target"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.25,
+      "role_score": 1.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7438635",
+    "company": "waymo",
+    "title": "Staff Machine Learning SWE Infra",
+    "location": "Mountain View, CA, USA",
+    "score": 54.4,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "pytorch"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: machine learning, pytorch",
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Location matches a preferred target"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.24,
+      "role_score": 1.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7403358",
+    "company": "waymo",
+    "title": "Product Manager, Perception ML Foundations",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 30.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: machine learning",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.25,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435017",
+    "company": "waymo",
+    "title": "Brand Media and Analytics Lead",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 29.4,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: data analysis, python",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.24,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7489173",
+    "company": "waymo",
+    "title": "Software Quality Operations, Vendor Data Analytics & KPI Lead",
+    "location": "US Remote",
+    "score": 29.4,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: data analysis, python",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.24,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7551076",
+    "company": "waymo",
+    "title": "Director, Systems Engineering",
+    "location": "Mountain View, CA, USA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7426952",
+    "company": "waymo",
+    "title": "Senior Fullstack Software Engineer, Workshop Management",
+    "location": "San Francisco, CA, USA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7583198",
+    "company": "waymo",
+    "title": "Brand Partnerships Lead",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA; Los Angeles, CA, USA; New York City, NY, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7651177",
+    "company": "waymo",
+    "title": "Finance Legal Entity Lead",
+    "location": "Mountain View, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435043",
+    "company": "waymo",
+    "title": "Global Marketing Strategy Manager",
+    "location": "San Francisco, California, USA; Mountain View, California, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7704975",
+    "company": "waymo",
+    "title": "Mapping Operations Senior Program Manager",
+    "location": "Mountain View, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7406829",
+    "company": "waymo",
+    "title": "Product Manager, Driving Behaviors",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA; New York, NY, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435480",
+    "company": "waymo",
+    "title": "Program Manager, Public Safety Outreach",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA; Washington D.C., USA; Phoenix, AZ, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7295723",
+    "company": "waymo",
+    "title": "Senior Network Engineer",
+    "location": "Washington, DC, USA; New York, New York, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7524131",
+    "company": "waymo",
+    "title": "Senior Product Manager, Planner",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA; New York, NY, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7747032",
+    "company": "waymo",
+    "title": "Senior Software Engineer, Eval Authoring APIs",
+    "location": "Mountain View,CA, USA; San Francisco, CA, USA; New York, NY, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7625366",
+    "company": "waymo",
+    "title": "Senior Systems Test Engineer, OEM TL",
+    "location": "Mountain View, California, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7404570",
+    "company": "waymo",
+    "title": "Senior UX Engineer, Design Systems & Tooling",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7497035",
+    "company": "waymo",
+    "title": "Senior Vehicle Systems Test Engineer, Thermal and Networks",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7483065",
+    "company": "waymo",
+    "title": "Senior Wireless Test Engineer",
+    "location": "Mountain View, Ca, USA; Fremont, Ca, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7438665",
+    "company": "waymo",
+    "title": "Sr Systems Engineer, Android Automotive",
+    "location": "Mountain View, California, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7430666",
+    "company": "waymo",
+    "title": "Staff Software Engineer, Fleet Monitoring & Platform",
+    "location": "San Francisco, CA, USA",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_6901826",
+    "company": "waymo",
+    "title": "Staff Software Engineer, Quantitative Evaluation",
+    "location": "Mountain View, California, United States; San Francisco, California, United States; New York City, New York, United States.",
+    "score": 17.57,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0429,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7683230",
+    "company": "waymo",
+    "title": "Senior Fullstack Engineer, Expansion Tooling",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7707371",
+    "company": "waymo",
+    "title": "Senior Hardware Development Engineer, Test",
+    "location": "Hsinchu City, Taiwan; Taipei City, Taipei City, Taiwan",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7489075",
+    "company": "waymo",
+    "title": "Software Quality Operations, Vendor Delivery Lead",
+    "location": "US Remote",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7438645",
+    "company": "waymo",
+    "title": "Sr System Engineer, Telematics",
+    "location": "Mountain View, California, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7749350",
+    "company": "waymo",
+    "title": "Staff Equipment Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7518181",
+    "company": "waymo",
+    "title": "Technical Recruiting Manager, Software Engineering",
+    "location": "Mountain View, CA, USA",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7455962",
+    "company": "waymo",
+    "title": "Senior Staff Software Engineer, Perception Data",
+    "location": "Mountain View, California, USA",
+    "score": 16.8,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.03,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7540809",
+    "company": "waymo",
+    "title": "Senior Software Engineer, Simulation, Vehicle & Autonomous Driving Realism",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 16.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "simulation",
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7222566",
+    "company": "waymo",
+    "title": "Senior Software Engineer, Simulator Platform",
+    "location": "Mountain View, CA, USA",
+    "score": 16.2,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.02,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435027",
+    "company": "waymo",
+    "title": "Brand Partnerships Manager",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7485673",
+    "company": "waymo",
+    "title": "Business Continuity Planning Engineer, Lead",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7450267",
+    "company": "waymo",
+    "title": "Business Intelligence, Lead",
+    "location": "Mountain View, CA, US; San Francisco, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7700280",
+    "company": "waymo",
+    "title": "Central Production and Performance Sr. Manager",
+    "location": "Tokyo, Japan",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7583007",
+    "company": "waymo",
+    "title": "Community Engagement Manager",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7658411",
+    "company": "waymo",
+    "title": "EHS Manager, Americas (San Francisco)",
+    "location": "San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7361509",
+    "company": "waymo",
+    "title": "Embedded Software Technical Lead & Manager, Simulation",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [
+      "simulation"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7159020",
+    "company": "waymo",
+    "title": "Fleet Readiness Lead - Emerging Markets",
+    "location": "San Francisco, CA, US ; Mountain View, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7245531",
+    "company": "waymo",
+    "title": "Fleet Readiness Lead, LA",
+    "location": "Los Angeles, California, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7676187",
+    "company": "waymo",
+    "title": "Global Process Manager, Waymo Support",
+    "location": "Los Angeles, CA, USA; Phoenix, AZ, USA; San Francisco, CA, USA;",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7759414",
+    "company": "waymo",
+    "title": "Indirect Procurement Category Manager",
+    "location": "Remote, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435342",
+    "company": "waymo",
+    "title": "Insurance Risk Manager",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7434481",
+    "company": "waymo",
+    "title": "Launch Readiness Manager",
+    "location": "San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435565",
+    "company": "waymo",
+    "title": "Localization and Internationalization Manager",
+    "location": "Mountain View, CA, US; Phoenix, AZ, US; San Francisco, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435474",
+    "company": "waymo",
+    "title": "Manager EHS, Americas (Los Angeles)",
+    "location": "Los Angeles, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7724803",
+    "company": "waymo",
+    "title": "Manager, Materials Program Manager",
+    "location": "Mountain View (US-MTV-RLS1)",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435256",
+    "company": "waymo",
+    "title": "Policy Showcases & Events Manager, East Coast",
+    "location": "Washington D.C., USA; New York City, NY, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7744280",
+    "company": "waymo",
+    "title": "Product Manager, Vehicle",
+    "location": "Mountain View, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7271833",
+    "company": "waymo",
+    "title": "Program Manager, Business Continuity",
+    "location": "Mountain View, CA, United States ; San Francisco, CA, United States",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7440845",
+    "company": "waymo",
+    "title": "Program Manager, International Regulatory",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7403720",
+    "company": "waymo",
+    "title": "Program Manager, Strategic Business Programs",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7630337",
+    "company": "waymo",
+    "title": "Real Estate & Transaction Manager",
+    "location": "New York, NY, USA; Washington, DC, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7654108",
+    "company": "waymo",
+    "title": "Roadside Assistance Integration Program Manager",
+    "location": "Los Angeles, CA, USA; Phoenix, AZ, USA; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7546024",
+    "company": "waymo",
+    "title": "SMS - Safety Policy and Culture Lead",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7442054",
+    "company": "waymo",
+    "title": "Senior Industrial Designer",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7762871",
+    "company": "waymo",
+    "title": "Senior Product Manager, DevAI & Agentic Workflows",
+    "location": "Mountain View,CA,USA; San Francisco,CA,USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7456231",
+    "company": "waymo",
+    "title": "Senior Program Manager, Release Evaluation Simulated Scenarios",
+    "location": "Mountain View, CA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7272586",
+    "company": "waymo",
+    "title": "Senior Security Engineer",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7442170",
+    "company": "waymo",
+    "title": "Senior Studio Engineer",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7484320",
+    "company": "waymo",
+    "title": "Staff Android Engineer, In-Car Experience",
+    "location": "Mountain View, CA, US; San Francisco, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7671532",
+    "company": "waymo",
+    "title": "Staff PCBA DFM and Manufacturing Engineer",
+    "location": "Mountain View, CA, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435582",
+    "company": "waymo",
+    "title": "Strategic Sourcing Manager Electronic Components",
+    "location": "Mountain View, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435332",
+    "company": "waymo",
+    "title": "Strategy and Operations Lead, Risk & Insurance",
+    "location": "San Francisco, CA, USA; Mountain View, CA, USA; New York City, NY, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7436009",
+    "company": "waymo",
+    "title": "Team Lead, Global Enterprise Outsourcing Services Category Manager",
+    "location": "Remote, US",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7721608",
+    "company": "waymo",
+    "title": "Program Manager, Mapping Operations",
+    "location": "Hyderabad, Telangana, India",
+    "score": 3.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7650676",
+    "company": "waymo",
+    "title": "Group Product Manager, London",
+    "location": "London, United Kingdom",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7372140",
+    "company": "waymo",
+    "title": "Staff Technical Recruiter",
+    "location": "Warsaw, Poland",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435672",
+    "company": "waymo",
+    "title": "Supply Operations Manager",
+    "location": "Los Angeles, CA, USA",
+    "score": 2.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7512147",
+    "company": "waymo",
+    "title": "Technical Lead Manager, Fullstack",
+    "location": "Warsaw, Masovian Voivodeship, Poland",
+    "score": 1.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_6367980",
+    "company": "waymo",
+    "title": "Backend Technical Lead Manager - TaaS",
+    "location": "Warsaw, Masovian Voivodeship, Poland",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7651108",
+    "company": "waymo",
+    "title": "Business Development & Strategic Partnerships Lead, Japan | \u30d3\u30b8\u30cd\u30b9\u30c7\u30d9\u30ed\u30c3\u30d7\u30e1\u30f3\u30c8 & \u30b9\u30c8\u30e9\u30c6\u30b8\u30c3\u30af\u30d1\u30fc\u30c8\u30ca\u30fc\u30b7\u30c3\u30d7\u30fb\u30ea\u30fc\u30c9 (\u65e5\u672c)",
+    "location": "Tokyo, Japan",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7655797",
+    "company": "waymo",
+    "title": "Central Production and Performance Sr. Manager",
+    "location": "London, UK",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7718640",
+    "company": "waymo",
+    "title": "Demand Operations Program Manager (Florida)",
+    "location": "Miami, Florida, US",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7718235",
+    "company": "waymo",
+    "title": "Demand Operations Program Manager (Southeast)",
+    "location": "Atlanta, GA, US",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7717459",
+    "company": "waymo",
+    "title": "International Manager, Event Response",
+    "location": "London, England, United Kingdom",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435061",
+    "company": "waymo",
+    "title": "Public Relations Lead, Japan / PR\u30ea\u30fc\u30c9\uff08\u65e5\u672c)",
+    "location": "Tokyo, Japan",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435941",
+    "company": "waymo",
+    "title": "Security Operations Center Watch Lead",
+    "location": "Phoenix, AZ, USA",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7657717",
+    "company": "waymo",
+    "title": "Senior Counsel, Regional APAC / \u30b7\u30cb\u30a2\u30fb\u30ab\u30a6\u30f3\u30b7\u30eb\u3001\u30a2\u30b8\u30a2\u592a\u5e73\u6d0b\u5730\u57df\u62c5\u5f53",
+    "location": "Tokyo, Japan",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7724008",
+    "company": "waymo",
+    "title": "Senior Counsel, Regulatory / \u30b7\u30cb\u30a2\u30fb\u30ab\u30a6\u30f3\u30bb\u30eb\uff08\u898f\u5236\u6cd5\u52d9\u62c5\u5f53\uff09",
+    "location": "Tokyo, Japan",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7325491",
+    "company": "waymo",
+    "title": "Senior EHS Manager, EMEA Region",
+    "location": "London, England, United Kingdom",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7249525",
+    "company": "waymo",
+    "title": "Senior Machine Learning Engineer, Computer Vision/VLM",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 45.8,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python",
+      "pytorch"
+    ],
+    "skill_gaps": [
+      "computer vision",
+      "vlm"
+    ],
+    "reasons": [
+      "Title aligns with preferred role: machine learning engineer intern",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0967,
+      "role_score": 1.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435321",
+    "company": "waymo",
+    "title": "Head of Risk Analytics",
+    "location": "San Francisco, CA, USA; New York City, NY, USA",
+    "score": 27.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Matched on key skills: data analysis",
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.2,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7490150",
+    "company": "waymo",
+    "title": "Senior Motion Systems Engineer, Actuators",
+    "location": "Mountain View, Ca, USA",
+    "score": 19.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0667,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7749587",
+    "company": "waymo",
+    "title": "Senior Software Engineer, Sensor/Vehicle Test and Calibration",
+    "location": "Mountain View, CA, US",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7658914",
+    "company": "waymo",
+    "title": "Software Technical Lead Manager, Test Automation Infrastructure",
+    "location": "Mountain View, CA, US",
+    "score": 18.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.05,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7458391",
+    "company": "waymo",
+    "title": "Senior Software Engineer, Planner Evaluation",
+    "location": "Mountain View, California, USA; San Francisco, California, USA",
+    "score": 17.57,
+    "action_label": "Skip",
+    "matched_skills": [
+      "data analysis",
+      "machine learning",
+      "python"
+    ],
+    "skill_gaps": [
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0429,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7633073",
+    "company": "waymo",
+    "title": "Back-End Senior Software Engineer, Simulation",
+    "location": "Mountain View, CA, United States; New York City, NY, United States",
+    "score": 17.0,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [
+      "simulation",
+      "software engineering"
+    ],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0333,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7540439",
+    "company": "waymo",
+    "title": "Senior Staff TLM, Perception, Semantics Understanding",
+    "location": "Mountain View, California, United States; San Francisco, California, United States",
+    "score": 16.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7516860",
+    "company": "waymo",
+    "title": "Staff TLM, Perception, Semantics Understanding",
+    "location": "Mountain View, CA, USA; San Francisco, CA, USA",
+    "score": 16.5,
+    "action_label": "Skip",
+    "matched_skills": [
+      "machine learning"
+    ],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.025,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7251804",
+    "company": "waymo",
+    "title": "Strategic Partnership Development Manager",
+    "location": "Mountain View, CA, USA ; San Francisco, CA, USA",
+    "score": 15.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Location matches a preferred target",
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "Graduation timing may not match this role"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 1.0,
+      "internship_bonus": 0.0
+    }
+  },
+  {
+    "job_id": "greenhouse_waymo_7435398",
+    "company": "waymo",
+    "title": "Senior Safety Researcher - Evaluation & Standardization",
+    "location": "London, England, United Kingdom",
+    "score": 0.0,
+    "action_label": "Skip",
+    "matched_skills": [],
+    "skill_gaps": [],
+    "reasons": [
+      "Blocked by eligibility constraints in the posting"
+    ],
+    "blocking_issues": [
+      "This role does not appear to be an internship",
+      "This role appears to be a senior-level position",
+      "This role appears to require a PhD"
+    ],
+    "component_scores": {
+      "skill_score": 0.0,
+      "role_score": 0.0,
+      "location_score": 0.0,
+      "internship_bonus": 0.0
     }
   }
 ]
