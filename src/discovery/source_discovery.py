@@ -27,6 +27,7 @@ DISCOVERED_SOURCE_SORT_FIELDS = ("company", "source_type", "source_identifier")
 PRESERVED_EXISTING_FIELDS = (
     "discovered_at",
     "last_validated_at",
+    "last_promoted_at",
     "status",
     "validation_notes",
     "source_score",
