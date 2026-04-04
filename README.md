@@ -30,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `85 passed`
+- current total: `90 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -98,7 +98,8 @@ The current implementation is intentionally simple and transparent. It is design
 - API tests
 - deduplication cleanup tests
 - source discovery tests
-- full suite currently passing: `85 passed`
+- source validation tests
+- full suite currently passing: `90 passed`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -305,6 +306,18 @@ Useful notes:
 - discovered candidates are written to `data/source_registry/discovered_sources.json`
 - the script records candidate sources only and does not auto-promote them into active registries
 
+### Validate discovered ATS source candidates
+
+```bash
+python scripts/validate_sources.py
+```
+
+Useful notes:
+- the script reads `data/source_registry/discovered_sources.json`
+- by default it validates only sources whose status is `candidate`
+- validation checks fetch success, non-empty results, normalization success, and internship density
+- active registry duplicates are noted in `validation_notes` but are not auto-promoted or removed
+
 ---
 
 ## How to run the baseline ranker
@@ -441,7 +454,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `76 passed`
+- current total: `90 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -455,7 +468,7 @@ Current status:
 - company normalization remains lightweight
 - hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
-- source discovery is now seed-based and candidate-only; validation and promotion are still manual
+- source discovery is now seed-based, validation is semi-automated, and promotion into active registries is still manual
 
 ---
 
