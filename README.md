@@ -15,6 +15,7 @@ InternLens currently supports:
 - processed job normalization
 - registry-driven batch fetching
 - one-command corpus refresh across Lever and Greenhouse registries
+- company-seed-based source discovery for candidate ATS sources
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
@@ -29,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `76 passed`
+- current total: `85 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -96,7 +97,8 @@ The current implementation is intentionally simple and transparent. It is design
 - CLI filtering tests
 - API tests
 - deduplication cleanup tests
-- full suite currently passing: `76 passed`
+- source discovery tests
+- full suite currently passing: `85 passed`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -291,6 +293,18 @@ python scripts/refresh_job_corpus.py --greenhouse-all-jobs
 This command is the preferred entry point for keeping the internal recommendation corpus fresh.
 It runs both registry flows, saves raw snapshots, and updates processed jobs in one pass.
 
+### Discover new candidate ATS sources from company seeds
+
+```bash
+python scripts/discover_sources.py
+```
+
+Useful notes:
+- the script looks for `data/source_registry/company_seeds.json`
+- if that file is missing, it falls back to `data/source_registry/company_seeds.example.json`
+- discovered candidates are written to `data/source_registry/discovered_sources.json`
+- the script records candidate sources only and does not auto-promote them into active registries
+
 ---
 
 ## How to run the baseline ranker
@@ -441,7 +455,7 @@ Current status:
 - company normalization remains lightweight
 - hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
-- source discovery is not automated yet; the current refresh system still depends on known registries
+- source discovery is now seed-based and candidate-only; validation and promotion are still manual
 
 ---
 
