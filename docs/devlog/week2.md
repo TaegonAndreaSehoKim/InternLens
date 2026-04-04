@@ -140,3 +140,79 @@ Stabilize the processed job corpus, make recommendation output easier to consume
 
 ### Key takeaway
 This stage shifted the project from "prototype pieces that work" toward "a backend pipeline that can be refreshed, explained, and evolved." The remaining gap is no longer core ingestion or ranking plumbing; it is source discovery and a user-facing recommendation flow built on top of the refreshed corpus.
+
+---
+
+## Day 13-14 - Source Discovery, Validation, and Promotion
+
+### Focus
+Reduce manual ATS registry maintenance by adding a full candidate-source workflow:
+- discover new ATS sources from company seeds
+- validate whether those sources are usable
+- promote validated sources into active refresh registries
+
+### What was done
+- Added `scripts/discover_sources.py` and `src/discovery/source_discovery.py`.
+- Implemented seed-based source discovery using `homepage_url` and `careers_url`.
+- Added ATS URL extraction for:
+  - `jobs.lever.co/<site_name>`
+  - `boards.greenhouse.io/<board_token>`
+  - `job-boards.greenhouse.io/<board_token>`
+- Added `scripts/validate_sources.py` and `src/discovery/source_validation.py`.
+- Implemented validation checks for discovered sources:
+  - fetch success
+  - non-empty job payload
+  - normalization success
+  - internship density estimate
+  - duplicate detection against active registries
+- Added `scripts/promote_sources.py` and `src/discovery/source_promotion.py`.
+- Implemented promotion rules so validated sources can be inserted into:
+  - `data/source_registry/lever_targets.json`
+  - `data/source_registry/greenhouse_targets.json`
+- Added safe reactivation behavior for inactive registry entries instead of duplicating them.
+- Preserved source lifecycle metadata such as:
+  - `last_validated_at`
+  - `last_promoted_at`
+  - `source_score`
+  - `internship_likelihood`
+- Updated README usage docs for discovery, validation, and promotion.
+
+### Validation
+- `pytest tests/test_source_discovery.py -q` -> **6 passed**
+- `pytest tests/test_source_validation.py -q` -> **5 passed**
+- `pytest tests/test_source_promotion.py -q` -> **4 passed**
+- `pytest -q` -> **94 passed**
+
+### Result
+- InternLens now has a scriptable source lifecycle:
+  - `discover_sources.py`
+  - `validate_sources.py`
+  - `promote_sources.py`
+- New source candidates no longer need to be inserted manually at the registry stage.
+- Discovery is still conservative because it produces candidates only.
+- Validation now acts as a quality gate before production refresh.
+- Promotion now gives a controlled path from discovered source to active registry target.
+
+### Why this matters
+This was a structural backend improvement rather than a ranking tweak.
+Before this stage, InternLens could refresh only sources that were already known.
+After this stage, the project can begin from company seeds and move sources through a staged pipeline with explicit control points.
+
+### Updated Week 2 status
+InternLens now supports:
+- ATS ingestion
+- corpus refresh
+- duplicate suppression
+- heuristic ranking
+- API summaries
+- company-seed-based source discovery
+- discovered-source validation
+- validated-source promotion into active registries
+
+Latest quality checkpoint:
+- full test suite stable at **94 passed**
+
+### Remaining next steps
+- add stricter promotion heuristics for noisy boards
+- add source validation reports or promotion dry-run output
+- connect the refreshed internal corpus to a default user-facing recommendation API flow
