@@ -26,6 +26,7 @@ GREENHOUSE_URL_PATTERN = re.compile(
 DISCOVERED_SOURCE_SORT_FIELDS = ("company", "source_type", "source_identifier")
 PRESERVED_EXISTING_FIELDS = (
     "discovered_at",
+    "last_validated_at",
     "status",
     "validation_notes",
     "source_score",
