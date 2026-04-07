@@ -216,3 +216,67 @@ Latest quality checkpoint:
 - add stricter promotion heuristics for noisy boards
 - add source validation reports or promotion dry-run output
 - connect the refreshed internal corpus to a default user-facing recommendation API flow
+
+---
+
+## Day 15-16 - Internal-Corpus API Flow and Source Pipeline Orchestration
+
+### Focus
+Move the recommendation flow closer to a real user-facing product path by:
+- making the API use the internal refreshed corpus by default
+- separating user-facing response fields from debug fields
+- adding a single orchestration entry point for the full source lifecycle
+
+### What was done
+- Changed `POST /recommend` so it now defaults to `data/processed/jobs` instead of `data/sample_jobs`.
+- Preserved `jobs_dir` as an override for debugging, source-specific evaluation, and regression tests.
+- Added shared output filtering logic so CLI and API use the same behavior for:
+  - `eligible_only`
+  - `applyable_only`
+- Added a debug toggle for API responses:
+  - default responses now emphasize user-facing fields such as `summary`, `recommendation`, `fit_level`, `eligibility_status`, `why_apply`, and `watchouts`
+  - `include_debug=true` restores raw ranking fields such as score, blockers, component scores, and reranking explanations
+- Added `scripts/run_source_pipeline.py` as a single command to run:
+  - discovery
+  - validation
+  - promotion
+  - refresh
+- Added step-skipping and refresh-scoping options for the source pipeline so it can support both full runs and targeted smoke tests.
+- Updated README so the API and source-pipeline entry points match the current implementation.
+
+### Validation
+- `pytest tests/test_api_and_ranking.py -q` -> **19 passed**
+- `pytest tests/test_run_baseline_cli.py -q` -> **7 passed**
+- `pytest tests/test_run_source_pipeline.py -q` -> **3 passed**
+- `pytest -q` -> **100 passed**
+
+### Result
+- The recommendation API now behaves more like a real internal-corpus recommender and less like a sample-data demo endpoint.
+- The default API payload is cleaner for end users because internal scoring details are hidden unless explicitly requested.
+- The full source lifecycle is now operational through one orchestration command instead of four separate scripts.
+- CLI/API parity improved because visibility filtering now shares one implementation path.
+
+### Why this matters
+This stage tightened the connection between the source-management pipeline and the recommendation product surface.
+Before this step, InternLens had the right backend pieces, but the default API still behaved like a development harness.
+After this step, the default path is much closer to the intended product behavior:
+- maintain an internal corpus
+- rank over that corpus by default
+- expose a cleaner recommendation response
+
+### Updated Week 2 status
+InternLens now supports:
+- ATS ingestion and normalization
+- deduplicated processed job loading
+- source discovery, validation, promotion, and refresh
+- a one-command source lifecycle pipeline
+- heuristic ranking over the internal processed corpus by default
+- user-facing API summaries with optional debug detail
+
+Latest quality checkpoint:
+- full test suite stable at **100 passed**
+
+### Remaining next steps
+- tighten promotion thresholds for noisy sources such as public multi-team boards
+- add dry-run or report output for source promotion and refresh
+- keep simplifying the user-facing recommendation contract while preserving internal debug access
