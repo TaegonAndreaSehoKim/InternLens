@@ -30,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `97 passed`
+- current total: `100 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -101,7 +101,8 @@ The current implementation is intentionally simple and transparent. It is design
 - source discovery tests
 - source validation tests
 - source promotion tests
-- full suite currently passing: `96 passed`
+- source pipeline tests
+- full suite currently passing: `100 passed`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -332,6 +333,18 @@ Useful notes:
 - by default the source must meet a minimum score and have at least some internship signal
 - matching inactive registry entries are reactivated instead of duplicated
 
+### Run the full source lifecycle in one command
+
+```bash
+python scripts/run_source_pipeline.py
+```
+
+Useful notes:
+- this runs discovery, validation, promotion, and corpus refresh in order
+- each stage can be skipped with `--skip-discovery`, `--skip-validation`, `--skip-promotion`, or `--skip-refresh`
+- use `--greenhouse-only` or `--lever-only` to limit the refresh step
+- use `--refresh-limit` to cap per-source fetch volume during a dry run or smoke test
+
 ---
 
 ## How to run the baseline ranker
@@ -480,7 +493,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `97 passed`
+- current total: `100 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -497,6 +510,7 @@ Current status:
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
+- the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
 
 ---
 
