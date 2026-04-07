@@ -75,6 +75,89 @@ def test_recommend_endpoint_with_inline_profile_returns_ranked_results() -> None
     assert isinstance(body["results"][0]["watchouts"], list)
 
 
+def test_recommend_endpoint_defaults_to_internal_corpus_when_jobs_dir_is_omitted(monkeypatch) -> None:
+    observed_jobs_dir: dict[str, Path] = {}
+
+    def fake_load_all_job_postings(path: Path):
+        observed_jobs_dir["path"] = path
+        return [
+            {
+                "job_id": "job_internal_1",
+                "company": "internal corp",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "description": "internship role",
+                "min_qualifications": "python",
+                "preferred_qualifications": "pytorch",
+                "posting_date": "2026-04-06",
+                "sponsorship_info": "",
+                "employment_type": "Internship",
+                "source": "manual",
+                "action_label": "Apply Now",
+                "blocking_issues": [],
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Skill overlap with Python"],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 30.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 10.0,
+                },
+                "score": 90.0,
+            }
+        ]
+
+    def fake_rank_jobs(profile, jobs):
+        return jobs
+
+    monkeypatch.setattr("src.api.app.load_all_job_postings", fake_load_all_job_postings)
+    monkeypatch.setattr("src.api.app.rank_jobs", fake_rank_jobs)
+
+    payload = {
+        "profile_data": {
+            "profile_id": "seho_001",
+            "resume_text": "Python, ML",
+            "degree_level": "Master's",
+            "grad_date": "2027-12",
+            "preferred_roles": ["Machine Learning Engineer Intern"],
+            "preferred_locations": ["Remote"],
+            "target_industries": ["AI"],
+            "sponsorship_need": True,
+            "extracted_skills": ["Python"],
+            "years_of_experience": 1,
+            "notes": "",
+        },
+        "top_k": 1,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert observed_jobs_dir["path"] == PROJECT_ROOT / "data" / "processed" / "jobs"
+    assert body["jobs_dir"] == "data/processed/jobs"
+    assert body["returned_jobs"] == 1
+
+
+def test_recommend_endpoint_supports_visibility_filters() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "eligible_only": True,
+        "applyable_only": True,
+        "top_k": 10,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["returned_jobs"] == len(body["results"])
+    assert all(not job["blocking_issues"] for job in body["results"])
+    assert all(job["action_label"] != "Skip" for job in body["results"])
+
+
 def test_example_ai_job_has_sponsorship_blocker() -> None:
     # A strong fit should still be skipped when a hard blocker exists.
     profile = load_candidate_profile(PROFILE_PATH)

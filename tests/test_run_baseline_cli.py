@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from scripts.run_baseline import _filter_results_for_output, _truncate_results
+from src.ranking.output_filters import filter_results_for_output, truncate_results
 from src.ingestion.greenhouse_client import (
     _build_jobs_url,
     _extract_location,
@@ -17,7 +17,7 @@ def test_filter_results_for_output_keeps_all_when_no_filters_are_enabled() -> No
         {"job_id": "job_2", "blocking_issues": ["This role does not appear to be an internship"], "action_label": "Skip"},
     ]
 
-    visible_jobs = _filter_results_for_output(
+    visible_jobs = filter_results_for_output(
         jobs,
         eligible_only=False,
         applyable_only=False,
@@ -34,7 +34,7 @@ def test_filter_results_for_output_drops_blocked_jobs_when_eligible_only_true() 
         {"job_id": "job_3", "blocking_issues": [], "action_label": "Skip"},
     ]
 
-    visible_jobs = _filter_results_for_output(
+    visible_jobs = filter_results_for_output(
         jobs,
         eligible_only=True,
         applyable_only=False,
@@ -52,7 +52,7 @@ def test_filter_results_for_output_drops_skip_jobs_when_applyable_only_true() ->
         {"job_id": "job_4", "blocking_issues": [], "action_label": "Apply Now"},
     ]
 
-    visible_jobs = _filter_results_for_output(
+    visible_jobs = filter_results_for_output(
         jobs,
         eligible_only=False,
         applyable_only=True,
@@ -70,7 +70,7 @@ def test_filter_results_for_output_supports_combined_filters() -> None:
         {"job_id": "job_4", "blocking_issues": [], "action_label": "Apply Now"},
     ]
 
-    visible_jobs = _filter_results_for_output(
+    visible_jobs = filter_results_for_output(
         jobs,
         eligible_only=True,
         applyable_only=True,
@@ -87,7 +87,7 @@ def test_truncate_results_applies_top_k_after_filtering() -> None:
         {"job_id": "job_3"},
     ]
 
-    visible_jobs = _truncate_results(jobs, top_k=2)
+    visible_jobs = truncate_results(jobs, top_k=2)
 
     assert [job["job_id"] for job in visible_jobs] == ["job_1", "job_2"]
 

@@ -15,6 +15,7 @@ from src.preprocessing.job_parser import load_all_job_postings
 from src.preprocessing.profile_parser import load_candidate_profile
 from src.ranking.baseline_scorer import rank_jobs
 from src.ranking.feedback_reranker import apply_feedback_reranking, load_feedback_profile
+from src.ranking.output_filters import filter_results_for_output, truncate_results
 
 
 def parse_args() -> argparse.Namespace:
@@ -57,30 +58,6 @@ def parse_args() -> argparse.Namespace:
         help="Show and export only jobs with action_label other than Skip.",
     )
     return parser.parse_args()
-
-
-def _filter_results_for_output(
-    results: List[Dict[str, Any]],
-    eligible_only: bool,
-    applyable_only: bool,
-) -> List[Dict[str, Any]]:
-    # Optionally keep only jobs that pass the selected output filters.
-    filtered = results
-
-    if eligible_only:
-        filtered = [job for job in filtered if not job.get("blocking_issues")]
-
-    if applyable_only:
-        filtered = [job for job in filtered if job.get("action_label") != "Skip"]
-
-    return filtered
-
-
-def _truncate_results(results: List[Dict[str, Any]], top_k: int | None) -> List[Dict[str, Any]]:
-    # Apply optional top-k truncation after filtering.
-    if top_k is None:
-        return results
-    return results[:top_k]
 
 
 def _stringify_list(values: List[Any]) -> str:
@@ -237,12 +214,12 @@ def main() -> None:
         ranked_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
         output_prefix = "reranked_results"
 
-    visible_jobs = _filter_results_for_output(
+    visible_jobs = filter_results_for_output(
         ranked_jobs,
         eligible_only=args.eligible_only,
         applyable_only=args.applyable_only,
     )
-    visible_jobs = _truncate_results(visible_jobs, args.top_k)
+    visible_jobs = truncate_results(visible_jobs, args.top_k)
 
     print("\n=== InternLens Baseline Ranking Results ===\n")
 

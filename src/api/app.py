@@ -17,6 +17,7 @@ from src.preprocessing.profile_parser import (
     load_candidate_profile,
     normalize_candidate_profile,
 )
+from src.ranking.output_filters import filter_results_for_output, truncate_results
 from src.ranking.baseline_scorer import (
     _has_description_internship_signal,
     _has_explicit_internship_signal,
@@ -71,7 +72,7 @@ class RecommendRequest(BaseModel):
         description="Inline candidate profile payload. If provided, this is used instead of profile_path.",
     )
     jobs_dir: str = Field(
-        default="data/sample_jobs",
+        default="data/processed/jobs",
         description="Path to the directory containing job posting JSON files, relative to the project root.",
     )
     feedback_path: Optional[str] = Field(
@@ -81,6 +82,14 @@ class RecommendRequest(BaseModel):
     feedback_data: Optional[FeedbackProfilePayload] = Field(
         default=None,
         description="Optional inline feedback payload. If provided, this is used instead of feedback_path.",
+    )
+    eligible_only: bool = Field(
+        default=False,
+        description="If true, return only jobs with no blocking issues.",
+    )
+    applyable_only: bool = Field(
+        default=False,
+        description="If true, return only jobs whose action label is not Skip.",
     )
     top_k: int = Field(default=10, ge=1, le=100)
 
@@ -409,7 +418,12 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    top_results = final_jobs[: request.top_k]
+    visible_jobs = filter_results_for_output(
+        final_jobs,
+        eligible_only=request.eligible_only,
+        applyable_only=request.applyable_only,
+    )
+    top_results = truncate_results(visible_jobs, request.top_k)
     enriched_results = [_enrich_job_result(job) for job in top_results]
     job_results = [JobResult(**job) for job in enriched_results]
 
@@ -420,7 +434,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         reranking_applied=reranking_applied,
         total_jobs_scored=len(final_jobs),
         returned_jobs=len(job_results),
-        overview=_build_recommend_overview(final_jobs),
+        overview=_build_recommend_overview(visible_jobs),
         results=job_results,
     )
 
