@@ -30,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `94 passed`
+- current total: `96 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -89,6 +89,7 @@ The current implementation is intentionally simple and transparent. It is design
 - CSV export
 - API endpoint for `/recommend`
 - API endpoint for `/jobs/{id}`
+- shared output filtering between CLI and API
 
 ### Validation
 - ingestion client tests
@@ -100,7 +101,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source discovery tests
 - source validation tests
 - source promotion tests
-- full suite currently passing: `94 passed`
+- full suite currently passing: `96 passed`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -389,6 +390,9 @@ Main endpoints:
 - `POST /recommend`
 - `GET /jobs/{id}`
 
+`POST /recommend` now defaults to the internal processed corpus under `data/processed/jobs`.
+`jobs_dir` is still supported as an override for testing, debugging, or focused evaluation runs.
+
 ### Example recommend request
 
 ```json
@@ -414,10 +418,17 @@ Main endpoints:
     "years_of_experience": 1,
     "notes": "Interested in recommendation and ranking systems"
   },
-  "jobs_dir": "data/sample_jobs",
+  "eligible_only": false,
+  "applyable_only": false,
   "top_k": 5
 }
 ```
+
+Useful notes:
+- omit `jobs_dir` to use the internal refreshed corpus by default
+- set `jobs_dir` only when you want to evaluate a specific source subset or local fixture directory
+- `eligible_only=true` keeps only jobs with no blocking issues
+- `applyable_only=true` keeps only jobs whose action label is not `Skip`
 
 ---
 
@@ -467,7 +478,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `94 passed`
+- current total: `96 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -482,6 +493,7 @@ Current status:
 - hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
+- `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 
 ---
 
