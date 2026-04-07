@@ -91,6 +91,10 @@ class RecommendRequest(BaseModel):
         default=False,
         description="If true, return only jobs whose action label is not Skip.",
     )
+    include_debug: bool = Field(
+        default=False,
+        description="If true, include raw scoring, blocker, and reranking debug fields in each result.",
+    )
     top_k: int = Field(default=10, ge=1, le=100)
 
     @model_validator(mode="after")
@@ -116,13 +120,13 @@ class JobResult(BaseModel):
     company: str
     title: str
     location: str
-    score: float
-    action_label: str
-    matched_skills: List[str]
-    skill_gaps: List[str]
-    reasons: List[str]
-    blocking_issues: List[str]
-    component_scores: Dict[str, float]
+    score: Optional[float] = None
+    action_label: Optional[str] = None
+    matched_skills: Optional[List[str]] = None
+    skill_gaps: Optional[List[str]] = None
+    reasons: Optional[List[str]] = None
+    blocking_issues: Optional[List[str]] = None
+    component_scores: Optional[Dict[str, float]] = None
     recommendation: str
     fit_level: str
     eligibility_status: str
@@ -245,7 +249,7 @@ def _build_user_summary(job: Dict[str, Any]) -> str:
     return f"{fit_level.capitalize()} fit based on the current baseline signals."
 
 
-def _enrich_job_result(job: Dict[str, Any]) -> Dict[str, Any]:
+def _enrich_job_result(job: Dict[str, Any], *, include_debug: bool) -> Dict[str, Any]:
     enriched = dict(job)
     enriched["recommendation"] = _recommendation_code(job["action_label"])
     enriched["fit_level"] = _fit_level(float(job["score"]))
@@ -254,6 +258,22 @@ def _enrich_job_result(job: Dict[str, Any]) -> Dict[str, Any]:
     enriched["why_apply"] = list(job.get("reasons", []))[:3]
     enriched["watchouts"] = _build_watchouts(job)
     enriched["application_link"] = _application_link(job)
+
+    if not include_debug:
+        for field in (
+            "score",
+            "action_label",
+            "matched_skills",
+            "skill_gaps",
+            "reasons",
+            "blocking_issues",
+            "component_scores",
+            "feedback_adjustment",
+            "reranked_score",
+            "feedback_explanations",
+        ):
+            enriched[field] = None
+
     return enriched
 
 
@@ -377,7 +397,7 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/recommend", response_model=RecommendResponse)
+@app.post("/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
 def recommend(request: RecommendRequest) -> RecommendResponse:
     jobs_dir = PROJECT_ROOT / request.jobs_dir
 
@@ -424,7 +444,10 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         applyable_only=request.applyable_only,
     )
     top_results = truncate_results(visible_jobs, request.top_k)
-    enriched_results = [_enrich_job_result(job) for job in top_results]
+    enriched_results = [
+        _enrich_job_result(job, include_debug=request.include_debug)
+        for job in top_results
+    ]
     job_results = [JobResult(**job) for job in enriched_results]
 
     return RecommendResponse(

@@ -73,6 +73,8 @@ def test_recommend_endpoint_with_inline_profile_returns_ranked_results() -> None
     assert isinstance(body["results"][0]["summary"], str)
     assert isinstance(body["results"][0]["why_apply"], list)
     assert isinstance(body["results"][0]["watchouts"], list)
+    assert "action_label" not in body["results"][0]
+    assert "component_scores" not in body["results"][0]
 
 
 def test_recommend_endpoint_defaults_to_internal_corpus_when_jobs_dir_is_omitted(monkeypatch) -> None:
@@ -154,8 +156,8 @@ def test_recommend_endpoint_supports_visibility_filters() -> None:
 
     assert response.status_code == 200
     assert body["returned_jobs"] == len(body["results"])
-    assert all(not job["blocking_issues"] for job in body["results"])
-    assert all(job["action_label"] != "Skip" for job in body["results"])
+    assert all(job["eligibility_status"] == "eligible" for job in body["results"])
+    assert all(job["recommendation"] != "skip" for job in body["results"])
 
 
 def test_example_ai_job_has_sponsorship_blocker() -> None:
@@ -285,6 +287,7 @@ def test_recommend_endpoint_with_profile_path_returns_ranked_results() -> None:
     payload = {
         "profile_path": "data/processed/candidate_profile_example.json",
         "jobs_dir": "data/sample_jobs",
+        "include_debug": True,
         "top_k": 3,
     }
 
@@ -320,6 +323,7 @@ def test_recommend_endpoint_with_feedback_path_applies_reranking() -> None:
         "profile_path": "data/processed/candidate_profile_example.json",
         "jobs_dir": "data/sample_jobs",
         "feedback_path": "data/feedback/sample_feedback.json",
+        "include_debug": True,
         "top_k": 5,
     }
 
@@ -343,6 +347,7 @@ def test_recommend_endpoint_feedback_response_includes_explanation_items() -> No
         "profile_path": "data/processed/candidate_profile_example.json",
         "jobs_dir": "data/sample_jobs",
         "feedback_path": "data/feedback/sample_feedback.json",
+        "include_debug": True,
         "top_k": 6,
     }
 
@@ -378,6 +383,7 @@ def test_recommend_endpoint_with_inline_feedback_applies_reranking() -> None:
                 {"job_id": "job_004", "feedback_label": "skipped"},
             ],
         },
+        "include_debug": True,
         "top_k": 5,
     }
 
@@ -391,7 +397,7 @@ def test_recommend_endpoint_with_inline_feedback_applies_reranking() -> None:
     assert "feedback_adjustment" in body["results"][0]
     assert "reranked_score" in body["results"][0]
     assert "feedback_explanations" in body["results"][0]
-    assert "application_link" in body["results"][0]
+    assert "summary" in body["results"][0]
 
 
 def test_recommend_endpoint_inline_feedback_response_includes_explanation_items() -> None:
@@ -406,6 +412,7 @@ def test_recommend_endpoint_inline_feedback_response_includes_explanation_items(
                 {"job_id": "job_004", "feedback_label": "skipped"},
             ],
         },
+        "include_debug": True,
         "top_k": 6,
     }
 
@@ -441,6 +448,7 @@ def test_recommend_endpoint_prefers_inline_feedback_over_feedback_path() -> None
                 {"job_id": "job_005", "feedback_label": "saved"},
             ],
         },
+        "include_debug": True,
         "top_k": 5,
     }
 
@@ -465,3 +473,20 @@ def test_recommend_endpoint_with_missing_feedback_file_returns_404() -> None:
 
     assert response.status_code == 404
     assert "Feedback file not found" in body["detail"]
+
+
+def test_recommend_endpoint_returns_debug_fields_only_when_requested() -> None:
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "include_debug": True,
+        "top_k": 1,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert "action_label" in body["results"][0]
+    assert "score" in body["results"][0]
+    assert "blocking_issues" in body["results"][0]
