@@ -30,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `96 passed`
+- current total: `97 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -418,6 +418,7 @@ Main endpoints:
     "years_of_experience": 1,
     "notes": "Interested in recommendation and ranking systems"
   },
+  "include_debug": false,
   "eligible_only": false,
   "applyable_only": false,
   "top_k": 5
@@ -427,6 +428,7 @@ Main endpoints:
 Useful notes:
 - omit `jobs_dir` to use the internal refreshed corpus by default
 - set `jobs_dir` only when you want to evaluate a specific source subset or local fixture directory
+- `include_debug=true` adds raw score, blocker, match, and reranking fields back into each result
 - `eligible_only=true` keeps only jobs with no blocking issues
 - `applyable_only=true` keeps only jobs whose action label is not `Skip`
 
@@ -478,7 +480,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `96 passed`
+- current total: `97 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -494,6 +496,7 @@ Current status:
 - duplicate-looking multi-location internships may still appear as separate postings
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
+- the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 
 ---
 
