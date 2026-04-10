@@ -170,8 +170,102 @@ def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monk
     assert body["feedback_source"] == "stored_feedback_events"
     assert body["reranking_applied"] is True
     assert body["jobs_dir"] == "data/processed/jobs"
+    assert body["run_id"].startswith("run_")
     assert body["results"][0]["action_label"] == "Apply Now"
     assert body["results"][0]["feedback_adjustment"] == 5.0
+
+    runs_response = client.get("/profiles/user_001/recommendations")
+    runs_body = runs_response.json()
+
+    assert runs_response.status_code == 200
+    assert len(runs_body["runs"]) == 1
+    assert runs_body["runs"][0]["run_id"] == body["run_id"]
+
+    run_detail_response = client.get(f"/profiles/user_001/recommendations/{body['run_id']}")
+    run_detail_body = run_detail_response.json()
+
+    assert run_detail_response.status_code == 200
+    assert run_detail_body["run_id"] == body["run_id"]
+    assert run_detail_body["results"][0]["job_id"] == "job_a"
+
+
+def test_profile_recommend_can_skip_run_persistence(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    monkeypatch.setattr(
+        api_app,
+        "load_all_job_postings",
+        lambda path: [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "description": "internship role",
+                "min_qualifications": "python",
+                "preferred_qualifications": "pytorch",
+                "posting_date": "2026-04-10",
+                "sponsorship_info": "",
+                "employment_type": "Internship",
+                "source": "manual",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        api_app,
+        "rank_jobs",
+        lambda profile, jobs: [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+            }
+        ],
+    )
+
+    response = client.post(
+        "/profiles/user_001/recommend",
+        json={"save_run": False, "top_k": 1},
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert "run_id" not in body
+
+    runs_response = client.get("/profiles/user_001/recommendations")
+    runs_body = runs_response.json()
+
+    assert runs_response.status_code == 200
+    assert runs_body["runs"] == []
+
+
+def test_profile_recommendation_run_detail_returns_404_for_missing_run(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.get("/profiles/user_001/recommendations/run_missing")
+    body = response.json()
+
+    assert response.status_code == 404
+    assert "Recommendation run not found" in body["detail"]
 
 
 def test_profile_recommend_returns_404_for_missing_profile(tmp_path: Path, monkeypatch) -> None:

@@ -19,10 +19,13 @@ from src.preprocessing.profile_parser import (
 )
 from src.storage.profile_store import (
     add_feedback_events,
+    create_recommendation_run,
     create_profile,
     default_database_path,
+    get_recommendation_run,
     get_feedback_events,
     get_profile,
+    list_recommendation_runs,
     update_profile,
 )
 from src.ranking.output_filters import filter_results_for_output, truncate_results
@@ -175,6 +178,10 @@ class ProfileRecommendRequest(BaseModel):
         default=True,
         description="If true, apply reranking based on persisted feedback events for this profile.",
     )
+    save_run: bool = Field(
+        default=True,
+        description="If true, persist this recommendation run and its result snapshot.",
+    )
     top_k: int = Field(default=10, ge=1, le=100)
 
 
@@ -226,6 +233,7 @@ class RecommendOverview(BaseModel):
 
 
 class RecommendResponse(BaseModel):
+    run_id: Optional[str] = None
     profile_source: str
     jobs_dir: str
     feedback_source: Optional[str]
@@ -234,6 +242,27 @@ class RecommendResponse(BaseModel):
     returned_jobs: int
     overview: RecommendOverview
     results: List[JobResult]
+
+
+class RecommendationRunSummary(BaseModel):
+    run_id: str
+    profile_id: str
+    jobs_dir: str
+    top_k: int
+    eligible_only: bool
+    applyable_only: bool
+    include_feedback: bool
+    include_debug: bool
+    reranking_applied: bool
+    feedback_source: Optional[str]
+    total_jobs_scored: int
+    returned_jobs: int
+    created_at: str
+
+
+class RecommendationRunListResponse(BaseModel):
+    profile_id: str
+    runs: List[RecommendationRunSummary]
 
 
 class JobDetailResponse(BaseModel):
@@ -506,6 +535,7 @@ def _build_recommend_response(
     top_k: int,
     feedback_profile: Optional[Dict[str, Any]] = None,
     feedback_source: Optional[str] = None,
+    run_id: Optional[str] = None,
 ) -> RecommendResponse:
     jobs_dir_path = PROJECT_ROOT / jobs_dir
 
@@ -531,6 +561,7 @@ def _build_recommend_response(
     job_results = [JobResult(**job) for job in enriched_results]
 
     return RecommendResponse(
+        run_id=run_id,
         profile_source=profile_source,
         jobs_dir=jobs_dir,
         feedback_source=feedback_source,
@@ -632,6 +663,51 @@ def add_profile_feedback_endpoint(profile_id: str, feedback_data: FeedbackProfil
     return StoredFeedbackResponse(profile_id=profile_id, events=[StoredFeedbackEvent(**event) for event in events])
 
 
+@app.get("/profiles/{profile_id}/recommendations", response_model=RecommendationRunListResponse)
+def list_profile_recommendations(profile_id: str) -> RecommendationRunListResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        runs = list_recommendation_runs(_database_path(), profile_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return RecommendationRunListResponse(
+        profile_id=profile_id,
+        runs=[RecommendationRunSummary(**run) for run in runs],
+    )
+
+
+@app.get("/profiles/{profile_id}/recommendations/{run_id}", response_model=RecommendResponse, response_model_exclude_none=True)
+def get_profile_recommendation_run(profile_id: str, run_id: str) -> RecommendResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        run = get_recommendation_run(_database_path(), profile_id, run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail=f"Recommendation run not found: {run_id}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return RecommendResponse(
+        run_id=run["run_id"],
+        profile_source=f"stored_profile:{profile_id}",
+        jobs_dir=run["jobs_dir"],
+        feedback_source=run["feedback_source"],
+        reranking_applied=run["reranking_applied"],
+        total_jobs_scored=run["total_jobs_scored"],
+        returned_jobs=run["returned_jobs"],
+        overview=_build_recommend_overview(run["results"]),
+        results=[JobResult(**result) for result in run["results"]],
+    )
+
+
 @app.post("/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
 def recommend(request: RecommendRequest) -> RecommendResponse:
     try:
@@ -697,7 +773,7 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
                 feedback_profile = _build_feedback_profile_from_events(profile_id, stored_events)
                 feedback_source = "stored_feedback_events"
 
-        return _build_recommend_response(
+        response = _build_recommend_response(
             profile=normalized_profile,
             profile_source=f"stored_profile:{profile_id}",
             jobs_dir=request.jobs_dir,
@@ -708,6 +784,26 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             feedback_profile=feedback_profile,
             feedback_source=feedback_source,
         )
+
+        if request.save_run:
+            persisted_run = create_recommendation_run(
+                _database_path(),
+                profile_id=profile_id,
+                jobs_dir=request.jobs_dir,
+                top_k=request.top_k,
+                eligible_only=request.eligible_only,
+                applyable_only=request.applyable_only,
+                include_feedback=request.include_feedback,
+                include_debug=request.include_debug,
+                reranking_applied=response.reranking_applied,
+                feedback_source=response.feedback_source,
+                total_jobs_scored=response.total_jobs_scored,
+                returned_jobs=response.returned_jobs,
+                results=[result.model_dump(exclude_none=True) for result in response.results],
+            )
+            response.run_id = persisted_run["run_id"]
+
+        return response
     except HTTPException:
         raise
     except FileNotFoundError as e:
