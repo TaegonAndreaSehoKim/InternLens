@@ -186,6 +186,10 @@ class ProfileRecommendRequest(BaseModel):
         default=True,
         description="If true, apply reranking based on persisted feedback events for this profile.",
     )
+    exclude_dismissed: bool = Field(
+        default=True,
+        description="If true, suppress jobs the user has already marked as dismissed.",
+    )
     save_run: bool = Field(
         default=True,
         description="If true, persist this recommendation run and its result snapshot.",
@@ -222,6 +226,8 @@ class JobResult(BaseModel):
     why_apply: List[str]
     watchouts: List[str]
     application_link: Optional[str] = None
+    user_job_state: Optional[str] = None
+    user_job_state_source_run_id: Optional[str] = None
 
     # Expose reranking fields only when feedback-based reranking is applied.
     feedback_adjustment: Optional[float] = None
@@ -432,6 +438,21 @@ def _enrich_job_result(job: Dict[str, Any], *, include_debug: bool) -> Dict[str,
     return enriched
 
 
+def _annotate_results_with_job_state(
+    jobs: List[Dict[str, Any]],
+    job_state_by_id: Dict[str, Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    annotated_jobs: List[Dict[str, Any]] = []
+    for job in jobs:
+        enriched_job = dict(job)
+        job_state = job_state_by_id.get(str(job.get("job_id")))
+        if job_state is not None:
+            enriched_job["user_job_state"] = job_state["state"]
+            enriched_job["user_job_state_source_run_id"] = job_state.get("source_run_id")
+        annotated_jobs.append(enriched_job)
+    return annotated_jobs
+
+
 def _top_locations(jobs: List[Dict[str, Any]]) -> List[str]:
     location_counts = Counter(
         job["location"]
@@ -586,6 +607,8 @@ def _build_recommend_response(
     top_k: int,
     feedback_profile: Optional[Dict[str, Any]] = None,
     feedback_source: Optional[str] = None,
+    excluded_job_ids: Optional[set[str]] = None,
+    job_state_by_id: Optional[Dict[str, Dict[str, Any]]] = None,
     run_id: Optional[str] = None,
 ) -> RecommendResponse:
     jobs_dir_path = PROJECT_ROOT / jobs_dir
@@ -604,6 +627,10 @@ def _build_recommend_response(
         eligible_only=eligible_only,
         applyable_only=applyable_only,
     )
+    if excluded_job_ids:
+        visible_jobs = [job for job in visible_jobs if job.get("job_id") not in excluded_job_ids]
+    if job_state_by_id:
+        visible_jobs = _annotate_results_with_job_state(visible_jobs, job_state_by_id)
     top_results = truncate_results(visible_jobs, top_k)
     enriched_results = [
         _enrich_job_result(job, include_debug=include_debug)
@@ -939,6 +966,8 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
         normalized_profile = normalize_candidate_profile(_profile_input_payload(stored_profile))
+        excluded_job_ids: set[str] = set()
+        job_state_by_id: Dict[str, Dict[str, Any]] = {}
 
         feedback_profile: Optional[Dict[str, Any]] = None
         feedback_source: Optional[str] = None
@@ -947,6 +976,16 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             if stored_events:
                 feedback_profile = _build_feedback_profile_from_events(profile_id, stored_events)
                 feedback_source = "stored_feedback_events"
+
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        job_state_by_id = {
+            job_state["job_id"]: job_state
+            for job_state in saved_jobs + dismissed_jobs
+        }
+
+        if request.exclude_dismissed:
+            excluded_job_ids = {job_state["job_id"] for job_state in dismissed_jobs}
 
         response = _build_recommend_response(
             profile=normalized_profile,
@@ -958,6 +997,8 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             top_k=request.top_k,
             feedback_profile=feedback_profile,
             feedback_source=feedback_source,
+            excluded_job_ids=excluded_job_ids,
+            job_state_by_id=job_state_by_id,
         )
 
         if request.save_run:
