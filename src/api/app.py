@@ -309,6 +309,19 @@ class StoredJobStateListResponse(BaseModel):
     jobs: List[StoredJobState]
 
 
+class ProfileSummaryResponse(BaseModel):
+    profile_id: str
+    recommendation_run_count: int
+    saved_jobs_count: int
+    dismissed_jobs_count: int
+    feedback_event_count: int
+    feedback_label_counts: Dict[str, int]
+    last_recommendation_at: Optional[str] = None
+    last_feedback_at: Optional[str] = None
+    last_saved_job_at: Optional[str] = None
+    last_dismissed_job_at: Optional[str] = None
+
+
 class JobDetailResponse(BaseModel):
     # Return one normalized job record through the API.
     job_id: str
@@ -720,6 +733,38 @@ def get_profile_feedback_endpoint(profile_id: str) -> StoredFeedbackResponse:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
     return StoredFeedbackResponse(profile_id=profile_id, events=[StoredFeedbackEvent(**event) for event in events])
+
+
+@app.get("/profiles/{profile_id}/summary", response_model=ProfileSummaryResponse)
+def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+        feedback_events = get_feedback_events(_database_path(), profile_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    feedback_label_counts = dict(Counter(event["feedback_label"] for event in feedback_events))
+
+    return ProfileSummaryResponse(
+        profile_id=profile_id,
+        recommendation_run_count=len(recommendation_runs),
+        saved_jobs_count=len(saved_jobs),
+        dismissed_jobs_count=len(dismissed_jobs),
+        feedback_event_count=len(feedback_events),
+        feedback_label_counts=feedback_label_counts,
+        last_recommendation_at=recommendation_runs[0]["created_at"] if recommendation_runs else None,
+        last_feedback_at=feedback_events[-1]["created_at"] if feedback_events else None,
+        last_saved_job_at=saved_jobs[0]["updated_at"] if saved_jobs else None,
+        last_dismissed_job_at=dismissed_jobs[0]["updated_at"] if dismissed_jobs else None,
+    )
 
 
 @app.post("/profiles/{profile_id}/feedback", response_model=StoredFeedbackResponse, status_code=201)
