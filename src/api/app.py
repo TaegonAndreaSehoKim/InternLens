@@ -17,6 +17,14 @@ from src.preprocessing.profile_parser import (
     load_candidate_profile,
     normalize_candidate_profile,
 )
+from src.storage.profile_store import (
+    add_feedback_events,
+    create_profile,
+    default_database_path,
+    get_feedback_events,
+    get_profile,
+    update_profile,
+)
 from src.ranking.output_filters import filter_results_for_output, truncate_results
 from src.ranking.baseline_scorer import (
     _has_description_internship_signal,
@@ -35,6 +43,21 @@ app = FastAPI(
     title="InternLens API",
     description="Internship application strategy optimizer API",
     version="0.3.2",
+)
+
+
+PROFILE_FIELDS = (
+    "profile_id",
+    "resume_text",
+    "degree_level",
+    "grad_date",
+    "preferred_roles",
+    "preferred_locations",
+    "target_industries",
+    "sponsorship_need",
+    "extracted_skills",
+    "years_of_experience",
+    "notes",
 )
 
 
@@ -103,6 +126,56 @@ class RecommendRequest(BaseModel):
         if self.profile_path is None and self.profile_data is None:
             raise ValueError("Either profile_path or profile_data must be provided.")
         return self
+
+
+class ProfileUpdatePayload(BaseModel):
+    resume_text: Optional[str] = None
+    degree_level: Optional[str] = None
+    grad_date: Optional[str] = None
+    preferred_roles: Optional[List[str]] = None
+    preferred_locations: Optional[List[str]] = None
+    target_industries: Optional[List[str]] = None
+    sponsorship_need: Optional[bool] = None
+    extracted_skills: Optional[List[str]] = None
+    years_of_experience: Optional[int] = None
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_non_empty_update(self) -> "ProfileUpdatePayload":
+        if not self.model_dump(exclude_none=True):
+            raise ValueError("At least one profile field must be provided for update.")
+        return self
+
+
+class StoredFeedbackEvent(BaseModel):
+    job_id: str
+    feedback_label: str
+    created_at: Optional[str] = None
+
+
+class StoredProfileResponse(CandidateProfilePayload):
+    created_at: str
+    updated_at: str
+
+
+class StoredFeedbackResponse(BaseModel):
+    profile_id: str
+    events: List[StoredFeedbackEvent]
+
+
+class ProfileRecommendRequest(BaseModel):
+    jobs_dir: str = Field(
+        default="data/processed/jobs",
+        description="Path to the directory containing job posting JSON files, relative to the project root.",
+    )
+    eligible_only: bool = Field(default=False)
+    applyable_only: bool = Field(default=False)
+    include_debug: bool = Field(default=False)
+    include_feedback: bool = Field(
+        default=True,
+        description="If true, apply reranking based on persisted feedback events for this profile.",
+    )
+    top_k: int = Field(default=10, ge=1, le=100)
 
 
 class FeedbackExplanation(BaseModel):
@@ -189,6 +262,10 @@ class JobDetailResponse(BaseModel):
     application_link: Optional[str] = None
 
 
+def _database_path() -> Path:
+    return default_database_path(PROJECT_ROOT)
+
+
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
     # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_candidate_profile(profile_data.model_dump())
@@ -197,6 +274,17 @@ def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[s
 def _build_feedback_from_payload(feedback_data: FeedbackProfilePayload) -> Dict[str, Any]:
     # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_feedback_profile(feedback_data.model_dump())
+
+
+def _profile_response_payload(profile: Dict[str, Any]) -> Dict[str, Any]:
+    return {field: profile[field] for field in PROFILE_FIELDS if field in profile} | {
+        "created_at": profile["created_at"],
+        "updated_at": profile["updated_at"],
+    }
+
+
+def _profile_input_payload(profile: Dict[str, Any]) -> Dict[str, Any]:
+    return {field: profile[field] for field in PROFILE_FIELDS if field in profile}
 
 
 def _recommendation_code(action_label: str) -> str:
@@ -392,17 +480,161 @@ def _possible_posting_blockers(job: Dict[str, Any]) -> List[str]:
     return blockers[:4]
 
 
+def _build_feedback_profile_from_events(profile_id: str, events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return normalize_feedback_profile(
+        {
+            "profile_id": profile_id,
+            "events": [
+                {
+                    "job_id": event["job_id"],
+                    "feedback_label": event["feedback_label"],
+                }
+                for event in events
+            ],
+        }
+    )
+
+
+def _build_recommend_response(
+    *,
+    profile: Dict[str, Any],
+    profile_source: str,
+    jobs_dir: str,
+    eligible_only: bool,
+    applyable_only: bool,
+    include_debug: bool,
+    top_k: int,
+    feedback_profile: Optional[Dict[str, Any]] = None,
+    feedback_source: Optional[str] = None,
+) -> RecommendResponse:
+    jobs_dir_path = PROJECT_ROOT / jobs_dir
+
+    jobs = load_all_job_postings(jobs_dir_path)
+    ranked_jobs = rank_jobs(profile, jobs)
+
+    reranking_applied = False
+    final_jobs = ranked_jobs
+    if feedback_profile is not None:
+        final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
+        reranking_applied = True
+
+    visible_jobs = filter_results_for_output(
+        final_jobs,
+        eligible_only=eligible_only,
+        applyable_only=applyable_only,
+    )
+    top_results = truncate_results(visible_jobs, top_k)
+    enriched_results = [
+        _enrich_job_result(job, include_debug=include_debug)
+        for job in top_results
+    ]
+    job_results = [JobResult(**job) for job in enriched_results]
+
+    return RecommendResponse(
+        profile_source=profile_source,
+        jobs_dir=jobs_dir,
+        feedback_source=feedback_source,
+        reranking_applied=reranking_applied,
+        total_jobs_scored=len(final_jobs),
+        returned_jobs=len(job_results),
+        overview=_build_recommend_overview(visible_jobs),
+        results=job_results,
+    )
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
-def recommend(request: RecommendRequest) -> RecommendResponse:
-    jobs_dir = PROJECT_ROOT / request.jobs_dir
+@app.post("/profiles", response_model=StoredProfileResponse, status_code=201)
+def create_profile_endpoint(profile_data: CandidateProfilePayload) -> StoredProfileResponse:
+    try:
+        normalized_profile = _build_profile_from_payload(profile_data)
+        stored_profile = create_profile(_database_path(), normalized_profile)
+    except ValueError as e:
+        detail = str(e)
+        if "already exists" in detail:
+            raise HTTPException(status_code=409, detail=detail) from e
+        raise HTTPException(status_code=400, detail=detail) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredProfileResponse(**_profile_response_payload(stored_profile))
+
+
+@app.get("/profiles/{profile_id}", response_model=StoredProfileResponse)
+def get_profile_endpoint(profile_id: str) -> StoredProfileResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    if stored_profile is None:
+        raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+    return StoredProfileResponse(**_profile_response_payload(stored_profile))
+
+
+@app.patch("/profiles/{profile_id}", response_model=StoredProfileResponse)
+def update_profile_endpoint(profile_id: str, profile_update: ProfileUpdatePayload) -> StoredProfileResponse:
+    try:
+        existing_profile = get_profile(_database_path(), profile_id)
+        if existing_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+        merged_profile = _profile_input_payload(existing_profile)
+        merged_profile.update(profile_update.model_dump(exclude_none=True))
+        merged_profile["profile_id"] = profile_id
+        normalized_profile = normalize_candidate_profile(merged_profile)
+        stored_profile = update_profile(_database_path(), normalized_profile)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredProfileResponse(**_profile_response_payload(stored_profile))
+
+
+@app.get("/profiles/{profile_id}/feedback", response_model=StoredFeedbackResponse)
+def get_profile_feedback_endpoint(profile_id: str) -> StoredFeedbackResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        events = get_feedback_events(_database_path(), profile_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredFeedbackResponse(profile_id=profile_id, events=[StoredFeedbackEvent(**event) for event in events])
+
+
+@app.post("/profiles/{profile_id}/feedback", response_model=StoredFeedbackResponse, status_code=201)
+def add_profile_feedback_endpoint(profile_id: str, feedback_data: FeedbackProfilePayload) -> StoredFeedbackResponse:
+    if feedback_data.profile_id != profile_id:
+        raise HTTPException(status_code=400, detail="Feedback payload profile_id must match the URL profile_id.")
 
     try:
-        # Resolve the candidate profile from either inline payload or file path.
+        normalized_feedback = _build_feedback_from_payload(feedback_data)
+        events = add_feedback_events(_database_path(), profile_id, normalized_feedback["events"])
+    except ValueError as e:
+        detail = str(e)
+        if "Profile not found" in detail:
+            raise HTTPException(status_code=404, detail=detail) from e
+        raise HTTPException(status_code=400, detail=detail) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredFeedbackResponse(profile_id=profile_id, events=[StoredFeedbackEvent(**event) for event in events])
+
+
+@app.post("/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
+def recommend(request: RecommendRequest) -> RecommendResponse:
+    try:
         if request.profile_data is not None:
             profile = _build_profile_from_payload(request.profile_data)
             profile_source = "inline_profile_payload"
@@ -411,24 +643,14 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             profile = load_candidate_profile(profile_path)
             profile_source = str(request.profile_path)
 
-        jobs = load_all_job_postings(jobs_dir)
-        ranked_jobs = rank_jobs(profile, jobs)
-
-        # Apply optional feedback-based reranking only when feedback data is provided.
-        reranking_applied = False
+        feedback_profile: Optional[Dict[str, Any]] = None
         feedback_source: Optional[str] = None
-        final_jobs = ranked_jobs
-
         if request.feedback_data is not None:
             feedback_profile = _build_feedback_from_payload(request.feedback_data)
-            final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
-            reranking_applied = True
             feedback_source = "inline_feedback_payload"
         elif request.feedback_path is not None:
             feedback_path = PROJECT_ROOT / request.feedback_path
             feedback_profile = load_feedback_profile(feedback_path)
-            final_jobs = apply_feedback_reranking(ranked_jobs, jobs, feedback_profile)
-            reranking_applied = True
             feedback_source = str(request.feedback_path)
 
     except FileNotFoundError as e:
@@ -438,28 +660,62 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    visible_jobs = filter_results_for_output(
-        final_jobs,
-        eligible_only=request.eligible_only,
-        applyable_only=request.applyable_only,
-    )
-    top_results = truncate_results(visible_jobs, request.top_k)
-    enriched_results = [
-        _enrich_job_result(job, include_debug=request.include_debug)
-        for job in top_results
-    ]
-    job_results = [JobResult(**job) for job in enriched_results]
+    try:
+        return _build_recommend_response(
+            profile=profile,
+            profile_source=profile_source,
+            jobs_dir=request.jobs_dir,
+            eligible_only=request.eligible_only,
+            applyable_only=request.applyable_only,
+            include_debug=request.include_debug,
+            top_k=request.top_k,
+            feedback_profile=feedback_profile,
+            feedback_source=feedback_source,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    return RecommendResponse(
-        profile_source=profile_source,
-        jobs_dir=request.jobs_dir,
-        feedback_source=feedback_source,
-        reranking_applied=reranking_applied,
-        total_jobs_scored=len(final_jobs),
-        returned_jobs=len(job_results),
-        overview=_build_recommend_overview(visible_jobs),
-        results=job_results,
-    )
+
+@app.post("/profiles/{profile_id}/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
+def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> RecommendResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+        normalized_profile = normalize_candidate_profile(_profile_input_payload(stored_profile))
+
+        feedback_profile: Optional[Dict[str, Any]] = None
+        feedback_source: Optional[str] = None
+        if request.include_feedback:
+            stored_events = get_feedback_events(_database_path(), profile_id)
+            if stored_events:
+                feedback_profile = _build_feedback_profile_from_events(profile_id, stored_events)
+                feedback_source = "stored_feedback_events"
+
+        return _build_recommend_response(
+            profile=normalized_profile,
+            profile_source=f"stored_profile:{profile_id}",
+            jobs_dir=request.jobs_dir,
+            eligible_only=request.eligible_only,
+            applyable_only=request.applyable_only,
+            include_debug=request.include_debug,
+            top_k=request.top_k,
+            feedback_profile=feedback_profile,
+            feedback_source=feedback_source,
+        )
+    except HTTPException:
+        raise
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
 
 @app.get("/jobs/{job_id}", response_model=JobDetailResponse)
