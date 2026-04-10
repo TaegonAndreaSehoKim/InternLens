@@ -230,6 +230,60 @@ def test_profile_summary_aggregates_activity(tmp_path: Path, monkeypatch) -> Non
     assert summary_body["last_dismissed_job_at"] is not None
 
 
+def test_profile_activity_returns_recent_mixed_events(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    client.post(
+        "/profiles/user_001/feedback",
+        json={
+            "profile_id": "user_001",
+            "events": [{"job_id": "job_a", "feedback_label": "saved"}],
+        },
+    )
+    _patch_ranked_jobs(
+        monkeypatch,
+        [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+                "source_url": "https://example.com/jobs/job_a",
+                "application_url": "https://example.com/jobs/job_a/apply",
+            }
+        ],
+    )
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 1}).json()["run_id"]
+    client.post("/profiles/user_001/jobs/job_a/save", json={"run_id": run_id})
+
+    activity_response = client.get("/profiles/user_001/activity?limit=3")
+    activity_body = activity_response.json()
+
+    assert activity_response.status_code == 200
+    assert activity_body["profile_id"] == "user_001"
+    assert len(activity_body["activities"]) == 3
+    assert {item["activity_type"] for item in activity_body["activities"]} == {
+        "recommendation_run",
+        "feedback",
+        "saved",
+    }
+
+
 def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
@@ -585,6 +639,30 @@ def test_profile_summary_returns_404_for_missing_profile(tmp_path: Path, monkeyp
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
 
     response = client.get("/profiles/missing/summary")
+    body = response.json()
+
+    assert response.status_code == 404
+    assert "Profile not found" in body["detail"]
+
+
+def test_profile_activity_rejects_invalid_limit(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.get("/profiles/user_001/activity?limit=0")
+    body = response.json()
+
+    assert response.status_code == 400
+    assert "limit must be between 1 and 100" in body["detail"]
+
+
+def test_profile_activity_returns_404_for_missing_profile(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    response = client.get("/profiles/missing/activity")
     body = response.json()
 
     assert response.status_code == 404

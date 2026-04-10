@@ -322,6 +322,21 @@ class ProfileSummaryResponse(BaseModel):
     last_dismissed_job_at: Optional[str] = None
 
 
+class ProfileActivityItem(BaseModel):
+    activity_type: str
+    created_at: str
+    job_id: Optional[str] = None
+    run_id: Optional[str] = None
+    label: Optional[str] = None
+    title: Optional[str] = None
+    summary: Optional[str] = None
+
+
+class ProfileActivityResponse(BaseModel):
+    profile_id: str
+    activities: List[ProfileActivityItem]
+
+
 class JobDetailResponse(BaseModel):
     # Return one normalized job record through the API.
     job_id: str
@@ -609,6 +624,59 @@ def _stored_job_state_response(state_payload: Dict[str, Any]) -> StoredJobState:
     )
 
 
+def _build_profile_activity(
+    profile_id: str,
+    *,
+    recommendation_runs: List[Dict[str, Any]],
+    feedback_events: List[Dict[str, Any]],
+    saved_jobs: List[Dict[str, Any]],
+    dismissed_jobs: List[Dict[str, Any]],
+    limit: int,
+) -> ProfileActivityResponse:
+    activities: List[Dict[str, Any]] = []
+
+    activities.extend(
+        {
+            "activity_type": "recommendation_run",
+            "created_at": run["created_at"],
+            "run_id": run["run_id"],
+            "label": "recommendation run",
+            "summary": f"Returned {run['returned_jobs']} jobs from {run['jobs_dir']}",
+        }
+        for run in recommendation_runs
+    )
+    activities.extend(
+        {
+            "activity_type": "feedback",
+            "created_at": event["created_at"],
+            "job_id": event["job_id"],
+            "label": event["feedback_label"],
+            "summary": f"Marked {event['job_id']} as {event['feedback_label']}",
+        }
+        for event in feedback_events
+    )
+    activities.extend(
+        {
+            "activity_type": state["state"],
+            "created_at": state["updated_at"],
+            "job_id": state["job_id"],
+            "run_id": state.get("source_run_id"),
+            "label": state["state"],
+            "title": state.get("job_snapshot", {}).get("title") if state.get("job_snapshot") else None,
+            "summary": (
+                f"{state['state'].capitalize()} {state.get('job_snapshot', {}).get('title', state['job_id'])}"
+            ),
+        }
+        for state in saved_jobs + dismissed_jobs
+    )
+
+    activities.sort(key=lambda item: (item["created_at"], item["activity_type"]), reverse=True)
+    return ProfileActivityResponse(
+        profile_id=profile_id,
+        activities=[ProfileActivityItem(**item) for item in activities[:limit]],
+    )
+
+
 def _build_recommend_response(
     *,
     profile: Dict[str, Any],
@@ -764,6 +832,35 @@ def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
         last_feedback_at=feedback_events[-1]["created_at"] if feedback_events else None,
         last_saved_job_at=saved_jobs[0]["updated_at"] if saved_jobs else None,
         last_dismissed_job_at=dismissed_jobs[0]["updated_at"] if dismissed_jobs else None,
+    )
+
+
+@app.get("/profiles/{profile_id}/activity", response_model=ProfileActivityResponse)
+def get_profile_activity_endpoint(profile_id: str, limit: int = 20) -> ProfileActivityResponse:
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 100.")
+
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+        feedback_events = get_feedback_events(_database_path(), profile_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return _build_profile_activity(
+        profile_id,
+        recommendation_runs=recommendation_runs,
+        feedback_events=feedback_events,
+        saved_jobs=saved_jobs,
+        dismissed_jobs=dismissed_jobs,
+        limit=limit,
     )
 
 
