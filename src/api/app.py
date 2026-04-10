@@ -349,6 +349,14 @@ class ProfileActivityResponse(BaseModel):
     activities: List[ProfileActivityItem]
 
 
+class ProfileDashboardResponse(BaseModel):
+    profile_id: str
+    summary: ProfileSummaryResponse
+    activity: ProfileActivityResponse
+    recent_runs: List[RecommendationRunSummary]
+    saved_jobs: List[StoredJobState]
+
+
 class JobDetailResponse(BaseModel):
     # Return one normalized job record through the API.
     job_id: str
@@ -742,6 +750,29 @@ def _build_profile_activity(
     )
 
 
+def _build_profile_summary(
+    profile_id: str,
+    *,
+    recommendation_runs: List[Dict[str, Any]],
+    feedback_events: List[Dict[str, Any]],
+    saved_jobs: List[Dict[str, Any]],
+    dismissed_jobs: List[Dict[str, Any]],
+) -> ProfileSummaryResponse:
+    feedback_label_counts = dict(Counter(event["feedback_label"] for event in feedback_events))
+    return ProfileSummaryResponse(
+        profile_id=profile_id,
+        recommendation_run_count=len(recommendation_runs),
+        saved_jobs_count=len(saved_jobs),
+        dismissed_jobs_count=len(dismissed_jobs),
+        feedback_event_count=len(feedback_events),
+        feedback_label_counts=feedback_label_counts,
+        last_recommendation_at=recommendation_runs[0]["created_at"] if recommendation_runs else None,
+        last_feedback_at=feedback_events[-1]["created_at"] if feedback_events else None,
+        last_saved_job_at=saved_jobs[0]["updated_at"] if saved_jobs else None,
+        last_dismissed_job_at=dismissed_jobs[0]["updated_at"] if dismissed_jobs else None,
+    )
+
+
 def _build_recommend_response(
     *,
     profile: Dict[str, Any],
@@ -884,19 +915,12 @@ def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    feedback_label_counts = dict(Counter(event["feedback_label"] for event in feedback_events))
-
-    return ProfileSummaryResponse(
+    return _build_profile_summary(
         profile_id=profile_id,
-        recommendation_run_count=len(recommendation_runs),
-        saved_jobs_count=len(saved_jobs),
-        dismissed_jobs_count=len(dismissed_jobs),
-        feedback_event_count=len(feedback_events),
-        feedback_label_counts=feedback_label_counts,
-        last_recommendation_at=recommendation_runs[0]["created_at"] if recommendation_runs else None,
-        last_feedback_at=feedback_events[-1]["created_at"] if feedback_events else None,
-        last_saved_job_at=saved_jobs[0]["updated_at"] if saved_jobs else None,
-        last_dismissed_job_at=dismissed_jobs[0]["updated_at"] if dismissed_jobs else None,
+        recommendation_runs=recommendation_runs,
+        feedback_events=feedback_events,
+        saved_jobs=saved_jobs,
+        dismissed_jobs=dismissed_jobs,
     )
 
 
@@ -926,6 +950,56 @@ def get_profile_activity_endpoint(profile_id: str, limit: int = 20) -> ProfileAc
         saved_jobs=saved_jobs,
         dismissed_jobs=dismissed_jobs,
         limit=limit,
+    )
+
+
+@app.get("/profiles/{profile_id}/dashboard", response_model=ProfileDashboardResponse)
+def get_profile_dashboard_endpoint(
+    profile_id: str,
+    activity_limit: int = 10,
+    run_limit: int = 5,
+    saved_job_limit: int = 5,
+) -> ProfileDashboardResponse:
+    if activity_limit < 1 or activity_limit > 100:
+        raise HTTPException(status_code=400, detail="activity_limit must be between 1 and 100.")
+    if run_limit < 1 or run_limit > 50:
+        raise HTTPException(status_code=400, detail="run_limit must be between 1 and 50.")
+    if saved_job_limit < 1 or saved_job_limit > 50:
+        raise HTTPException(status_code=400, detail="saved_job_limit must be between 1 and 50.")
+
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+        feedback_events = get_feedback_events(_database_path(), profile_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return ProfileDashboardResponse(
+        profile_id=profile_id,
+        summary=_build_profile_summary(
+            profile_id=profile_id,
+            recommendation_runs=recommendation_runs,
+            feedback_events=feedback_events,
+            saved_jobs=saved_jobs,
+            dismissed_jobs=dismissed_jobs,
+        ),
+        activity=_build_profile_activity(
+            profile_id,
+            recommendation_runs=recommendation_runs,
+            feedback_events=feedback_events,
+            saved_jobs=saved_jobs,
+            dismissed_jobs=dismissed_jobs,
+            limit=activity_limit,
+        ),
+        recent_runs=[RecommendationRunSummary(**run) for run in recommendation_runs[:run_limit]],
+        saved_jobs=[_stored_job_state_response(job_state) for job_state in saved_jobs[:saved_job_limit]],
     )
 
 

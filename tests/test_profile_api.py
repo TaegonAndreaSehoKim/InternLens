@@ -284,6 +284,81 @@ def test_profile_activity_returns_recent_mixed_events(tmp_path: Path, monkeypatc
     }
 
 
+def test_profile_dashboard_returns_combined_snapshot(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    client.post(
+        "/profiles/user_001/feedback",
+        json={
+            "profile_id": "user_001",
+            "events": [{"job_id": "job_a", "feedback_label": "saved"}],
+        },
+    )
+    _patch_ranked_jobs(
+        monkeypatch,
+        [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+                "source_url": "https://example.com/jobs/job_a",
+                "application_url": "https://example.com/jobs/job_a/apply",
+            },
+            {
+                "job_id": "job_b",
+                "company": "example",
+                "title": "data science intern",
+                "location": "remote",
+                "score": 82.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Relevant role match"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 45.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 7.0,
+                },
+                "source_url": "https://example.com/jobs/job_b",
+                "application_url": "https://example.com/jobs/job_b/apply",
+            },
+        ],
+    )
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 2}).json()["run_id"]
+    client.post("/profiles/user_001/jobs/job_a/save", json={"run_id": run_id})
+
+    response = client.get("/profiles/user_001/dashboard?activity_limit=2&run_limit=1&saved_job_limit=1")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["profile_id"] == "user_001"
+    assert body["summary"]["recommendation_run_count"] == 1
+    assert body["summary"]["saved_jobs_count"] == 1
+    assert len(body["activity"]["activities"]) == 2
+    assert len(body["recent_runs"]) == 1
+    assert body["recent_runs"][0]["run_id"] == run_id
+    assert len(body["saved_jobs"]) == 1
+    assert body["saved_jobs"][0]["job_id"] == "job_a"
+
+
 def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
@@ -722,6 +797,30 @@ def test_profile_activity_returns_404_for_missing_profile(tmp_path: Path, monkey
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
 
     response = client.get("/profiles/missing/activity")
+    body = response.json()
+
+    assert response.status_code == 404
+    assert "Profile not found" in body["detail"]
+
+
+def test_profile_dashboard_rejects_invalid_limits(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.get("/profiles/user_001/dashboard?activity_limit=0")
+    body = response.json()
+
+    assert response.status_code == 400
+    assert "activity_limit must be between 1 and 100" in body["detail"]
+
+
+def test_profile_dashboard_returns_404_for_missing_profile(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    response = client.get("/profiles/missing/dashboard")
     body = response.json()
 
     assert response.status_code == 404
