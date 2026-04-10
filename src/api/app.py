@@ -19,13 +19,17 @@ from src.preprocessing.profile_parser import (
 )
 from src.storage.profile_store import (
     add_feedback_events,
+    clear_profile_job_state,
     create_recommendation_run,
     create_profile,
     default_database_path,
     get_recommendation_run,
     get_feedback_events,
+    get_profile_job_state,
     get_profile,
+    list_profile_job_states,
     list_recommendation_runs,
+    upsert_profile_job_state,
     update_profile,
 )
 from src.ranking.output_filters import filter_results_for_output, truncate_results
@@ -166,6 +170,10 @@ class StoredFeedbackResponse(BaseModel):
     events: List[StoredFeedbackEvent]
 
 
+class JobStateRequest(BaseModel):
+    run_id: Optional[str] = None
+
+
 class ProfileRecommendRequest(BaseModel):
     jobs_dir: str = Field(
         default="data/processed/jobs",
@@ -263,6 +271,36 @@ class RecommendationRunSummary(BaseModel):
 class RecommendationRunListResponse(BaseModel):
     profile_id: str
     runs: List[RecommendationRunSummary]
+
+
+class StoredJobStateSnapshot(BaseModel):
+    job_id: str
+    company: str
+    title: str
+    location: str
+    recommendation: str
+    fit_level: str
+    eligibility_status: str
+    summary: str
+    why_apply: List[str]
+    watchouts: List[str]
+    application_link: Optional[str] = None
+
+
+class StoredJobState(BaseModel):
+    profile_id: str
+    job_id: str
+    state: str
+    source_run_id: Optional[str]
+    job_snapshot: Optional[StoredJobStateSnapshot] = None
+    created_at: str
+    updated_at: str
+
+
+class StoredJobStateListResponse(BaseModel):
+    profile_id: str
+    state: str
+    jobs: List[StoredJobState]
 
 
 class JobDetailResponse(BaseModel):
@@ -524,6 +562,19 @@ def _build_feedback_profile_from_events(profile_id: str, events: List[Dict[str, 
     )
 
 
+def _stored_job_state_response(state_payload: Dict[str, Any]) -> StoredJobState:
+    snapshot = state_payload.get("job_snapshot")
+    return StoredJobState(
+        profile_id=state_payload["profile_id"],
+        job_id=state_payload["job_id"],
+        state=state_payload["state"],
+        source_run_id=state_payload.get("source_run_id"),
+        job_snapshot=StoredJobStateSnapshot(**snapshot) if snapshot is not None else None,
+        created_at=state_payload["created_at"],
+        updated_at=state_payload["updated_at"],
+    )
+
+
 def _build_recommend_response(
     *,
     profile: Dict[str, Any],
@@ -661,6 +712,130 @@ def add_profile_feedback_endpoint(profile_id: str, feedback_data: FeedbackProfil
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
     return StoredFeedbackResponse(profile_id=profile_id, events=[StoredFeedbackEvent(**event) for event in events])
+
+
+@app.get("/profiles/{profile_id}/saved-jobs", response_model=StoredJobStateListResponse)
+def list_saved_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        job_states = list_profile_job_states(_database_path(), profile_id, "saved")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredJobStateListResponse(
+        profile_id=profile_id,
+        state="saved",
+        jobs=[_stored_job_state_response(job_state) for job_state in job_states],
+    )
+
+
+@app.get("/profiles/{profile_id}/dismissed-jobs", response_model=StoredJobStateListResponse)
+def list_dismissed_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        job_states = list_profile_job_states(_database_path(), profile_id, "dismissed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredJobStateListResponse(
+        profile_id=profile_id,
+        state="dismissed",
+        jobs=[_stored_job_state_response(job_state) for job_state in job_states],
+    )
+
+
+@app.post("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState, status_code=201)
+def save_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+    try:
+        stored_state = upsert_profile_job_state(
+            _database_path(),
+            profile_id=profile_id,
+            job_id=job_id,
+            state="saved",
+            source_run_id=job_state.run_id,
+        )
+    except ValueError as e:
+        detail = str(e)
+        if "Profile not found" in detail or "Recommendation run not found" in detail:
+            raise HTTPException(status_code=404, detail=detail) from e
+        raise HTTPException(status_code=400, detail=detail) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return _stored_job_state_response(stored_state)
+
+
+@app.post("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState, status_code=201)
+def dismiss_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+    try:
+        stored_state = upsert_profile_job_state(
+            _database_path(),
+            profile_id=profile_id,
+            job_id=job_id,
+            state="dismissed",
+            source_run_id=job_state.run_id,
+        )
+    except ValueError as e:
+        detail = str(e)
+        if "Profile not found" in detail or "Recommendation run not found" in detail:
+            raise HTTPException(status_code=404, detail=detail) from e
+        raise HTTPException(status_code=400, detail=detail) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return _stored_job_state_response(stored_state)
+
+
+@app.delete("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState)
+def unsave_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        if existing_state is None or existing_state["state"] != "saved":
+            raise HTTPException(status_code=404, detail=f"Saved job not found: {job_id}")
+        cleared = clear_profile_job_state(_database_path(), profile_id, job_id, "saved")
+        if not cleared:
+            raise HTTPException(status_code=404, detail=f"Saved job not found: {job_id}")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return _stored_job_state_response(existing_state)
+
+
+@app.delete("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState)
+def undismiss_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        if existing_state is None or existing_state["state"] != "dismissed":
+            raise HTTPException(status_code=404, detail=f"Dismissed job not found: {job_id}")
+        cleared = clear_profile_job_state(_database_path(), profile_id, job_id, "dismissed")
+        if not cleared:
+            raise HTTPException(status_code=404, detail=f"Dismissed job not found: {job_id}")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return _stored_job_state_response(existing_state)
 
 
 @app.get("/profiles/{profile_id}/recommendations", response_model=RecommendationRunListResponse)

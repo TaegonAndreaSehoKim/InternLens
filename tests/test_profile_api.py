@@ -26,6 +26,55 @@ def _profile_payload() -> dict:
     }
 
 
+def _patch_single_ranked_job(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api_app,
+        "load_all_job_postings",
+        lambda path: [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "description": "internship role",
+                "min_qualifications": "python",
+                "preferred_qualifications": "pytorch",
+                "posting_date": "2026-04-10",
+                "sponsorship_info": "",
+                "employment_type": "Internship",
+                "source": "manual",
+                "source_url": "https://example.com/jobs/job_a",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        api_app,
+        "rank_jobs",
+        lambda profile, jobs: [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+                "source_url": "https://example.com/jobs/job_a",
+                "application_url": "https://example.com/jobs/job_a/apply",
+            }
+        ],
+    )
+
+
 def test_profile_create_get_and_update_flow(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
@@ -194,50 +243,7 @@ def test_profile_recommend_can_skip_run_persistence(tmp_path: Path, monkeypatch)
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
 
     client.post("/profiles", json=_profile_payload())
-
-    monkeypatch.setattr(
-        api_app,
-        "load_all_job_postings",
-        lambda path: [
-            {
-                "job_id": "job_a",
-                "company": "example",
-                "title": "machine learning engineer intern",
-                "location": "remote",
-                "description": "internship role",
-                "min_qualifications": "python",
-                "preferred_qualifications": "pytorch",
-                "posting_date": "2026-04-10",
-                "sponsorship_info": "",
-                "employment_type": "Internship",
-                "source": "manual",
-            }
-        ],
-    )
-    monkeypatch.setattr(
-        api_app,
-        "rank_jobs",
-        lambda profile, jobs: [
-            {
-                "job_id": "job_a",
-                "company": "example",
-                "title": "machine learning engineer intern",
-                "location": "remote",
-                "score": 88.0,
-                "action_label": "Apply Now",
-                "matched_skills": ["python"],
-                "skill_gaps": [],
-                "reasons": ["Strong skill overlap"],
-                "blocking_issues": [],
-                "component_scores": {
-                    "skill_score": 50.0,
-                    "role_score": 20.0,
-                    "location_score": 10.0,
-                    "internship_bonus": 8.0,
-                },
-            }
-        ],
-    )
+    _patch_single_ranked_job(monkeypatch)
 
     response = client.post(
         "/profiles/user_001/recommend",
@@ -253,6 +259,75 @@ def test_profile_recommend_can_skip_run_persistence(tmp_path: Path, monkeypatch)
 
     assert runs_response.status_code == 200
     assert runs_body["runs"] == []
+
+
+def test_saved_and_dismissed_job_state_flow(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    _patch_single_ranked_job(monkeypatch)
+
+    recommend_response = client.post("/profiles/user_001/recommend", json={"top_k": 1})
+    run_id = recommend_response.json()["run_id"]
+
+    save_response = client.post(
+        "/profiles/user_001/jobs/job_a/save",
+        json={"run_id": run_id},
+    )
+    save_body = save_response.json()
+
+    assert save_response.status_code == 201
+    assert save_body["state"] == "saved"
+    assert save_body["source_run_id"] == run_id
+    assert save_body["job_snapshot"]["job_id"] == "job_a"
+    assert save_body["job_snapshot"]["recommendation"] == "apply_now"
+
+    saved_response = client.get("/profiles/user_001/saved-jobs")
+    saved_body = saved_response.json()
+
+    assert saved_response.status_code == 200
+    assert saved_body["state"] == "saved"
+    assert len(saved_body["jobs"]) == 1
+    assert saved_body["jobs"][0]["job_id"] == "job_a"
+
+    dismiss_response = client.post(
+        "/profiles/user_001/jobs/job_a/dismiss",
+        json={"run_id": run_id},
+    )
+    dismiss_body = dismiss_response.json()
+
+    assert dismiss_response.status_code == 201
+    assert dismiss_body["state"] == "dismissed"
+
+    saved_after_dismiss = client.get("/profiles/user_001/saved-jobs").json()
+    dismissed_after_dismiss = client.get("/profiles/user_001/dismissed-jobs").json()
+
+    assert saved_after_dismiss["jobs"] == []
+    assert len(dismissed_after_dismiss["jobs"]) == 1
+    assert dismissed_after_dismiss["jobs"][0]["job_id"] == "job_a"
+
+    clear_dismiss_response = client.delete("/profiles/user_001/jobs/job_a/dismiss")
+    assert clear_dismiss_response.status_code == 200
+
+    dismissed_after_clear = client.get("/profiles/user_001/dismissed-jobs").json()
+    assert dismissed_after_clear["jobs"] == []
+
+
+def test_save_job_rejects_missing_recommendation_run(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.post(
+        "/profiles/user_001/jobs/job_a/save",
+        json={"run_id": "run_missing"},
+    )
+    body = response.json()
+
+    assert response.status_code == 404
+    assert "Recommendation run not found" in body["detail"]
 
 
 def test_profile_recommendation_run_detail_returns_404_for_missing_run(tmp_path: Path, monkeypatch) -> None:

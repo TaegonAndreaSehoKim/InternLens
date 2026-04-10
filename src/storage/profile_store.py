@@ -76,6 +76,22 @@ def initialize_database(db_path: Path) -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS profile_job_states (
+                profile_id TEXT NOT NULL,
+                job_id TEXT NOT NULL,
+                state TEXT NOT NULL,
+                source_run_id TEXT,
+                snapshot_json TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY(profile_id, job_id),
+                FOREIGN KEY(profile_id) REFERENCES profiles(profile_id) ON DELETE CASCADE,
+                FOREIGN KEY(source_run_id) REFERENCES recommendation_runs(run_id) ON DELETE SET NULL
+            )
+            """
+        )
 
 
 def _profile_payload_for_storage(profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -389,3 +405,174 @@ def get_recommendation_run(db_path: Path, profile_id: str, run_id: str) -> Optio
         "created_at": run_row["created_at"],
         "results": [json.loads(row["result_json"]) for row in result_rows],
     }
+
+
+def upsert_profile_job_state(
+    db_path: Path,
+    *,
+    profile_id: str,
+    job_id: str,
+    state: str,
+    source_run_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    initialize_database(db_path)
+    if get_profile(db_path, profile_id) is None:
+        raise ValueError(f"Profile not found: {profile_id}")
+
+    if state not in {"saved", "dismissed"}:
+        raise ValueError(f"Unsupported job state: {state}")
+
+    snapshot: Optional[Dict[str, Any]] = None
+    if source_run_id is not None:
+        run = get_recommendation_run(db_path, profile_id, source_run_id)
+        if run is None:
+            raise ValueError(f"Recommendation run not found: {source_run_id}")
+        snapshot = next((result for result in run["results"] if result.get("job_id") == job_id), None)
+        if snapshot is None:
+            raise ValueError(f"Job not found in recommendation run: {job_id}")
+
+    now = utc_now_iso()
+    with _connect(db_path) as connection:
+        existing = connection.execute(
+            """
+            SELECT created_at
+            FROM profile_job_states
+            WHERE profile_id = ? AND job_id = ?
+            """,
+            (profile_id, job_id),
+        ).fetchone()
+
+        created_at = existing["created_at"] if existing is not None else now
+        connection.execute(
+            """
+            INSERT INTO profile_job_states (
+                profile_id,
+                job_id,
+                state,
+                source_run_id,
+                snapshot_json,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(profile_id, job_id)
+            DO UPDATE SET
+                state = excluded.state,
+                source_run_id = excluded.source_run_id,
+                snapshot_json = excluded.snapshot_json,
+                updated_at = excluded.updated_at
+            """,
+            (
+                profile_id,
+                job_id,
+                state,
+                source_run_id,
+                json.dumps(snapshot, ensure_ascii=False) if snapshot is not None else None,
+                created_at,
+                now,
+            ),
+        )
+
+    stored_state = get_profile_job_state(db_path, profile_id, job_id)
+    if stored_state is None:
+        raise ValueError(f"Profile job state could not be loaded after update: {job_id}")
+    return stored_state
+
+
+def get_profile_job_state(db_path: Path, profile_id: str, job_id: str) -> Optional[Dict[str, Any]]:
+    initialize_database(db_path)
+    with _connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT
+                profile_id,
+                job_id,
+                state,
+                source_run_id,
+                snapshot_json,
+                created_at,
+                updated_at
+            FROM profile_job_states
+            WHERE profile_id = ? AND job_id = ?
+            """,
+            (profile_id, job_id),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "profile_id": row["profile_id"],
+        "job_id": row["job_id"],
+        "state": row["state"],
+        "source_run_id": row["source_run_id"],
+        "job_snapshot": json.loads(row["snapshot_json"]) if row["snapshot_json"] else None,
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def list_profile_job_states(db_path: Path, profile_id: str, state: str) -> List[Dict[str, Any]]:
+    initialize_database(db_path)
+    if state not in {"saved", "dismissed"}:
+        raise ValueError(f"Unsupported job state: {state}")
+
+    with _connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                profile_id,
+                job_id,
+                state,
+                source_run_id,
+                snapshot_json,
+                created_at,
+                updated_at
+            FROM profile_job_states
+            WHERE profile_id = ? AND state = ?
+            ORDER BY updated_at DESC, job_id ASC
+            """,
+            (profile_id, state),
+        ).fetchall()
+
+    return [
+        {
+            "profile_id": row["profile_id"],
+            "job_id": row["job_id"],
+            "state": row["state"],
+            "source_run_id": row["source_run_id"],
+            "job_snapshot": json.loads(row["snapshot_json"]) if row["snapshot_json"] else None,
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        }
+        for row in rows
+    ]
+
+
+def clear_profile_job_state(db_path: Path, profile_id: str, job_id: str, state: str) -> bool:
+    initialize_database(db_path)
+    if state not in {"saved", "dismissed"}:
+        raise ValueError(f"Unsupported job state: {state}")
+
+    with _connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT state
+            FROM profile_job_states
+            WHERE profile_id = ? AND job_id = ?
+            """,
+            (profile_id, job_id),
+        ).fetchone()
+
+        if row is None or row["state"] != state:
+            return False
+
+        connection.execute(
+            """
+            DELETE FROM profile_job_states
+            WHERE profile_id = ? AND job_id = ?
+            """,
+            (profile_id, job_id),
+        )
+
+    return True
