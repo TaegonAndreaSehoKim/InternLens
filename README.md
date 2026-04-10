@@ -407,9 +407,17 @@ Main endpoints:
 - `POST /profiles`
 - `GET /profiles/{id}`
 - `PATCH /profiles/{id}`
+- `GET /profiles/{id}/summary`
+- `GET /profiles/{id}/activity`
+- `GET /profiles/{id}/dashboard`
 - `POST /profiles/{id}/feedback`
 - `GET /profiles/{id}/feedback`
 - `POST /profiles/{id}/recommend`
+- `GET /profiles/{id}/recommendations`
+- `GET /profiles/{id}/recommendations/{run_id}`
+- `GET /profiles/{id}/saved-jobs`
+- `GET /profiles/{id}/dismissed-jobs`
+- `POST /profiles/{id}/jobs/{job_id}/action`
 
 `POST /recommend` now defaults to the internal processed corpus under `data/processed/jobs`.
 `jobs_dir` is still supported as an override for testing, debugging, or focused evaluation runs.
@@ -496,9 +504,61 @@ POST /profiles/user_001/recommend
   "eligible_only": false,
   "applyable_only": false,
   "include_feedback": true,
-  "include_debug": false
+  "exclude_dismissed": true,
+  "include_debug": false,
+  "save_run": true
 }
 ```
+
+List saved recommendation runs for that profile:
+
+```json
+GET /profiles/user_001/recommendations
+```
+
+Fetch a saved recommendation run snapshot:
+
+```json
+GET /profiles/user_001/recommendations/run_abc123
+```
+
+Useful notes:
+- stored-profile recommendation calls now save a run snapshot by default
+- set `save_run=false` when you want a one-off recommendation without history
+- saved runs let the app show prior recommendation sessions without recomputing immediately
+- stored-profile recommendation calls suppress previously dismissed jobs by default
+- result items from stored-profile recommendations can now include `user_job_state`
+
+Save or dismiss a job from a stored-profile workflow:
+
+```json
+POST /profiles/user_001/jobs/job_a/action
+{
+  "action": "save",
+  "run_id": "run_abc123"
+}
+```
+
+Clear a previously saved or dismissed state:
+
+```json
+POST /profiles/user_001/jobs/job_a/action
+{
+  "action": "clear"
+}
+```
+
+Fetch a profile dashboard snapshot:
+
+```json
+GET /profiles/user_001/dashboard
+```
+
+The dashboard response combines:
+- summary counts
+- recent activity
+- recent recommendation runs
+- saved job previews
 
 ---
 
@@ -548,7 +608,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `104 passed`
+- current total: `120 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 

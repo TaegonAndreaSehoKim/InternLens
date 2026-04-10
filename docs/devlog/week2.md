@@ -280,3 +280,84 @@ Latest quality checkpoint:
 - tighten promotion thresholds for noisy sources such as public multi-team boards
 - add dry-run or report output for source promotion and refresh
 - keep simplifying the user-facing recommendation contract while preserving internal debug access
+
+---
+
+## Day 17-18 - Stored Profile Product Flow, Job Actions, and Dashboard APIs
+
+### Focus
+Move from a stateless recommendation demo toward a reusable user-product flow by adding:
+- persisted stored profiles
+- persisted feedback and recommendation run history
+- saved/dismissed job actions
+- profile summary, activity, and dashboard endpoints
+
+### What was done
+- Added SQLite-backed stored profile support:
+  - `POST /profiles`
+  - `GET /profiles/{id}`
+  - `PATCH /profiles/{id}`
+- Added persisted feedback endpoints:
+  - `POST /profiles/{id}/feedback`
+  - `GET /profiles/{id}/feedback`
+- Added stored-profile recommendation execution:
+  - `POST /profiles/{id}/recommend`
+- Added recommendation run persistence and retrieval:
+  - `GET /profiles/{id}/recommendations`
+  - `GET /profiles/{id}/recommendations/{run_id}`
+- Added saved and dismissed job state storage with run linkage so user actions can point back to the recommendation session that produced the job.
+- Added job-state APIs:
+  - `GET /profiles/{id}/saved-jobs`
+  - `GET /profiles/{id}/dismissed-jobs`
+  - `POST /profiles/{id}/jobs/{job_id}/save`
+  - `POST /profiles/{id}/jobs/{job_id}/dismiss`
+  - `DELETE /profiles/{id}/jobs/{job_id}/save`
+  - `DELETE /profiles/{id}/jobs/{job_id}/dismiss`
+- Added unified job action API:
+  - `POST /profiles/{id}/jobs/{job_id}/action`
+  - supports `save`, `dismiss`, and `clear`
+- Changed stored-profile recommendation behavior so dismissed jobs are hidden by default unless explicitly re-enabled.
+- Added user-state annotations to stored-profile recommendation results so returned jobs can indicate whether they are already saved or dismissed.
+- Added profile-level dashboard APIs:
+  - `GET /profiles/{id}/summary`
+  - `GET /profiles/{id}/activity`
+  - `GET /profiles/{id}/dashboard`
+
+### Validation
+- `pytest tests/test_profile_api.py -q` -> **20 passed**
+- `pytest -q` -> **120 passed**
+
+### Result
+- InternLens now has a real persisted user flow instead of only stateless scoring requests.
+- Recommendation runs can be revisited later without immediate recomputation.
+- User curation actions are now stored explicitly instead of being inferred only from feedback labels.
+- Stored-profile recommendations can avoid repeating dismissed jobs.
+- A frontend can now render a first dashboard view from a single API call using `/profiles/{id}/dashboard`.
+
+### Why this matters
+This stage is the clearest transition yet from "backend ranking engine" to "product backend."
+Before this work, InternLens could recommend jobs, but it had weak support for user session continuity.
+After this work, the system can remember:
+- who the user is
+- what feedback they gave
+- what runs they saw
+- which jobs they saved or dismissed
+- what their current dashboard state looks like
+
+### Updated Week 2 status
+InternLens now supports:
+- ATS ingestion, normalization, discovery, validation, promotion, and refresh
+- deduplicated processed corpus loading
+- heuristic ranking with user-facing API summaries
+- stored profiles and stored feedback
+- persisted recommendation runs
+- saved/dismissed job actions
+- profile summary, activity, and dashboard APIs
+
+Latest quality checkpoint:
+- full test suite stable at **120 passed**
+
+### Remaining next steps
+- add applied-job tracking separate from feedback labels
+- connect dashboard data to a lightweight frontend
+- decide whether job actions should also update feedback events automatically
