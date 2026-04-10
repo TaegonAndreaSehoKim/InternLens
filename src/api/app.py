@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, model_validator
@@ -174,6 +174,11 @@ class JobStateRequest(BaseModel):
     run_id: Optional[str] = None
 
 
+class JobActionRequest(BaseModel):
+    action: Literal["save", "dismiss", "clear"]
+    run_id: Optional[str] = None
+
+
 class ProfileRecommendRequest(BaseModel):
     jobs_dir: str = Field(
         default="data/processed/jobs",
@@ -307,6 +312,13 @@ class StoredJobStateListResponse(BaseModel):
     profile_id: str
     state: str
     jobs: List[StoredJobState]
+
+
+class JobActionResponse(BaseModel):
+    profile_id: str
+    job_id: str
+    action: str
+    job_state: Optional[StoredJobState] = None
 
 
 class ProfileSummaryResponse(BaseModel):
@@ -624,6 +636,59 @@ def _stored_job_state_response(state_payload: Dict[str, Any]) -> StoredJobState:
     )
 
 
+def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optional[str]) -> JobActionResponse:
+    stored_profile = get_profile(_database_path(), profile_id)
+    if stored_profile is None:
+        raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+
+    if action in {"save", "dismiss"}:
+        state = "saved" if action == "save" else "dismissed"
+        try:
+            stored_state = upsert_profile_job_state(
+                _database_path(),
+                profile_id=profile_id,
+                job_id=job_id,
+                state=state,
+                source_run_id=run_id,
+            )
+        except ValueError as e:
+            detail = str(e)
+            if "Profile not found" in detail or "Recommendation run not found" in detail:
+                raise HTTPException(status_code=404, detail=detail) from e
+            raise HTTPException(status_code=400, detail=detail) from e
+
+        return JobActionResponse(
+            profile_id=profile_id,
+            job_id=job_id,
+            action=action,
+            job_state=_stored_job_state_response(stored_state),
+        )
+
+    existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+    if existing_state is None:
+        raise HTTPException(status_code=404, detail=f"Job state not found: {job_id}")
+
+    try:
+        cleared = clear_profile_job_state(
+            _database_path(),
+            profile_id,
+            job_id,
+            existing_state["state"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    if not cleared:
+        raise HTTPException(status_code=404, detail=f"Job state not found: {job_id}")
+
+    return JobActionResponse(
+        profile_id=profile_id,
+        job_id=job_id,
+        action=action,
+        job_state=None,
+    )
+
+
 def _build_profile_activity(
     profile_id: str,
     *,
@@ -921,60 +986,51 @@ def list_dismissed_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
     )
 
 
-@app.post("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState, status_code=201)
-def save_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+@app.post("/profiles/{profile_id}/jobs/{job_id}/action", response_model=JobActionResponse)
+def job_action_endpoint(profile_id: str, job_id: str, job_action: JobActionRequest) -> JobActionResponse:
     try:
-        stored_state = upsert_profile_job_state(
-            _database_path(),
-            profile_id=profile_id,
-            job_id=job_id,
-            state="saved",
-            source_run_id=job_state.run_id,
-        )
-    except ValueError as e:
-        detail = str(e)
-        if "Profile not found" in detail or "Recommendation run not found" in detail:
-            raise HTTPException(status_code=404, detail=detail) from e
-        raise HTTPException(status_code=400, detail=detail) from e
+        return _apply_job_action(profile_id, job_id, job_action.action, job_action.run_id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    return _stored_job_state_response(stored_state)
+
+@app.post("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState, status_code=201)
+def save_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+    try:
+        response = _apply_job_action(profile_id, job_id, "save", job_state.run_id)
+        if response.job_state is None:
+            raise HTTPException(status_code=500, detail="Saved job state was not returned.")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return response.job_state
 
 
 @app.post("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState, status_code=201)
 def dismiss_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
     try:
-        stored_state = upsert_profile_job_state(
-            _database_path(),
-            profile_id=profile_id,
-            job_id=job_id,
-            state="dismissed",
-            source_run_id=job_state.run_id,
-        )
-    except ValueError as e:
-        detail = str(e)
-        if "Profile not found" in detail or "Recommendation run not found" in detail:
-            raise HTTPException(status_code=404, detail=detail) from e
-        raise HTTPException(status_code=400, detail=detail) from e
+        response = _apply_job_action(profile_id, job_id, "dismiss", job_state.run_id)
+        if response.job_state is None:
+            raise HTTPException(status_code=500, detail="Dismissed job state was not returned.")
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
-    return _stored_job_state_response(stored_state)
+    return response.job_state
 
 
 @app.delete("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState)
 def unsave_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
-        if stored_profile is None:
-            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
         existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
         if existing_state is None or existing_state["state"] != "saved":
             raise HTTPException(status_code=404, detail=f"Saved job not found: {job_id}")
-        cleared = clear_profile_job_state(_database_path(), profile_id, job_id, "saved")
-        if not cleared:
-            raise HTTPException(status_code=404, detail=f"Saved job not found: {job_id}")
+        _apply_job_action(profile_id, job_id, "clear", None)
     except HTTPException:
         raise
     except ValueError as e:
@@ -988,15 +1044,10 @@ def unsave_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
 @app.delete("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState)
 def undismiss_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
-        if stored_profile is None:
-            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
         existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
         if existing_state is None or existing_state["state"] != "dismissed":
             raise HTTPException(status_code=404, detail=f"Dismissed job not found: {job_id}")
-        cleared = clear_profile_job_state(_database_path(), profile_id, job_id, "dismissed")
-        if not cleared:
-            raise HTTPException(status_code=404, detail=f"Dismissed job not found: {job_id}")
+        _apply_job_action(profile_id, job_id, "clear", None)
     except HTTPException:
         raise
     except ValueError as e:

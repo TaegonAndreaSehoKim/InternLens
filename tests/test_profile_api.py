@@ -465,6 +465,49 @@ def test_saved_and_dismissed_job_state_flow(tmp_path: Path, monkeypatch) -> None
     assert dismissed_after_clear["jobs"] == []
 
 
+def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    _patch_single_ranked_job(monkeypatch)
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 1}).json()["run_id"]
+
+    save_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "save", "run_id": run_id},
+    )
+    save_body = save_response.json()
+
+    assert save_response.status_code == 200
+    assert save_body["action"] == "save"
+    assert save_body["job_state"]["state"] == "saved"
+    assert save_body["job_state"]["source_run_id"] == run_id
+
+    dismiss_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "dismiss", "run_id": run_id},
+    )
+    dismiss_body = dismiss_response.json()
+
+    assert dismiss_response.status_code == 200
+    assert dismiss_body["action"] == "dismiss"
+    assert dismiss_body["job_state"]["state"] == "dismissed"
+
+    clear_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "clear"},
+    )
+    clear_body = clear_response.json()
+
+    assert clear_response.status_code == 200
+    assert clear_body["action"] == "clear"
+    assert clear_body["job_state"] is None
+    assert client.get("/profiles/user_001/saved-jobs").json()["jobs"] == []
+    assert client.get("/profiles/user_001/dismissed-jobs").json()["jobs"] == []
+
+
 def test_profile_recommend_excludes_dismissed_jobs_by_default(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
@@ -608,6 +651,22 @@ def test_save_job_rejects_missing_recommendation_run(tmp_path: Path, monkeypatch
 
     assert response.status_code == 404
     assert "Recommendation run not found" in body["detail"]
+
+
+def test_unified_job_action_clear_returns_404_when_state_missing(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "clear"},
+    )
+    body = response.json()
+
+    assert response.status_code == 404
+    assert "Job state not found" in body["detail"]
 
 
 def test_profile_recommendation_run_detail_returns_404_for_missing_run(tmp_path: Path, monkeypatch) -> None:
