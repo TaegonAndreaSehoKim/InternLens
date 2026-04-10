@@ -30,7 +30,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `100 passed`
+- current total: `104 passed`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -89,6 +89,7 @@ The current implementation is intentionally simple and transparent. It is design
 - CSV export
 - API endpoint for `/recommend`
 - API endpoint for `/jobs/{id}`
+- profile persistence and stored-feedback recommendation flow
 - shared output filtering between CLI and API
 
 ### Validation
@@ -102,7 +103,8 @@ The current implementation is intentionally simple and transparent. It is design
 - source validation tests
 - source promotion tests
 - source pipeline tests
-- full suite currently passing: `100 passed`
+- profile API tests
+- full suite currently passing: `104 passed`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -402,6 +404,12 @@ uvicorn src.api.app:app --reload
 Main endpoints:
 - `POST /recommend`
 - `GET /jobs/{id}`
+- `POST /profiles`
+- `GET /profiles/{id}`
+- `PATCH /profiles/{id}`
+- `POST /profiles/{id}/feedback`
+- `GET /profiles/{id}/feedback`
+- `POST /profiles/{id}/recommend`
 
 `POST /recommend` now defaults to the internal processed corpus under `data/processed/jobs`.
 `jobs_dir` is still supported as an override for testing, debugging, or focused evaluation runs.
@@ -444,6 +452,53 @@ Useful notes:
 - `include_debug=true` adds raw score, blocker, match, and reranking fields back into each result
 - `eligible_only=true` keeps only jobs with no blocking issues
 - `applyable_only=true` keeps only jobs whose action label is not `Skip`
+
+### Stored profile flow
+
+Create a persisted profile:
+
+```json
+POST /profiles
+{
+  "profile_id": "user_001",
+  "resume_text": "Python, machine learning, ranking systems",
+  "degree_level": "Master's",
+  "grad_date": "2027-12",
+  "preferred_roles": ["Machine Learning Engineer Intern"],
+  "preferred_locations": ["Remote", "California"],
+  "target_industries": ["AI", "Tech"],
+  "sponsorship_need": true,
+  "extracted_skills": ["Python", "Machine Learning"],
+  "years_of_experience": 1,
+  "notes": "Interested in recommender systems"
+}
+```
+
+Store feedback events for that profile:
+
+```json
+POST /profiles/user_001/feedback
+{
+  "profile_id": "user_001",
+  "events": [
+    {"job_id": "job_002", "feedback_label": "applied"},
+    {"job_id": "job_005", "feedback_label": "saved"}
+  ]
+}
+```
+
+Request recommendations from the stored profile:
+
+```json
+POST /profiles/user_001/recommend
+{
+  "top_k": 10,
+  "eligible_only": false,
+  "applyable_only": false,
+  "include_feedback": true,
+  "include_debug": false
+}
+```
 
 ---
 
@@ -493,7 +548,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `100 passed`
+- current total: `104 passed`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -511,6 +566,7 @@ Current status:
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 - the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
+- persisted user data is currently SQLite-based and intended for local or prototype use rather than multi-user production deployment
 
 ---
 
