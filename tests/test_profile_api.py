@@ -213,6 +213,7 @@ def test_profile_summary_aggregates_activity(tmp_path: Path, monkeypatch) -> Non
     run_id = client.post("/profiles/user_001/recommend", json={"top_k": 2}).json()["run_id"]
     client.post("/profiles/user_001/jobs/job_a/save", json={"run_id": run_id})
     client.post("/profiles/user_001/jobs/job_b/dismiss", json={"run_id": run_id})
+    client.post("/profiles/user_001/jobs/job_a/action", json={"action": "apply", "run_id": run_id})
 
     summary_response = client.get("/profiles/user_001/summary")
     summary_body = summary_response.json()
@@ -220,14 +221,16 @@ def test_profile_summary_aggregates_activity(tmp_path: Path, monkeypatch) -> Non
     assert summary_response.status_code == 200
     assert summary_body["profile_id"] == "user_001"
     assert summary_body["recommendation_run_count"] == 1
-    assert summary_body["saved_jobs_count"] == 1
+    assert summary_body["saved_jobs_count"] == 0
     assert summary_body["dismissed_jobs_count"] == 1
+    assert summary_body["applied_jobs_count"] == 1
     assert summary_body["feedback_event_count"] == 2
     assert summary_body["feedback_label_counts"] == {"saved": 1, "applied": 1}
     assert summary_body["last_recommendation_at"] is not None
     assert summary_body["last_feedback_at"] is not None
-    assert summary_body["last_saved_job_at"] is not None
+    assert summary_body["last_saved_job_at"] is None
     assert summary_body["last_dismissed_job_at"] is not None
+    assert summary_body["last_applied_job_at"] is not None
 
 
 def test_profile_activity_returns_recent_mixed_events(tmp_path: Path, monkeypatch) -> None:
@@ -344,19 +347,25 @@ def test_profile_dashboard_returns_combined_snapshot(tmp_path: Path, monkeypatch
 
     run_id = client.post("/profiles/user_001/recommend", json={"top_k": 2}).json()["run_id"]
     client.post("/profiles/user_001/jobs/job_a/save", json={"run_id": run_id})
+    client.post("/profiles/user_001/jobs/job_b/action", json={"action": "apply", "run_id": run_id})
 
-    response = client.get("/profiles/user_001/dashboard?activity_limit=2&run_limit=1&saved_job_limit=1")
+    response = client.get(
+        "/profiles/user_001/dashboard?activity_limit=2&run_limit=1&saved_job_limit=1&applied_job_limit=1"
+    )
     body = response.json()
 
     assert response.status_code == 200
     assert body["profile_id"] == "user_001"
     assert body["summary"]["recommendation_run_count"] == 1
     assert body["summary"]["saved_jobs_count"] == 1
+    assert body["summary"]["applied_jobs_count"] == 1
     assert len(body["activity"]["activities"]) == 2
     assert len(body["recent_runs"]) == 1
     assert body["recent_runs"][0]["run_id"] == run_id
     assert len(body["saved_jobs"]) == 1
     assert body["saved_jobs"][0]["job_id"] == "job_a"
+    assert len(body["applied_jobs"]) == 1
+    assert body["applied_jobs"][0]["job_id"] == "job_b"
 
 
 def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monkeypatch) -> None:
@@ -583,6 +592,35 @@ def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Pa
     assert client.get("/profiles/user_001/dismissed-jobs").json()["jobs"] == []
 
 
+def test_unified_job_action_endpoint_tracks_applied_jobs(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    _patch_single_ranked_job(monkeypatch)
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 1}).json()["run_id"]
+
+    apply_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "apply", "run_id": run_id},
+    )
+    apply_body = apply_response.json()
+
+    assert apply_response.status_code == 200
+    assert apply_body["action"] == "apply"
+    assert apply_body["job_state"]["state"] == "applied"
+    assert apply_body["job_state"]["source_run_id"] == run_id
+
+    applied_response = client.get("/profiles/user_001/applied-jobs")
+    applied_body = applied_response.json()
+
+    assert applied_response.status_code == 200
+    assert applied_body["state"] == "applied"
+    assert len(applied_body["jobs"]) == 1
+    assert applied_body["jobs"][0]["job_id"] == "job_a"
+
+
 def test_profile_recommend_excludes_dismissed_jobs_by_default(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
@@ -709,6 +747,141 @@ def test_profile_recommend_can_include_dismissed_jobs(tmp_path: Path, monkeypatc
     assert response.status_code == 200
     assert [result["job_id"] for result in body["results"]] == ["job_a", "job_b"]
     assert body["results"][0]["user_job_state"] == "dismissed"
+    assert body["results"][0]["user_job_state_source_run_id"] == run_id
+
+
+def test_profile_recommend_excludes_applied_jobs_by_default(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    _patch_ranked_jobs(
+        monkeypatch,
+        [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+                "source_url": "https://example.com/jobs/job_a",
+                "application_url": "https://example.com/jobs/job_a/apply",
+            },
+            {
+                "job_id": "job_b",
+                "company": "example",
+                "title": "data science intern",
+                "location": "remote",
+                "score": 82.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Relevant role match"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 45.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 7.0,
+                },
+                "source_url": "https://example.com/jobs/job_b",
+                "application_url": "https://example.com/jobs/job_b/apply",
+            },
+        ],
+    )
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 2}).json()["run_id"]
+    apply_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "apply", "run_id": run_id},
+    )
+    assert apply_response.status_code == 200
+
+    response = client.post("/profiles/user_001/recommend", json={"top_k": 2})
+    body = response.json()
+
+    assert response.status_code == 200
+    assert [result["job_id"] for result in body["results"]] == ["job_b"]
+
+
+def test_profile_recommend_can_include_applied_jobs(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+    _patch_ranked_jobs(
+        monkeypatch,
+        [
+            {
+                "job_id": "job_a",
+                "company": "example",
+                "title": "machine learning engineer intern",
+                "location": "remote",
+                "score": 88.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Strong skill overlap"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 50.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 8.0,
+                },
+                "source_url": "https://example.com/jobs/job_a",
+                "application_url": "https://example.com/jobs/job_a/apply",
+            },
+            {
+                "job_id": "job_b",
+                "company": "example",
+                "title": "data science intern",
+                "location": "remote",
+                "score": 82.0,
+                "action_label": "Apply Now",
+                "matched_skills": ["python"],
+                "skill_gaps": [],
+                "reasons": ["Relevant role match"],
+                "blocking_issues": [],
+                "component_scores": {
+                    "skill_score": 45.0,
+                    "role_score": 20.0,
+                    "location_score": 10.0,
+                    "internship_bonus": 7.0,
+                },
+                "source_url": "https://example.com/jobs/job_b",
+                "application_url": "https://example.com/jobs/job_b/apply",
+            },
+        ],
+    )
+
+    run_id = client.post("/profiles/user_001/recommend", json={"top_k": 2}).json()["run_id"]
+    apply_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "apply", "run_id": run_id},
+    )
+    assert apply_response.status_code == 200
+
+    response = client.post(
+        "/profiles/user_001/recommend",
+        json={"top_k": 2, "exclude_applied": False},
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert [result["job_id"] for result in body["results"]] == ["job_a", "job_b"]
+    assert body["results"][0]["user_job_state"] == "applied"
     assert body["results"][0]["user_job_state_source_run_id"] == run_id
 
 

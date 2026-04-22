@@ -175,7 +175,7 @@ class JobStateRequest(BaseModel):
 
 
 class JobActionRequest(BaseModel):
-    action: Literal["save", "dismiss", "clear"]
+    action: Literal["save", "dismiss", "apply", "clear"]
     run_id: Optional[str] = None
 
 
@@ -194,6 +194,10 @@ class ProfileRecommendRequest(BaseModel):
     exclude_dismissed: bool = Field(
         default=True,
         description="If true, suppress jobs the user has already marked as dismissed.",
+    )
+    exclude_applied: bool = Field(
+        default=True,
+        description="If true, suppress jobs the user has already marked as applied.",
     )
     save_run: bool = Field(
         default=True,
@@ -326,12 +330,14 @@ class ProfileSummaryResponse(BaseModel):
     recommendation_run_count: int
     saved_jobs_count: int
     dismissed_jobs_count: int
+    applied_jobs_count: int
     feedback_event_count: int
     feedback_label_counts: Dict[str, int]
     last_recommendation_at: Optional[str] = None
     last_feedback_at: Optional[str] = None
     last_saved_job_at: Optional[str] = None
     last_dismissed_job_at: Optional[str] = None
+    last_applied_job_at: Optional[str] = None
 
 
 class ProfileActivityItem(BaseModel):
@@ -355,6 +361,7 @@ class ProfileDashboardResponse(BaseModel):
     activity: ProfileActivityResponse
     recent_runs: List[RecommendationRunSummary]
     saved_jobs: List[StoredJobState]
+    applied_jobs: List[StoredJobState]
 
 
 class JobDetailResponse(BaseModel):
@@ -649,8 +656,13 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
     if stored_profile is None:
         raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
-    if action in {"save", "dismiss"}:
-        state = "saved" if action == "save" else "dismissed"
+    if action in {"save", "dismiss", "apply"}:
+        state_by_action = {
+            "save": "saved",
+            "dismiss": "dismissed",
+            "apply": "applied",
+        }
+        state = state_by_action[action]
         try:
             stored_state = upsert_profile_job_state(
                 _database_path(),
@@ -704,6 +716,7 @@ def _build_profile_activity(
     feedback_events: List[Dict[str, Any]],
     saved_jobs: List[Dict[str, Any]],
     dismissed_jobs: List[Dict[str, Any]],
+    applied_jobs: List[Dict[str, Any]],
     limit: int,
 ) -> ProfileActivityResponse:
     activities: List[Dict[str, Any]] = []
@@ -740,7 +753,7 @@ def _build_profile_activity(
                 f"{state['state'].capitalize()} {state.get('job_snapshot', {}).get('title', state['job_id'])}"
             ),
         }
-        for state in saved_jobs + dismissed_jobs
+        for state in saved_jobs + dismissed_jobs + applied_jobs
     )
 
     activities.sort(key=lambda item: (item["created_at"], item["activity_type"]), reverse=True)
@@ -757,6 +770,7 @@ def _build_profile_summary(
     feedback_events: List[Dict[str, Any]],
     saved_jobs: List[Dict[str, Any]],
     dismissed_jobs: List[Dict[str, Any]],
+    applied_jobs: List[Dict[str, Any]],
 ) -> ProfileSummaryResponse:
     feedback_label_counts = dict(Counter(event["feedback_label"] for event in feedback_events))
     return ProfileSummaryResponse(
@@ -764,12 +778,14 @@ def _build_profile_summary(
         recommendation_run_count=len(recommendation_runs),
         saved_jobs_count=len(saved_jobs),
         dismissed_jobs_count=len(dismissed_jobs),
+        applied_jobs_count=len(applied_jobs),
         feedback_event_count=len(feedback_events),
         feedback_label_counts=feedback_label_counts,
         last_recommendation_at=recommendation_runs[0]["created_at"] if recommendation_runs else None,
         last_feedback_at=feedback_events[-1]["created_at"] if feedback_events else None,
         last_saved_job_at=saved_jobs[0]["updated_at"] if saved_jobs else None,
         last_dismissed_job_at=dismissed_jobs[0]["updated_at"] if dismissed_jobs else None,
+        last_applied_job_at=applied_jobs[0]["updated_at"] if applied_jobs else None,
     )
 
 
@@ -910,6 +926,7 @@ def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
         recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
         saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
         dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
     except HTTPException:
         raise
     except Exception as e:
@@ -921,6 +938,7 @@ def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
         feedback_events=feedback_events,
         saved_jobs=saved_jobs,
         dismissed_jobs=dismissed_jobs,
+        applied_jobs=applied_jobs,
     )
 
 
@@ -938,6 +956,7 @@ def get_profile_activity_endpoint(profile_id: str, limit: int = 20) -> ProfileAc
         recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
         saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
         dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
     except HTTPException:
         raise
     except Exception as e:
@@ -949,6 +968,7 @@ def get_profile_activity_endpoint(profile_id: str, limit: int = 20) -> ProfileAc
         feedback_events=feedback_events,
         saved_jobs=saved_jobs,
         dismissed_jobs=dismissed_jobs,
+        applied_jobs=applied_jobs,
         limit=limit,
     )
 
@@ -959,6 +979,7 @@ def get_profile_dashboard_endpoint(
     activity_limit: int = 10,
     run_limit: int = 5,
     saved_job_limit: int = 5,
+    applied_job_limit: int = 5,
 ) -> ProfileDashboardResponse:
     if activity_limit < 1 or activity_limit > 100:
         raise HTTPException(status_code=400, detail="activity_limit must be between 1 and 100.")
@@ -966,6 +987,8 @@ def get_profile_dashboard_endpoint(
         raise HTTPException(status_code=400, detail="run_limit must be between 1 and 50.")
     if saved_job_limit < 1 or saved_job_limit > 50:
         raise HTTPException(status_code=400, detail="saved_job_limit must be between 1 and 50.")
+    if applied_job_limit < 1 or applied_job_limit > 50:
+        raise HTTPException(status_code=400, detail="applied_job_limit must be between 1 and 50.")
 
     try:
         stored_profile = get_profile(_database_path(), profile_id)
@@ -976,6 +999,7 @@ def get_profile_dashboard_endpoint(
         recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
         saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
         dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
     except HTTPException:
         raise
     except Exception as e:
@@ -989,6 +1013,7 @@ def get_profile_dashboard_endpoint(
             feedback_events=feedback_events,
             saved_jobs=saved_jobs,
             dismissed_jobs=dismissed_jobs,
+            applied_jobs=applied_jobs,
         ),
         activity=_build_profile_activity(
             profile_id,
@@ -996,10 +1021,12 @@ def get_profile_dashboard_endpoint(
             feedback_events=feedback_events,
             saved_jobs=saved_jobs,
             dismissed_jobs=dismissed_jobs,
+            applied_jobs=applied_jobs,
             limit=activity_limit,
         ),
         recent_runs=[RecommendationRunSummary(**run) for run in recommendation_runs[:run_limit]],
         saved_jobs=[_stored_job_state_response(job_state) for job_state in saved_jobs[:saved_job_limit]],
+        applied_jobs=[_stored_job_state_response(job_state) for job_state in applied_jobs[:applied_job_limit]],
     )
 
 
@@ -1056,6 +1083,25 @@ def list_dismissed_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
     return StoredJobStateListResponse(
         profile_id=profile_id,
         state="dismissed",
+        jobs=[_stored_job_state_response(job_state) for job_state in job_states],
+    )
+
+
+@app.get("/profiles/{profile_id}/applied-jobs", response_model=StoredJobStateListResponse)
+def list_applied_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+    try:
+        stored_profile = get_profile(_database_path(), profile_id)
+        if stored_profile is None:
+            raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
+        job_states = list_profile_job_states(_database_path(), profile_id, "applied")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredJobStateListResponse(
+        profile_id=profile_id,
+        state="applied",
         jobs=[_stored_job_state_response(job_state) for job_state in job_states],
     )
 
@@ -1246,13 +1292,16 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
 
         saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
         dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
         job_state_by_id = {
             job_state["job_id"]: job_state
-            for job_state in saved_jobs + dismissed_jobs
+            for job_state in saved_jobs + dismissed_jobs + applied_jobs
         }
 
         if request.exclude_dismissed:
             excluded_job_ids = {job_state["job_id"] for job_state in dismissed_jobs}
+        if request.exclude_applied:
+            excluded_job_ids.update(job_state["job_id"] for job_state in applied_jobs)
 
         response = _build_recommend_response(
             profile=normalized_profile,

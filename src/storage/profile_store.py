@@ -9,6 +9,9 @@ from typing import Any, Dict, List, Optional
 from src.discovery.source_discovery import utc_now_iso
 
 
+JOB_STATES = {"saved", "dismissed", "applied"}
+
+
 def default_database_path(project_root: Path) -> Path:
     return project_root / "data" / "app" / "internlens.db"
 
@@ -419,7 +422,7 @@ def upsert_profile_job_state(
     if get_profile(db_path, profile_id) is None:
         raise ValueError(f"Profile not found: {profile_id}")
 
-    if state not in {"saved", "dismissed"}:
+    if state not in JOB_STATES:
         raise ValueError(f"Unsupported job state: {state}")
 
     snapshot: Optional[Dict[str, Any]] = None
@@ -514,7 +517,7 @@ def get_profile_job_state(db_path: Path, profile_id: str, job_id: str) -> Option
 
 def list_profile_job_states(db_path: Path, profile_id: str, state: str) -> List[Dict[str, Any]]:
     initialize_database(db_path)
-    if state not in {"saved", "dismissed"}:
+    if state not in JOB_STATES:
         raise ValueError(f"Unsupported job state: {state}")
 
     with _connect(db_path) as connection:
@@ -551,7 +554,7 @@ def list_profile_job_states(db_path: Path, profile_id: str, state: str) -> List[
 
 def clear_profile_job_state(db_path: Path, profile_id: str, job_id: str, state: str) -> bool:
     initialize_database(db_path)
-    if state not in {"saved", "dismissed"}:
+    if state not in JOB_STATES:
         raise ValueError(f"Unsupported job state: {state}")
 
     with _connect(db_path) as connection:
