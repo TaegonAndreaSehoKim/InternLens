@@ -104,9 +104,48 @@ button:disabled {
   font-weight: 700;
 }
 
+.status-topline,
+.status-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
 .status-card small,
 .muted {
   color: var(--muted);
+}
+
+.health-pill,
+.status-refresh {
+  border: 1px solid rgba(23, 33, 28, 0.12);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.health-pill.checking {
+  color: #71551b;
+  background: rgba(214, 154, 53, 0.18);
+}
+
+.health-pill.online {
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.16);
+}
+
+.health-pill.offline {
+  color: var(--cedar);
+  background: rgba(158, 78, 50, 0.14);
+}
+
+.status-refresh {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.46);
 }
 
 .pulse-dot {
@@ -322,13 +361,29 @@ textarea {
 }
 
 .result-count,
-.state-pill {
+.state-pill,
+.action-pill {
   align-self: center;
   border-radius: 999px;
   padding: 7px 11px;
   background: rgba(86, 107, 67, 0.13);
   color: var(--moss);
   font-weight: 900;
+}
+
+.action-pill.apply-now {
+  color: #fffaf0;
+  background: var(--cedar);
+}
+
+.action-pill.apply-later {
+  color: #5c4312;
+  background: rgba(214, 154, 53, 0.24);
+}
+
+.action-pill.skip {
+  color: var(--muted);
+  background: rgba(23, 33, 28, 0.08);
 }
 
 .job-list {

@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const STORAGE_KEY = "internlens.ui.state";
 
 const defaultProfile = {
   profile_id: "user_001",
@@ -36,6 +37,26 @@ function profilePayload(form) {
   };
 }
 
+function readStoredState() {
+  try {
+    return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredState(state) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage can be unavailable in private browsing or locked-down environments.
+  }
+}
+
+function actionClass(value = "") {
+  return value.toLowerCase().replace(/\s+/g, "-");
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
@@ -52,12 +73,16 @@ async function api(path, options = {}) {
 }
 
 function App() {
-  const [form, setForm] = useState(defaultProfile);
-  const [profileId, setProfileId] = useState(defaultProfile.profile_id);
+  const [storedState] = useState(() => readStoredState());
+  const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
+  const [profileId, setProfileId] = useState(
+    () => storedState.profileId ?? storedState.form?.profile_id ?? defaultProfile.profile_id
+  );
   const [dashboard, setDashboard] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
-  const [selectedRun, setSelectedRun] = useState(null);
-  const [status, setStatus] = useState("Connect to the API, create a profile, then run recommendations.");
+  const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
+  const [status, setStatus] = useState("Checking API connection...");
+  const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
 
   async function runTask(label, task) {
@@ -65,11 +90,21 @@ function App() {
     setStatus(label);
     try {
       await task();
+      setApiHealth("online");
     } catch (error) {
+      if (String(error.message).includes("fetch")) {
+        setApiHealth("offline");
+      }
       setStatus(error.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function checkApiHealth() {
+    setApiHealth("checking");
+    await api("/health");
+    setApiHealth("online");
   }
 
   async function loadDashboard(id = profileId) {
@@ -128,15 +163,60 @@ function App() {
       body: JSON.stringify({ action, run_id: selectedRun })
     });
     await loadDashboard(profileId);
-    if (recommendations) {
+    if (recommendations && selectedRun) {
       await loadRun(selectedRun);
     }
     setStatus(`${action} recorded for ${jobId}.`);
   }
 
   useEffect(() => {
+    let cancelled = false;
     document.title = "InternLens";
-  }, []);
+
+    async function restoreSession() {
+      try {
+        await api("/health");
+        if (cancelled) return;
+        setApiHealth("online");
+
+        if (!storedState.profileId) {
+          setStatus("API online. Save a profile to start recommendations.");
+          return;
+        }
+
+        const restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`);
+        if (cancelled) return;
+        setDashboard(restoredDashboard);
+        setStatus(`Restored profile ${storedState.profileId}.`);
+
+        if (storedState.selectedRun) {
+          try {
+            const restoredRun = await api(`/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`);
+            if (cancelled) return;
+            setRecommendations(restoredRun);
+            setStatus(`Restored run ${storedState.selectedRun}.`);
+          } catch {
+            if (!cancelled) {
+              setSelectedRun(null);
+            }
+          }
+        }
+      } catch (error) {
+        if (cancelled) return;
+        setApiHealth("offline");
+        setStatus(`API offline: ${error.message}`);
+      }
+    }
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [storedState.profileId, storedState.selectedRun]);
+
+  useEffect(() => {
+    writeStoredState({ form, profileId, selectedRun });
+  }, [form, profileId, selectedRun]);
 
   return (
     <main className="shell">
@@ -150,9 +230,24 @@ function App() {
           </p>
         </div>
         <div className="status-card">
-          <span className={busy ? "pulse-dot active" : "pulse-dot"} />
+          <div className="status-topline">
+            <span className={busy ? "pulse-dot active" : "pulse-dot"} />
+            <span className={`health-pill ${apiHealth}`}>{apiHealth}</span>
+          </div>
           <p>{status}</p>
-          <small>API base: {API_BASE}</small>
+          <div className="status-footer">
+            <small>API base: {API_BASE}</small>
+            <button
+              className="status-refresh"
+              disabled={busy}
+              onClick={() => runTask("Checking API...", async () => {
+                await checkApiHealth();
+                setStatus("API is online.");
+              })}
+            >
+              Check API
+            </button>
+          </div>
         </div>
       </section>
 
@@ -336,6 +431,9 @@ function RecommendationPanel({ recommendations, selectedRun, busy, onAction }) {
                   <span>{job.company}</span>
                   <span>{job.location}</span>
                   <span>{job.fit_level}</span>
+                  {job.action_label && (
+                    <span className={`action-pill ${actionClass(job.action_label)}`}>{job.action_label}</span>
+                  )}
                   {job.user_job_state && <span className="state-pill">{job.user_job_state}</span>}
                 </div>
                 <h3>{job.title}</h3>
