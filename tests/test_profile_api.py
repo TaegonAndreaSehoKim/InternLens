@@ -366,6 +366,39 @@ def test_profile_dashboard_returns_combined_snapshot(tmp_path: Path, monkeypatch
     assert body["saved_jobs"][0]["job_id"] == "job_a"
     assert len(body["applied_jobs"]) == 1
     assert body["applied_jobs"][0]["job_id"] == "job_b"
+    assert [action["action"] for action in body["recommended_next_actions"]] == [
+        "apply_saved_job",
+        "review_applied_job",
+        "refresh_recommendations",
+    ]
+    assert body["recommended_next_actions"][0]["target_job_id"] == "job_a"
+
+
+def test_profile_dashboard_recommends_first_run_for_empty_profile(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    client.post("/profiles", json=_profile_payload())
+
+    response = client.get("/profiles/user_001/dashboard")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["summary"]["recommendation_run_count"] == 0
+    assert body["activity"]["activities"] == []
+    assert body["recent_runs"] == []
+    assert body["saved_jobs"] == []
+    assert body["applied_jobs"] == []
+    assert body["recommended_next_actions"] == [
+        {
+            "action": "run_recommendation",
+            "label": "Run your first recommendation",
+            "description": "Create a recommendation run from the stored profile and current job corpus.",
+            "priority": 1,
+            "target_job_id": None,
+            "target_run_id": None,
+        }
+    ]
 
 
 def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monkeypatch) -> None:

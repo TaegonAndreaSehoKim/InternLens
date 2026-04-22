@@ -357,9 +357,19 @@ class ProfileActivityResponse(BaseModel):
     activities: List[ProfileActivityItem]
 
 
+class DashboardNextAction(BaseModel):
+    action: str
+    label: str
+    description: str
+    priority: int
+    target_job_id: Optional[str] = None
+    target_run_id: Optional[str] = None
+
+
 class ProfileDashboardResponse(BaseModel):
     profile_id: str
     summary: ProfileSummaryResponse
+    recommended_next_actions: List[DashboardNextAction]
     activity: ProfileActivityResponse
     recent_runs: List[RecommendationRunSummary]
     saved_jobs: List[StoredJobState]
@@ -806,6 +816,66 @@ def _build_profile_summary(
     )
 
 
+def _build_dashboard_next_actions(
+    *,
+    recommendation_runs: List[Dict[str, Any]],
+    saved_jobs: List[Dict[str, Any]],
+    applied_jobs: List[Dict[str, Any]],
+) -> List[DashboardNextAction]:
+    actions: List[Dict[str, Any]] = []
+
+    if not recommendation_runs:
+        actions.append(
+            {
+                "action": "run_recommendation",
+                "label": "Run your first recommendation",
+                "description": "Create a recommendation run from the stored profile and current job corpus.",
+                "priority": 1,
+            }
+        )
+    else:
+        actions.append(
+            {
+                "action": "refresh_recommendations",
+                "label": "Refresh recommendations",
+                "description": "Run recommendations again to include the latest corpus and feedback state.",
+                "priority": 3,
+                "target_run_id": recommendation_runs[0]["run_id"],
+            }
+        )
+
+    if saved_jobs:
+        top_saved_job = saved_jobs[0]
+        snapshot = top_saved_job.get("job_snapshot") or {}
+        actions.append(
+            {
+                "action": "apply_saved_job",
+                "label": "Apply to a saved job",
+                "description": f"Review and apply to {snapshot.get('title', top_saved_job['job_id'])}.",
+                "priority": 1,
+                "target_job_id": top_saved_job["job_id"],
+                "target_run_id": top_saved_job.get("source_run_id"),
+            }
+        )
+
+    if applied_jobs:
+        top_applied_job = applied_jobs[0]
+        snapshot = top_applied_job.get("job_snapshot") or {}
+        actions.append(
+            {
+                "action": "review_applied_job",
+                "label": "Review applied job",
+                "description": f"Track follow-up for {snapshot.get('title', top_applied_job['job_id'])}.",
+                "priority": 2,
+                "target_job_id": top_applied_job["job_id"],
+                "target_run_id": top_applied_job.get("source_run_id"),
+            }
+        )
+
+    actions.sort(key=lambda item: (item["priority"], item["action"]))
+    return [DashboardNextAction(**item) for item in actions[:3]]
+
+
 def _build_recommend_response(
     *,
     profile: Dict[str, Any],
@@ -1030,6 +1100,11 @@ def get_profile_dashboard_endpoint(
             feedback_events=feedback_events,
             saved_jobs=saved_jobs,
             dismissed_jobs=dismissed_jobs,
+            applied_jobs=applied_jobs,
+        ),
+        recommended_next_actions=_build_dashboard_next_actions(
+            recommendation_runs=recommendation_runs,
+            saved_jobs=saved_jobs,
             applied_jobs=applied_jobs,
         ),
         activity=_build_profile_activity(
