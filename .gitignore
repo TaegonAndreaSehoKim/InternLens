@@ -32,3 +32,7 @@ AGENTS.md
 # Optional: generated outputs
 # Keep these tracked if you want demo artifacts in the repo.
 # outputs/
+
+# Frontend dependencies / build output
+frontend/node_modules/
+frontend/dist/
