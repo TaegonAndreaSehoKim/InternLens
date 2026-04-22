@@ -4,6 +4,12 @@ import "./styles.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
+const ACTION_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "apply_now", label: "Apply Now" },
+  { value: "apply_later", label: "Apply Later" },
+  { value: "skip", label: "Skip" }
+];
 
 const defaultProfile = {
   profile_id: "user_001",
@@ -57,6 +63,19 @@ function actionClass(value = "") {
   return value.toLowerCase().replace(/\s+/g, "-");
 }
 
+function actionValue(job) {
+  return job.recommendation ?? actionClass(job.action_label).replace(/-/g, "_");
+}
+
+function actionLabel(job) {
+  return job.action_label ?? ACTION_FILTERS.find((filter) => filter.value === job.recommendation)?.label;
+}
+
+function displayScore(job) {
+  const score = job.reranked_score ?? job.score;
+  return typeof score === "number" ? Math.round(score) : null;
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
@@ -81,6 +100,7 @@ function App() {
   const [dashboard, setDashboard] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
+  const [recommendationFilter, setRecommendationFilter] = useState(() => storedState.recommendationFilter ?? "all");
   const [status, setStatus] = useState("Checking API connection...");
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
@@ -140,7 +160,7 @@ function App() {
         include_feedback: true,
         exclude_dismissed: true,
         exclude_applied: true,
-        include_debug: false,
+        include_debug: true,
         save_run: true
       })
     });
@@ -215,8 +235,8 @@ function App() {
   }, [storedState.profileId, storedState.selectedRun]);
 
   useEffect(() => {
-    writeStoredState({ form, profileId, selectedRun });
-  }, [form, profileId, selectedRun]);
+    writeStoredState({ form, profileId, selectedRun, recommendationFilter });
+  }, [form, profileId, selectedRun, recommendationFilter]);
 
   return (
     <main className="shell">
@@ -270,6 +290,8 @@ function App() {
       <RecommendationPanel
         recommendations={recommendations}
         selectedRun={selectedRun}
+        filter={recommendationFilter}
+        onFilterChange={setRecommendationFilter}
         busy={busy}
         onAction={(jobId, action) => runTask(`${action} ${jobId}...`, () => actOnJob(jobId, action))}
       />
@@ -409,7 +431,14 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
   );
 }
 
-function RecommendationPanel({ recommendations, selectedRun, busy, onAction }) {
+function RecommendationPanel({ recommendations, selectedRun, filter, onFilterChange, busy, onAction }) {
+  const jobs = recommendations?.results ?? [];
+  const counts = ACTION_FILTERS.reduce((current, item) => {
+    current[item.value] = item.value === "all" ? jobs.length : jobs.filter((job) => actionValue(job) === item.value).length;
+    return current;
+  }, {});
+  const visibleJobs = filter === "all" ? jobs : jobs.filter((job) => actionValue(job) === filter);
+
   return (
     <section className="panel results-panel">
       <div className="panel-heading split">
@@ -417,48 +446,109 @@ function RecommendationPanel({ recommendations, selectedRun, busy, onAction }) {
           <p className="eyebrow">Recommendations</p>
           <h2>{selectedRun ? `Run ${selectedRun.slice(0, 12)}` : "No run loaded"}</h2>
         </div>
-        {recommendations && <span className="result-count">{recommendations.returned_jobs} shown</span>}
+        {recommendations && <span className="result-count">{visibleJobs.length} of {recommendations.returned_jobs} shown</span>}
       </div>
 
       {!recommendations ? (
         <div className="empty-state">Run recommendations to see ranked internship leads.</div>
       ) : (
-        <div className="job-list">
-          {recommendations.results.map((job) => (
-            <article className="job-card" key={job.job_id}>
-              <div>
-                <div className="job-meta">
-                  <span>{job.company}</span>
-                  <span>{job.location}</span>
-                  <span>{job.fit_level}</span>
-                  {job.action_label && (
-                    <span className={`action-pill ${actionClass(job.action_label)}`}>{job.action_label}</span>
-                  )}
-                  {job.user_job_state && <span className="state-pill">{job.user_job_state}</span>}
-                </div>
-                <h3>{job.title}</h3>
-                <p>{job.summary}</p>
-                <ul>
-                  {job.why_apply.slice(0, 2).map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="job-actions">
-                {job.application_link && (
-                  <a href={job.application_link} target="_blank" rel="noreferrer">
-                    Open
-                  </a>
-                )}
-                <button disabled={busy} onClick={() => onAction(job.job_id, "save")}>Save</button>
-                <button disabled={busy} onClick={() => onAction(job.job_id, "apply")}>Applied</button>
-                <button disabled={busy} onClick={() => onAction(job.job_id, "dismiss")}>Dismiss</button>
-              </div>
-            </article>
-          ))}
-        </div>
+        <>
+          <div className="filter-bar" aria-label="Recommendation filters">
+            {ACTION_FILTERS.map((item) => (
+              <button
+                key={item.value}
+                className={filter === item.value ? "active" : ""}
+                onClick={() => onFilterChange(item.value)}
+              >
+                <span>{item.label}</span>
+                <strong>{counts[item.value] ?? 0}</strong>
+              </button>
+            ))}
+          </div>
+
+          {visibleJobs.length === 0 ? (
+            <div className="empty-state">No jobs match this filter.</div>
+          ) : (
+            <div className="job-list">
+              {visibleJobs.map((job) => (
+                <JobCard key={job.job_id} job={job} busy={busy} onAction={onAction} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </section>
+  );
+}
+
+function JobCard({ job, busy, onAction }) {
+  const score = displayScore(job);
+  const label = actionLabel(job);
+  const action = actionValue(job);
+  const watchouts = job.watchouts ?? job.blocking_issues ?? [];
+
+  return (
+    <article className={`job-card ${actionClass(label ?? action)}`}>
+      <div>
+        <div className="job-meta">
+          <span>{job.company}</span>
+          <span>{job.location}</span>
+          <span>{job.fit_level}</span>
+          {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
+          {job.user_job_state && <span className="state-pill">{job.user_job_state}</span>}
+        </div>
+        <h3>{job.title}</h3>
+        <p>{job.summary}</p>
+
+        <div className="evidence-grid">
+          <EvidenceList title="Why it fits" items={job.why_apply} empty="No strong positive signals surfaced." />
+          <EvidenceList title="Watchouts" items={watchouts} empty="No major watchouts surfaced." />
+        </div>
+      </div>
+      <div className="job-side">
+        <ScoreDial score={score} fitLevel={job.fit_level} />
+        <div className="job-actions">
+          {job.application_link && (
+            <a href={job.application_link} target="_blank" rel="noreferrer">
+              Open
+            </a>
+          )}
+          <button disabled={busy} onClick={() => onAction(job.job_id, "save")}>Save</button>
+          <button disabled={busy} onClick={() => onAction(job.job_id, "apply")}>Applied</button>
+          <button disabled={busy} onClick={() => onAction(job.job_id, "dismiss")}>Dismiss</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ScoreDial({ score, fitLevel }) {
+  const safeScore = score ?? 0;
+
+  return (
+    <div className={`score-dial ${fitLevel}`} style={{ "--score": `${Math.min(Math.max(safeScore, 0), 100) * 3.6}deg` }}>
+      <strong>{score ?? "--"}</strong>
+      <span>{score === null ? "no score" : "score"}</span>
+    </div>
+  );
+}
+
+function EvidenceList({ title, items = [], empty }) {
+  const visibleItems = items.filter(Boolean).slice(0, 3);
+
+  return (
+    <div className="evidence-list">
+      <h4>{title}</h4>
+      {visibleItems.length === 0 ? (
+        <p>{empty}</p>
+      ) : (
+        <ul>
+          {visibleItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

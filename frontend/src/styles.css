@@ -360,6 +360,43 @@ textarea {
   margin-top: 22px;
 }
 
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.filter-bar button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(23, 33, 28, 0.1);
+  border-radius: 18px;
+  padding: 12px 13px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.42);
+  font-weight: 900;
+}
+
+.filter-bar button.active {
+  color: #fffaf0;
+  background: linear-gradient(135deg, var(--ink), var(--moss));
+}
+
+.filter-bar strong {
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(23, 33, 28, 0.08);
+}
+
+.filter-bar button.active strong {
+  background: rgba(255, 250, 240, 0.18);
+}
+
 .result-count,
 .state-pill,
 .action-pill {
@@ -393,12 +430,23 @@ textarea {
 
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 138px;
   gap: 20px;
   border: 1px solid var(--line);
   border-radius: 26px;
   padding: 18px;
   background: rgba(255, 255, 255, 0.46);
+}
+
+.job-card.apply-now {
+  border-color: rgba(158, 78, 50, 0.34);
+  background:
+    linear-gradient(90deg, rgba(158, 78, 50, 0.08), transparent 44%),
+    rgba(255, 255, 255, 0.5);
+}
+
+.job-card.skip {
+  opacity: 0.74;
 }
 
 .job-meta {
@@ -423,9 +471,94 @@ textarea {
   color: var(--muted);
 }
 
-.job-card ul {
-  margin: 12px 0 0;
+.evidence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.evidence-list {
+  border: 1px solid rgba(23, 33, 28, 0.09);
+  border-radius: 18px;
+  padding: 13px;
+  background: rgba(247, 241, 229, 0.58);
+}
+
+.evidence-list h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-list ul {
+  margin: 0;
   padding-left: 18px;
+}
+
+.evidence-list li,
+.evidence-list p {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.evidence-list p {
+  margin: 0;
+}
+
+.job-side {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.score-dial {
+  display: grid;
+  width: 116px;
+  height: 116px;
+  place-items: center;
+  justify-self: end;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at center, #fffaf0 0 54%, transparent 55%),
+    conic-gradient(var(--moss) var(--score), rgba(23, 33, 28, 0.09) 0);
+  box-shadow: inset 0 0 0 1px rgba(23, 33, 28, 0.08);
+}
+
+.score-dial.weak {
+  background:
+    radial-gradient(circle at center, #fffaf0 0 54%, transparent 55%),
+    conic-gradient(var(--cedar) var(--score), rgba(23, 33, 28, 0.09) 0);
+}
+
+.score-dial.moderate {
+  background:
+    radial-gradient(circle at center, #fffaf0 0 54%, transparent 55%),
+    conic-gradient(var(--gold) var(--score), rgba(23, 33, 28, 0.09) 0);
+}
+
+.score-dial strong,
+.score-dial span {
+  grid-area: 1 / 1;
+}
+
+.score-dial strong {
+  margin-top: -14px;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.score-dial span {
+  margin-top: 38px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .job-actions {
@@ -483,8 +616,14 @@ textarea {
   }
 
   .metric-row,
-  .mini-columns {
+  .mini-columns,
+  .filter-bar,
+  .evidence-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .score-dial {
+    justify-self: start;
   }
 
   .job-actions {
@@ -511,7 +650,9 @@ textarea {
 
   .form-grid,
   .metric-row,
-  .mini-columns {
+  .mini-columns,
+  .filter-bar,
+  .evidence-grid {
     grid-template-columns: 1fr;
   }
 }
