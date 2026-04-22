@@ -5,6 +5,7 @@ InternLens is a lightweight internship discovery and ranking pipeline for public
 It fetches public internship postings from ATS job boards, normalizes them into a shared schema, ranks them against a candidate profile, and exposes the results through both a CLI workflow and a FastAPI service.
 
 The project started as a simple baseline recommender on static sample jobs, but it now supports multi-source ingestion, registry-driven batch fetches, blocker-aware ranking, shortlist-oriented CLI filters, and regression-tested API behavior.
+It also includes a lightweight Vite/React frontend for the stored-profile recommendation workflow.
 
 ## Current status
 
@@ -19,6 +20,8 @@ InternLens currently supports:
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
+- stored profile, feedback, recommendation history, job action, and dashboard APIs
+- Vite/React frontend for profile setup, dashboard review, recommendation runs, and job actions
 - regression-tested iteration
 
 Current architecture planning also includes a long-term source acquisition strategy centered on:
@@ -30,7 +33,8 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `104 passed`
+- current total: `124 passed`
+- frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -91,6 +95,7 @@ The current implementation is intentionally simple and transparent. It is design
 - API endpoint for `/jobs/{id}`
 - profile persistence and stored-feedback recommendation flow
 - shared output filtering between CLI and API
+- local frontend dashboard workflow
 
 ### Validation
 - ingestion client tests
@@ -104,7 +109,8 @@ The current implementation is intentionally simple and transparent. It is design
 - source promotion tests
 - source pipeline tests
 - profile API tests
-- full suite currently passing: `104 passed`
+- full suite currently passing: `124 passed`
+- frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -401,6 +407,23 @@ Start the API server:
 uvicorn src.api.app:app --reload
 ```
 
+Start the frontend in a separate terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+The frontend expects the API at `http://127.0.0.1:8000` by default.
+Set `VITE_API_BASE_URL` if the backend is running somewhere else.
+
 Main endpoints:
 - `POST /recommend`
 - `GET /jobs/{id}`
@@ -417,6 +440,7 @@ Main endpoints:
 - `GET /profiles/{id}/recommendations/{run_id}`
 - `GET /profiles/{id}/saved-jobs`
 - `GET /profiles/{id}/dismissed-jobs`
+- `GET /profiles/{id}/applied-jobs`
 - `POST /profiles/{id}/jobs/{job_id}/action`
 
 `POST /recommend` now defaults to the internal processed corpus under `data/processed/jobs`.
@@ -608,7 +632,8 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `120 passed`
+- current total: `124 passed`
+- frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -655,10 +680,10 @@ That makes it a strong base for future work such as:
 ## Next steps
 
 Planned follow-up improvements:
-- reduce remaining ranking noise for broad non-core internships
-- continue refining hybrid/in-office location preference handling
-- improve deduplication for repeated internship postings
-- improve company and team normalization
-- add company-seed-based source discovery and validation
-- polish shortlist summaries in the API layer
-- prepare cleaner demo outputs and documentation
+- improve frontend empty states and error messages
+- make saved, applied, and dismissed state transitions clearer in recommendation cards
+- add a lightweight frontend lint or test setup
+- continue refining ranking noise for broad non-core internships
+- continue improving company, team, and location normalization
+- add stronger source validation and promotion reporting
+- prepare cleaner demo documentation and screenshots
