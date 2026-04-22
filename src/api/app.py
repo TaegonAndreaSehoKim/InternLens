@@ -323,6 +323,8 @@ class JobActionResponse(BaseModel):
     job_id: str
     action: str
     job_state: Optional[StoredJobState] = None
+    feedback_synced: bool = False
+    feedback_label: Optional[str] = None
 
 
 class ProfileSummaryResponse(BaseModel):
@@ -662,7 +664,14 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
             "dismiss": "dismissed",
             "apply": "applied",
         }
+        feedback_label_by_action = {
+            "save": "saved",
+            "dismiss": "skipped",
+            "apply": "applied",
+        }
         state = state_by_action[action]
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        should_sync_feedback = existing_state is None or existing_state["state"] != state
         try:
             stored_state = upsert_profile_job_state(
                 _database_path(),
@@ -671,6 +680,12 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
                 state=state,
                 source_run_id=run_id,
             )
+            if should_sync_feedback:
+                add_feedback_events(
+                    _database_path(),
+                    profile_id,
+                    [{"job_id": job_id, "feedback_label": feedback_label_by_action[action]}],
+                )
         except ValueError as e:
             detail = str(e)
             if "Profile not found" in detail or "Recommendation run not found" in detail:
@@ -682,6 +697,8 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
             job_id=job_id,
             action=action,
             job_state=_stored_job_state_response(stored_state),
+            feedback_synced=should_sync_feedback,
+            feedback_label=feedback_label_by_action[action] if should_sync_feedback else None,
         )
 
     existing_state = get_profile_job_state(_database_path(), profile_id, job_id)

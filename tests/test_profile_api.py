@@ -224,8 +224,8 @@ def test_profile_summary_aggregates_activity(tmp_path: Path, monkeypatch) -> Non
     assert summary_body["saved_jobs_count"] == 0
     assert summary_body["dismissed_jobs_count"] == 1
     assert summary_body["applied_jobs_count"] == 1
-    assert summary_body["feedback_event_count"] == 2
-    assert summary_body["feedback_label_counts"] == {"saved": 1, "applied": 1}
+    assert summary_body["feedback_event_count"] == 5
+    assert summary_body["feedback_label_counts"] == {"saved": 2, "applied": 2, "skipped": 1}
     assert summary_body["last_recommendation_at"] is not None
     assert summary_body["last_feedback_at"] is not None
     assert summary_body["last_saved_job_at"] is None
@@ -274,12 +274,12 @@ def test_profile_activity_returns_recent_mixed_events(tmp_path: Path, monkeypatc
     run_id = client.post("/profiles/user_001/recommend", json={"top_k": 1}).json()["run_id"]
     client.post("/profiles/user_001/jobs/job_a/save", json={"run_id": run_id})
 
-    activity_response = client.get("/profiles/user_001/activity?limit=3")
+    activity_response = client.get("/profiles/user_001/activity?limit=4")
     activity_body = activity_response.json()
 
     assert activity_response.status_code == 200
     assert activity_body["profile_id"] == "user_001"
-    assert len(activity_body["activities"]) == 3
+    assert len(activity_body["activities"]) == 4
     assert {item["activity_type"] for item in activity_body["activities"]} == {
         "recommendation_run",
         "feedback",
@@ -537,16 +537,20 @@ def test_saved_and_dismissed_job_state_flow(tmp_path: Path, monkeypatch) -> None
 
     saved_after_dismiss = client.get("/profiles/user_001/saved-jobs").json()
     dismissed_after_dismiss = client.get("/profiles/user_001/dismissed-jobs").json()
+    feedback_after_dismiss = client.get("/profiles/user_001/feedback").json()
 
     assert saved_after_dismiss["jobs"] == []
     assert len(dismissed_after_dismiss["jobs"]) == 1
     assert dismissed_after_dismiss["jobs"][0]["job_id"] == "job_a"
+    assert [event["feedback_label"] for event in feedback_after_dismiss["events"]] == ["saved", "skipped"]
 
     clear_dismiss_response = client.delete("/profiles/user_001/jobs/job_a/dismiss")
     assert clear_dismiss_response.status_code == 200
 
     dismissed_after_clear = client.get("/profiles/user_001/dismissed-jobs").json()
+    feedback_after_clear = client.get("/profiles/user_001/feedback").json()
     assert dismissed_after_clear["jobs"] == []
+    assert [event["feedback_label"] for event in feedback_after_clear["events"]] == ["saved", "skipped"]
 
 
 def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Path, monkeypatch) -> None:
@@ -568,6 +572,8 @@ def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Pa
     assert save_body["action"] == "save"
     assert save_body["job_state"]["state"] == "saved"
     assert save_body["job_state"]["source_run_id"] == run_id
+    assert save_body["feedback_synced"] is True
+    assert save_body["feedback_label"] == "saved"
 
     dismiss_response = client.post(
         "/profiles/user_001/jobs/job_a/action",
@@ -578,6 +584,18 @@ def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Pa
     assert dismiss_response.status_code == 200
     assert dismiss_body["action"] == "dismiss"
     assert dismiss_body["job_state"]["state"] == "dismissed"
+    assert dismiss_body["feedback_synced"] is True
+    assert dismiss_body["feedback_label"] == "skipped"
+
+    duplicate_dismiss_response = client.post(
+        "/profiles/user_001/jobs/job_a/action",
+        json={"action": "dismiss", "run_id": run_id},
+    )
+    duplicate_dismiss_body = duplicate_dismiss_response.json()
+
+    assert duplicate_dismiss_response.status_code == 200
+    assert duplicate_dismiss_body["feedback_synced"] is False
+    assert duplicate_dismiss_body["feedback_label"] is None
 
     clear_response = client.post(
         "/profiles/user_001/jobs/job_a/action",
@@ -588,8 +606,13 @@ def test_unified_job_action_endpoint_handles_save_dismiss_and_clear(tmp_path: Pa
     assert clear_response.status_code == 200
     assert clear_body["action"] == "clear"
     assert clear_body["job_state"] is None
+    assert clear_body["feedback_synced"] is False
     assert client.get("/profiles/user_001/saved-jobs").json()["jobs"] == []
     assert client.get("/profiles/user_001/dismissed-jobs").json()["jobs"] == []
+    assert [event["feedback_label"] for event in client.get("/profiles/user_001/feedback").json()["events"]] == [
+        "saved",
+        "skipped",
+    ]
 
 
 def test_unified_job_action_endpoint_tracks_applied_jobs(tmp_path: Path, monkeypatch) -> None:
@@ -611,6 +634,8 @@ def test_unified_job_action_endpoint_tracks_applied_jobs(tmp_path: Path, monkeyp
     assert apply_body["action"] == "apply"
     assert apply_body["job_state"]["state"] == "applied"
     assert apply_body["job_state"]["source_run_id"] == run_id
+    assert apply_body["feedback_synced"] is True
+    assert apply_body["feedback_label"] == "applied"
 
     applied_response = client.get("/profiles/user_001/applied-jobs")
     applied_body = applied_response.json()
@@ -619,6 +644,9 @@ def test_unified_job_action_endpoint_tracks_applied_jobs(tmp_path: Path, monkeyp
     assert applied_body["state"] == "applied"
     assert len(applied_body["jobs"]) == 1
     assert applied_body["jobs"][0]["job_id"] == "job_a"
+    assert [event["feedback_label"] for event in client.get("/profiles/user_001/feedback").json()["events"]] == [
+        "applied"
+    ]
 
 
 def test_profile_recommend_excludes_dismissed_jobs_by_default(tmp_path: Path, monkeypatch) -> None:
