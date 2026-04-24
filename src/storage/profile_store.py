@@ -24,6 +24,22 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     return connection
 
 
+def _ensure_recommendation_run_schema(connection: sqlite3.Connection) -> None:
+    # Add newly introduced recommendation run columns for existing databases.
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(recommendation_runs)").fetchall()
+    }
+
+    if "suppress_similar_results" not in columns:
+        connection.execute(
+            """
+            ALTER TABLE recommendation_runs
+            ADD COLUMN suppress_similar_results INTEGER NOT NULL DEFAULT 0
+            """
+        )
+
+
 def initialize_database(db_path: Path) -> None:
     with _connect(db_path) as connection:
         connection.execute(
@@ -57,6 +73,7 @@ def initialize_database(db_path: Path) -> None:
                 top_k INTEGER NOT NULL,
                 eligible_only INTEGER NOT NULL,
                 applyable_only INTEGER NOT NULL,
+                suppress_similar_results INTEGER NOT NULL DEFAULT 0,
                 include_feedback INTEGER NOT NULL,
                 include_debug INTEGER NOT NULL,
                 reranking_applied INTEGER NOT NULL,
@@ -95,6 +112,7 @@ def initialize_database(db_path: Path) -> None:
             )
             """
         )
+        _ensure_recommendation_run_schema(connection)
 
 
 def _profile_payload_for_storage(profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -240,6 +258,7 @@ def create_recommendation_run(
     top_k: int,
     eligible_only: bool,
     applyable_only: bool,
+    suppress_similar_results: bool,
     include_feedback: bool,
     include_debug: bool,
     reranking_applied: bool,
@@ -265,6 +284,7 @@ def create_recommendation_run(
                 top_k,
                 eligible_only,
                 applyable_only,
+                suppress_similar_results,
                 include_feedback,
                 include_debug,
                 reranking_applied,
@@ -273,7 +293,7 @@ def create_recommendation_run(
                 returned_jobs,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 run_id,
@@ -282,6 +302,7 @@ def create_recommendation_run(
                 top_k,
                 int(eligible_only),
                 int(applyable_only),
+                int(suppress_similar_results),
                 int(include_feedback),
                 int(include_debug),
                 int(reranking_applied),
@@ -320,6 +341,7 @@ def list_recommendation_runs(db_path: Path, profile_id: str) -> List[Dict[str, A
                 top_k,
                 eligible_only,
                 applyable_only,
+                suppress_similar_results,
                 include_feedback,
                 include_debug,
                 reranking_applied,
@@ -342,6 +364,7 @@ def list_recommendation_runs(db_path: Path, profile_id: str) -> List[Dict[str, A
             "top_k": row["top_k"],
             "eligible_only": bool(row["eligible_only"]),
             "applyable_only": bool(row["applyable_only"]),
+            "suppress_similar_results": bool(row["suppress_similar_results"]),
             "include_feedback": bool(row["include_feedback"]),
             "include_debug": bool(row["include_debug"]),
             "reranking_applied": bool(row["reranking_applied"]),
@@ -366,6 +389,7 @@ def get_recommendation_run(db_path: Path, profile_id: str, run_id: str) -> Optio
                 top_k,
                 eligible_only,
                 applyable_only,
+                suppress_similar_results,
                 include_feedback,
                 include_debug,
                 reranking_applied,
@@ -399,6 +423,7 @@ def get_recommendation_run(db_path: Path, profile_id: str, run_id: str) -> Optio
         "top_k": run_row["top_k"],
         "eligible_only": bool(run_row["eligible_only"]),
         "applyable_only": bool(run_row["applyable_only"]),
+        "suppress_similar_results": bool(run_row["suppress_similar_results"]),
         "include_feedback": bool(run_row["include_feedback"]),
         "include_debug": bool(run_row["include_debug"]),
         "reranking_applied": bool(run_row["reranking_applied"]),

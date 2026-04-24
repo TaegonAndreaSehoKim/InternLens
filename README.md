@@ -89,12 +89,13 @@ The current implementation is intentionally simple and transparent. It is design
 - shortlist CLI workflow
 - `--eligible-only`
 - `--applyable-only`
+- `--suppress-similar-results`
 - JSON export
 - CSV export
 - API endpoint for `/recommend`
 - API endpoint for `/jobs/{id}`
 - profile persistence and stored-feedback recommendation flow
-- shared output filtering between CLI and API
+- shared output filtering between CLI and API, including optional similar-result suppression
 - local frontend dashboard workflow
 
 ### Validation
@@ -386,6 +387,12 @@ python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudfl
 
 ```bash
 python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --eligible-only --applyable-only
+```
+
+To collapse near-duplicate multi-location shortlist items:
+
+```bash
+python scripts/run_baseline.py --jobs-dir data/processed/jobs/greenhouse/cloudflare --applyable-only --suppress-similar-results
 ```
 
 Recent validation examples:

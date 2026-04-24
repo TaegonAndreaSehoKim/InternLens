@@ -470,7 +470,7 @@ def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monk
 
     response = client.post(
         "/profiles/user_001/recommend",
-        json={"include_debug": True, "top_k": 1},
+        json={"include_debug": True, "suppress_similar_results": True, "top_k": 1},
     )
     body = response.json()
 
@@ -489,6 +489,7 @@ def test_profile_recommend_uses_stored_profile_and_feedback(tmp_path: Path, monk
     assert runs_response.status_code == 200
     assert len(runs_body["runs"]) == 1
     assert runs_body["runs"][0]["run_id"] == body["run_id"]
+    assert runs_body["runs"][0]["suppress_similar_results"] is True
 
     run_detail_response = client.get(f"/profiles/user_001/recommendations/{body['run_id']}")
     run_detail_body = run_detail_response.json()

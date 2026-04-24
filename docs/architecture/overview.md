@@ -97,6 +97,7 @@ InternLens supports:
 Recent CLI improvements:
 - `--eligible-only`
 - `--applyable-only`
+- `--suppress-similar-results`
 
 These filters make it easier to inspect meaningful subsets rather than dumping the full ranked list.
 
@@ -195,7 +196,7 @@ It also shows good engineering discipline:
 ### Product limitations
 - shortlist filtering is useful, but still CLI-first
 - there is no polished front-end yet
-- deduplication and grouping are still basic
+- corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
 
 ---

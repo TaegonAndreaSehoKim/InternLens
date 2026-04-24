@@ -137,6 +137,10 @@ class RecommendRequest(BaseModel):
         default=False,
         description="If true, include raw scoring, blocker, and reranking debug fields in each result.",
     )
+    suppress_similar_results: bool = Field(
+        default=False,
+        description="If true, suppress near-duplicate recommendation results that look like the same posting.",
+    )
     top_k: int = Field(default=10, ge=1, le=100)
 
     @model_validator(mode="after")
@@ -199,6 +203,7 @@ class ProfileRecommendRequest(BaseModel):
     eligible_only: bool = Field(default=False)
     applyable_only: bool = Field(default=False)
     include_debug: bool = Field(default=False)
+    suppress_similar_results: bool = Field(default=False)
     include_feedback: bool = Field(
         default=True,
         description="If true, apply reranking based on persisted feedback events for this profile.",
@@ -286,6 +291,7 @@ class RecommendationRunSummary(BaseModel):
     top_k: int
     eligible_only: bool
     applyable_only: bool
+    suppress_similar_results: bool = False
     include_feedback: bool
     include_debug: bool
     reranking_applied: bool
@@ -896,6 +902,7 @@ def _build_recommend_response(
     eligible_only: bool,
     applyable_only: bool,
     include_debug: bool,
+    suppress_similar_results: bool,
     top_k: int,
     feedback_profile: Optional[Dict[str, Any]] = None,
     feedback_source: Optional[str] = None,
@@ -918,6 +925,7 @@ def _build_recommend_response(
         final_jobs,
         eligible_only=eligible_only,
         applyable_only=applyable_only,
+        suppress_similar=suppress_similar_results,
     )
     if excluded_job_ids:
         visible_jobs = [job for job in visible_jobs if job.get("job_id") not in excluded_job_ids]
@@ -1363,6 +1371,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             eligible_only=request.eligible_only,
             applyable_only=request.applyable_only,
             include_debug=request.include_debug,
+            suppress_similar_results=request.suppress_similar_results,
             top_k=request.top_k,
             feedback_profile=feedback_profile,
             feedback_source=feedback_source,
@@ -1414,6 +1423,7 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             eligible_only=request.eligible_only,
             applyable_only=request.applyable_only,
             include_debug=request.include_debug,
+            suppress_similar_results=request.suppress_similar_results,
             top_k=request.top_k,
             feedback_profile=feedback_profile,
             feedback_source=feedback_source,
@@ -1429,6 +1439,7 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
                 top_k=request.top_k,
                 eligible_only=request.eligible_only,
                 applyable_only=request.applyable_only,
+                suppress_similar_results=request.suppress_similar_results,
                 include_feedback=request.include_feedback,
                 include_debug=request.include_debug,
                 reranking_applied=response.reranking_applied,

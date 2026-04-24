@@ -84,3 +84,6 @@ def test_rank_jobs_accepts_nested_crawled_lever_jobs(tmp_path: Path) -> None:
         "lever_rws_contract_001",
     }
     assert ranked[0]["job_id"] == "lever_rws_intern_001"
+    assert ranked[0]["application_url"] == "https://jobs.lever.co/rws/intern_001/apply"
+    assert ranked[0]["source_url"] == "https://jobs.lever.co/rws/intern_001"
+    assert ranked[0]["team"] == "TrainAI"

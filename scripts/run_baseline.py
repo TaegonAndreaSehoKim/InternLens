@@ -57,6 +57,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Show and export only jobs with action_label other than Skip.",
     )
+    parser.add_argument(
+        "--suppress-similar-results",
+        action="store_true",
+        help="Suppress near-duplicate ranked jobs that look like the same posting.",
+    )
     return parser.parse_args()
 
 
@@ -218,6 +223,7 @@ def main() -> None:
         ranked_jobs,
         eligible_only=args.eligible_only,
         applyable_only=args.applyable_only,
+        suppress_similar=args.suppress_similar_results,
     )
     visible_jobs = truncate_results(visible_jobs, args.top_k)
 

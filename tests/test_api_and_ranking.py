@@ -160,6 +160,97 @@ def test_recommend_endpoint_supports_visibility_filters() -> None:
     assert all(job["recommendation"] != "skip" for job in body["results"])
 
 
+def test_recommend_endpoint_supports_similar_result_suppression(monkeypatch) -> None:
+    raw_jobs = [
+        {
+            "job_id": "job_1",
+            "company": "cloudflare",
+            "title": "data engineer intern",
+            "location": "San Francisco, CA",
+            "description": "Internship role building data systems.",
+            "min_qualifications": "python",
+            "preferred_qualifications": "sql",
+            "posting_date": "2026-04-20",
+            "sponsorship_info": "",
+            "employment_type": "Internship",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "remote_status": "hybrid",
+            "team": "Data Platform",
+            "source_url": "https://example.com/jobs/job_1",
+            "application_url": "https://example.com/jobs/job_1/apply",
+        },
+        {
+            "job_id": "job_2",
+            "company": "cloudflare",
+            "title": "data engineering intern",
+            "location": "Austin, TX",
+            "description": "Internship role building data systems.",
+            "min_qualifications": "python",
+            "preferred_qualifications": "sql",
+            "posting_date": "2026-04-20",
+            "sponsorship_info": "",
+            "employment_type": "Internship",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "remote_status": "hybrid",
+            "team": "Data Platform",
+            "source_url": "https://example.com/jobs/job_2",
+            "application_url": "https://example.com/jobs/job_2/apply",
+        },
+    ]
+    ranked_jobs = [
+        {
+            **raw_jobs[0],
+            "score": 91.0,
+            "action_label": "Apply Now",
+            "matched_skills": ["python"],
+            "skill_gaps": [],
+            "reasons": ["Strong skill overlap"],
+            "blocking_issues": [],
+            "component_scores": {
+                "skill_score": 0.6,
+                "role_score": 0.2,
+                "location_score": 0.15,
+                "internship_bonus": 0.3,
+            },
+        },
+        {
+            **raw_jobs[1],
+            "score": 83.0,
+            "action_label": "Apply Later",
+            "matched_skills": ["python"],
+            "skill_gaps": [],
+            "reasons": ["Relevant title overlap"],
+            "blocking_issues": [],
+            "component_scores": {
+                "skill_score": 0.55,
+                "role_score": 0.2,
+                "location_score": 0.0,
+                "internship_bonus": 0.3,
+            },
+        },
+    ]
+
+    monkeypatch.setattr("src.api.app.load_all_job_postings", lambda path: raw_jobs)
+    monkeypatch.setattr("src.api.app.rank_jobs", lambda profile, jobs: ranked_jobs)
+
+    payload = {
+        "profile_path": "data/processed/candidate_profile_example.json",
+        "jobs_dir": "data/sample_jobs",
+        "suppress_similar_results": True,
+        "include_debug": True,
+        "top_k": 5,
+    }
+
+    response = client.post("/recommend", json=payload)
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["returned_jobs"] == 1
+    assert [job["job_id"] for job in body["results"]] == ["job_1"]
+
+
 def test_example_ai_job_has_sponsorship_blocker() -> None:
     # A strong fit should still be skipped when a hard blocker exists.
     profile = load_candidate_profile(PROFILE_PATH)

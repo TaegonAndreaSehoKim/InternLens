@@ -79,6 +79,88 @@ def test_filter_results_for_output_supports_combined_filters() -> None:
     assert [job["job_id"] for job in visible_jobs] == ["job_1", "job_4"]
 
 
+def test_filter_results_for_output_suppresses_similar_results_when_enabled() -> None:
+    # Near-identical multi-location results should collapse to the highest-ranked item.
+    jobs = [
+        {
+            "job_id": "job_1",
+            "company": "cloudflare",
+            "title": "data engineer intern",
+            "location": "San Francisco, CA",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "employment_type": "Internship",
+            "remote_status": "hybrid",
+            "team": "Data Platform",
+            "blocking_issues": [],
+            "action_label": "Apply Now",
+        },
+        {
+            "job_id": "job_2",
+            "company": "cloudflare",
+            "title": "data engineering intern",
+            "location": "Austin, TX",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "employment_type": "Internship",
+            "remote_status": "hybrid",
+            "team": "Data Platform",
+            "blocking_issues": [],
+            "action_label": "Apply Later",
+        },
+    ]
+
+    visible_jobs = filter_results_for_output(
+        jobs,
+        eligible_only=False,
+        applyable_only=False,
+        suppress_similar=True,
+    )
+
+    assert [job["job_id"] for job in visible_jobs] == ["job_1"]
+
+
+def test_filter_results_for_output_keeps_distinct_results_when_team_differs() -> None:
+    # Same-company titles across different teams should remain visible.
+    jobs = [
+        {
+            "job_id": "job_1",
+            "company": "cloudflare",
+            "title": "data engineer intern",
+            "location": "San Francisco, CA",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "employment_type": "Internship",
+            "remote_status": "hybrid",
+            "team": "Data Platform",
+            "blocking_issues": [],
+            "action_label": "Apply Now",
+        },
+        {
+            "job_id": "job_2",
+            "company": "cloudflare",
+            "title": "data engineer intern",
+            "location": "Austin, TX",
+            "source": "greenhouse",
+            "source_site": "cloudflare",
+            "employment_type": "Internship",
+            "remote_status": "hybrid",
+            "team": "Security",
+            "blocking_issues": [],
+            "action_label": "Apply Later",
+        },
+    ]
+
+    visible_jobs = filter_results_for_output(
+        jobs,
+        eligible_only=False,
+        applyable_only=False,
+        suppress_similar=True,
+    )
+
+    assert [job["job_id"] for job in visible_jobs] == ["job_1", "job_2"]
+
+
 def test_truncate_results_applies_top_k_after_filtering() -> None:
     # top_k should be applied after the visible result set is prepared.
     jobs = [
