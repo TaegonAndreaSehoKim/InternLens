@@ -423,7 +423,7 @@ def test_product_manager_intern_does_not_get_noisy_python_match() -> None:
     assert result["action_label"] == "Skip"
 
 
-def test_business_analyst_intern_still_keeps_fallback_skill_matching() -> None:
+def test_business_analyst_intern_keeps_fallback_skill_matching_but_stays_skip() -> None:
     profile = _build_profile()
 
     job = {
@@ -432,6 +432,30 @@ def test_business_analyst_intern_still_keeps_fallback_skill_matching() -> None:
         "title": "Business Analyst Intern, Revenue Operations (AI Innovation) (Summer 2026)",
         "location": "Austin, US",
         "description": "Use data analysis and Python to evaluate operational trends.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+
+    result = score_job(profile, job)
+
+    assert "data analysis" in result["matched_skills"]
+    assert result["action_label"] == "Skip"
+
+
+def test_data_analytics_intern_still_gets_apply_later_without_business_context() -> None:
+    profile = _build_profile()
+
+    job = {
+        "job_id": "data_analytics_intern",
+        "company": "example",
+        "title": "Data Analytics Intern (Summer 2026)",
+        "location": "Austin, US",
+        "description": "Use Python and data analysis to evaluate operational trends.",
         "min_qualifications": "",
         "preferred_qualifications": "",
         "posting_date": "2026-03-30",

@@ -120,6 +120,42 @@ NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
     "talent",
 ]
 
+NON_CORE_BUSINESS_INTERNSHIP_KEYWORDS = [
+    "business analyst",
+    "revenue operations",
+    "sales operations",
+    "marketing operations",
+    "people operations",
+    "hr operations",
+    "human resources",
+    "product manager",
+    "product management",
+    "customer success",
+    "recruiter",
+    "talent",
+    "finance",
+    "tax",
+    "legal",
+    "audit",
+    "partnerships",
+    "brand",
+    "events",
+]
+
+CORE_TECHNICAL_TITLE_OVERRIDE_KEYWORDS = [
+    "engineer",
+    "engineering",
+    "developer",
+    "software",
+    "scientist",
+    "research",
+    "researcher",
+    "network",
+    "security",
+    "infrastructure",
+    "platform",
+]
+
 
 def _title_supports_fallback_skill_matching(title: str) -> bool:
     """
@@ -158,6 +194,38 @@ def _title_supports_fallback_skill_matching(title: str) -> bool:
         return True
 
     return False
+
+
+def _looks_like_non_core_business_internship(job: Dict[str, Any]) -> bool:
+    """
+    Identify internship titles that look adjacent to business/ops work rather
+    than core engineering, research, or platform roles.
+
+    This is intentionally conservative and is only used to prevent weak
+    internship-language grace from promoting noisy public-board roles.
+    """
+    normalized_context = _canonicalize_text(
+        " ".join(
+            [
+                str(job.get("title", "")),
+                str(job.get("team", "")),
+            ]
+        )
+    )
+
+    if "operations research" in normalized_context:
+        return False
+
+    has_non_core_signal = any(
+        keyword in normalized_context
+        for keyword in NON_CORE_BUSINESS_INTERNSHIP_KEYWORDS
+    ) or "coordinator" in normalized_context
+    has_core_technical_override = any(
+        keyword in normalized_context
+        for keyword in CORE_TECHNICAL_TITLE_OVERRIDE_KEYWORDS
+    )
+
+    return has_non_core_signal and not has_core_technical_override
 
 # Strong seniority indicators that should usually block internship recommendations.
 SENIORITY_TITLE_PATTERNS = [
@@ -610,6 +678,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     final_score = round(bounded_score * 100, 2)
 
     has_explicit_internship = _has_explicit_internship_signal(job)
+    looks_like_non_core_business_internship = _looks_like_non_core_business_internship(job)
     has_relevance_signal = bool(matched_skills) or role_score >= 0.20
 
     if blockers:
@@ -618,7 +687,11 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         action_label = "Apply Now"
     elif final_score >= 45:
         action_label = "Apply Later"
-    elif has_explicit_internship and has_relevance_signal:
+    elif (
+        has_explicit_internship
+        and has_relevance_signal
+        and not looks_like_non_core_business_internship
+    ):
         # A clear internship can still be Apply Later even when the baseline
         # score is modest, but only if we see some role or skill relevance.
         action_label = "Apply Later"
