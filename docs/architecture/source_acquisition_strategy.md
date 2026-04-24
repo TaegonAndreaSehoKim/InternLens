@@ -269,6 +269,12 @@ Primary targets:
 - `boards.greenhouse.io/<board_token>`
 - `job-boards.greenhouse.io/<board_token>`
 
+Current implementation caveats observed during a wide seed dry run:
+- discovery is still sequential, so large seed sets increase runtime quickly
+- some company careers pages block simple HTML fetches with `403` or rate-limit with `429`
+- Greenhouse embed helper URLs such as `boards.greenhouse.io/embed/...` should be ignored, but the current classifier can still mislabel them as candidate sources
+- discovered source output should therefore be treated as operator-reviewed candidate data, not canonical truth
+
 ### Phase 2: source validation
 
 For each discovered candidate:
@@ -320,6 +326,13 @@ Refresh should be source-aware rather than blindly global.
 
 3. targeted refresh
    - one company or one ATS source
+
+### Near-term hardening priorities
+
+- filter out non-board Greenhouse URLs such as embed helpers before candidate creation
+- preserve partial discovery output earlier during long runs so timeouts do not waste all progress
+- add retry/backoff or softer handling for `403` and `429` responses
+- consider limited parallelism so larger seed files remain practical
 
 ---
 

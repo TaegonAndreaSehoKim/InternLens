@@ -149,3 +149,32 @@ InternLens now supports:
 - Add screenshots or a short demo walkthrough once the UI flow stabilizes.
 - Consider adding a lightweight frontend lint/test setup.
 - Continue keeping docs updated at end-of-day checkpoints rather than after every feature commit.
+
+---
+
+## Day 27 - Seed Expansion and Discovery Dry Run
+
+### Focus
+Stress-test the company-seed-based discovery path with a much wider seed draft before tightening the source pipeline.
+
+### What was done
+- Added a larger working `company_seeds.json` draft under `data/source_registry/`.
+- Expanded the seed list to `144` companies across AI, security, data, developer tools, fintech, marketplace, and autonomy targets.
+- Ran discovery against the wider draft to see where the current implementation breaks before promoting any new sources.
+
+### What the dry run showed
+- Full discovery over the larger seed set is currently slow because discovery fetches company pages sequentially.
+- Some careers pages returned `403 Forbidden` or `429 Too Many Requests`, which means the current HTML-fetch strategy is not robust enough for broad scans.
+- Discovery quality is not clean enough yet:
+  - some good candidates were found, such as `honehealth`, `figma`, `vercel`, and a few Lever/Greenhouse boards
+  - at least one false-positive Greenhouse candidate was produced from an embed helper URL, yielding `source_identifier = "embed"`
+- The generated `discovered_sources.json` from this run is useful for debugging, but it is not yet trustworthy enough to treat as canonical registry input.
+
+### Result
+The larger seed list is useful as a stress harness, but the discovery pipeline still needs hardening before wide scans become reliable.
+
+### Immediate next fixes
+- reject non-board Greenhouse embed URLs during discovery
+- preserve partial results during long runs
+- handle `403` and `429` more gracefully
+- consider limited parallelism after correctness issues are fixed first

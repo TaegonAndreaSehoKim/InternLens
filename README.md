@@ -317,6 +317,10 @@ Useful notes:
 - if that file is missing, it falls back to `data/source_registry/company_seeds.example.json`
 - discovered candidates are written to `data/source_registry/discovered_sources.json`
 - the script records candidate sources only and does not auto-promote them into active registries
+- the current working seed draft contains `144` companies to stress-test discovery breadth before later pruning
+- a full discovery run over the larger seed draft is currently slow because page fetches are sequential
+- some company careers pages now return `403` or `429`, so partial discovery results are expected during wide scans
+- Greenhouse embed URLs such as `boards.greenhouse.io/embed/...` can currently be misclassified as source candidates and should be treated as noisy output until discovery rules are tightened
 
 ### Validate discovered ATS source candidates
 

@@ -1,0 +1,1442 @@
+[
+  {
+    "company": "Waymo",
+    "homepage_url": "https://waymo.com",
+    "careers_url": "https://careers.withwaymo.com/",
+    "priority": 10,
+    "industries": ["autonomous driving", "ai", "robotics"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value technical internship source"
+  },
+  {
+    "company": "Cloudflare",
+    "homepage_url": "https://www.cloudflare.com",
+    "careers_url": "https://www.cloudflare.com/careers/jobs/",
+    "priority": 9,
+    "industries": ["security", "networking", "cloud"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "strong technical source but can be noisy"
+  },
+  {
+    "company": "Hone Health",
+    "homepage_url": "https://www.honehealth.com",
+    "careers_url": "https://boards.greenhouse.io/honehealth",
+    "priority": 6,
+    "industries": ["healthtech"],
+    "target_roles": ["data science", "analytics", "software engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "smaller source for discovery validation"
+  },
+  {
+    "company": "Databricks",
+    "homepage_url": "https://www.databricks.com",
+    "careers_url": "https://www.databricks.com/company/careers",
+    "priority": 10,
+    "industries": ["data", "platform", "ai"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value data and ml platform source"
+  },
+  {
+    "company": "Snowflake",
+    "homepage_url": "https://www.snowflake.com",
+    "careers_url": "https://careers.snowflake.com/",
+    "priority": 9,
+    "industries": ["data", "cloud"],
+    "target_roles": ["software engineering", "data", "infrastructure"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "strong platform and data roles"
+  },
+  {
+    "company": "Stripe",
+    "homepage_url": "https://stripe.com",
+    "careers_url": "https://stripe.com/jobs",
+    "priority": 10,
+    "industries": ["fintech", "payments", "infrastructure"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "high-value technical source"
+  },
+  {
+    "company": "Figma",
+    "homepage_url": "https://www.figma.com",
+    "careers_url": "https://www.figma.com/careers/",
+    "priority": 9,
+    "industries": ["design", "collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "product engineering and frontend-heavy source"
+  },
+  {
+    "company": "Notion",
+    "homepage_url": "https://www.notion.so",
+    "careers_url": "https://www.notion.so/careers",
+    "priority": 8,
+    "industries": ["productivity", "collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "good startup-style technical source"
+  },
+  {
+    "company": "Canva",
+    "homepage_url": "https://www.canva.com",
+    "careers_url": "https://www.canva.com/careers/",
+    "priority": 8,
+    "industries": ["design", "productivity", "saas"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote", "apac"],
+    "notes": "global product source"
+  },
+  {
+    "company": "Airtable",
+    "homepage_url": "https://www.airtable.com",
+    "careers_url": "https://www.airtable.com/careers",
+    "priority": 8,
+    "industries": ["productivity", "database", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "good app-platform source"
+  },
+  {
+    "company": "Scale AI",
+    "homepage_url": "https://scale.com",
+    "careers_url": "https://scale.com/careers",
+    "priority": 10,
+    "industries": ["ai", "data", "defense"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value ml and data source"
+  },
+  {
+    "company": "OpenAI",
+    "homepage_url": "https://openai.com",
+    "careers_url": "https://openai.com/careers/",
+    "priority": 10,
+    "industries": ["ai", "research"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states"],
+    "notes": "top-tier ai research and engineering source"
+  },
+  {
+    "company": "Anthropic",
+    "homepage_url": "https://www.anthropic.com",
+    "careers_url": "https://www.anthropic.com/careers",
+    "priority": 10,
+    "industries": ["ai", "research", "safety"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "top-tier ai source"
+  },
+  {
+    "company": "NVIDIA",
+    "homepage_url": "https://www.nvidia.com",
+    "careers_url": "https://www.nvidia.com/en-us/about-nvidia/careers/",
+    "priority": 10,
+    "industries": ["semiconductors", "ai", "graphics"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "high-value hardware and ai source"
+  },
+  {
+    "company": "AMD",
+    "homepage_url": "https://www.amd.com",
+    "careers_url": "https://careers.amd.com/careers-home/",
+    "priority": 8,
+    "industries": ["semiconductors", "hardware"],
+    "target_roles": ["software engineering", "systems", "hardware"],
+    "preferred_regions": ["united states"],
+    "notes": "chip and systems source"
+  },
+  {
+    "company": "Intel",
+    "homepage_url": "https://www.intel.com",
+    "careers_url": "https://jobs.intel.com/",
+    "priority": 8,
+    "industries": ["semiconductors", "hardware"],
+    "target_roles": ["software engineering", "systems", "hardware"],
+    "preferred_regions": ["united states"],
+    "notes": "large technical employer with intern volume"
+  },
+  {
+    "company": "Qualcomm",
+    "homepage_url": "https://www.qualcomm.com",
+    "careers_url": "https://www.qualcomm.com/company/careers",
+    "priority": 8,
+    "industries": ["semiconductors", "wireless"],
+    "target_roles": ["software engineering", "systems", "embedded"],
+    "preferred_regions": ["united states"],
+    "notes": "embedded and systems-heavy source"
+  },
+  {
+    "company": "Arm",
+    "homepage_url": "https://www.arm.com",
+    "careers_url": "https://careers.arm.com/",
+    "priority": 7,
+    "industries": ["semiconductors", "hardware"],
+    "target_roles": ["software engineering", "systems", "hardware"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "global chip design source"
+  },
+  {
+    "company": "Cisco",
+    "homepage_url": "https://www.cisco.com",
+    "careers_url": "https://jobs.cisco.com/",
+    "priority": 7,
+    "industries": ["networking", "security", "cloud"],
+    "target_roles": ["software engineering", "security", "network"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "broad technical source"
+  },
+  {
+    "company": "Juniper Networks",
+    "homepage_url": "https://www.juniper.net",
+    "careers_url": "https://careers.juniper.net/",
+    "priority": 7,
+    "industries": ["networking", "security"],
+    "target_roles": ["software engineering", "network", "security"],
+    "preferred_regions": ["united states"],
+    "notes": "network infrastructure source"
+  },
+  {
+    "company": "Palo Alto Networks",
+    "homepage_url": "https://www.paloaltonetworks.com",
+    "careers_url": "https://jobs.paloaltonetworks.com/",
+    "priority": 9,
+    "industries": ["security", "networking", "cloud"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "strong security source"
+  },
+  {
+    "company": "CrowdStrike",
+    "homepage_url": "https://www.crowdstrike.com",
+    "careers_url": "https://www.crowdstrike.com/careers/",
+    "priority": 9,
+    "industries": ["security", "cloud"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value security source"
+  },
+  {
+    "company": "Okta",
+    "homepage_url": "https://www.okta.com",
+    "careers_url": "https://www.okta.com/company/careers/",
+    "priority": 8,
+    "industries": ["security", "identity", "cloud"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "identity and security source"
+  },
+  {
+    "company": "Zscaler",
+    "homepage_url": "https://www.zscaler.com",
+    "careers_url": "https://www.zscaler.com/careers",
+    "priority": 8,
+    "industries": ["security", "networking", "cloud"],
+    "target_roles": ["software engineering", "security", "network"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "security source"
+  },
+  {
+    "company": "Wiz",
+    "homepage_url": "https://www.wiz.io",
+    "careers_url": "https://www.wiz.io/careers",
+    "priority": 8,
+    "industries": ["security", "cloud"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "cloud security source"
+  },
+  {
+    "company": "GitHub",
+    "homepage_url": "https://github.com",
+    "careers_url": "https://github.careers/",
+    "priority": 8,
+    "industries": ["developer tools", "collaboration"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "developer tools source"
+  },
+  {
+    "company": "GitLab",
+    "homepage_url": "https://about.gitlab.com",
+    "careers_url": "https://about.gitlab.com/jobs/",
+    "priority": 8,
+    "industries": ["developer tools", "devops", "saas"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "remote-first developer tools source"
+  },
+  {
+    "company": "Atlassian",
+    "homepage_url": "https://www.atlassian.com",
+    "careers_url": "https://www.atlassian.com/company/careers",
+    "priority": 8,
+    "industries": ["developer tools", "collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote", "apac"],
+    "notes": "broad technical source"
+  },
+  {
+    "company": "MongoDB",
+    "homepage_url": "https://www.mongodb.com",
+    "careers_url": "https://www.mongodb.com/company/careers",
+    "priority": 8,
+    "industries": ["database", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "data", "infrastructure"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "database platform source"
+  },
+  {
+    "company": "Confluent",
+    "homepage_url": "https://www.confluent.io",
+    "careers_url": "https://www.confluent.io/careers/",
+    "priority": 8,
+    "industries": ["data", "streaming", "infrastructure"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "streaming data platform source"
+  },
+  {
+    "company": "Elastic",
+    "homepage_url": "https://www.elastic.co",
+    "careers_url": "https://www.elastic.co/careers",
+    "priority": 7,
+    "industries": ["search", "observability", "security"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "remote", "europe"],
+    "notes": "search and observability source"
+  },
+  {
+    "company": "Redis",
+    "homepage_url": "https://redis.io",
+    "careers_url": "https://redis.io/careers/",
+    "priority": 7,
+    "industries": ["database", "infrastructure"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "database infrastructure source"
+  },
+  {
+    "company": "Cockroach Labs",
+    "homepage_url": "https://www.cockroachlabs.com",
+    "careers_url": "https://www.cockroachlabs.com/careers/",
+    "priority": 7,
+    "industries": ["database", "infrastructure"],
+    "target_roles": ["software engineering", "data", "distributed systems"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "distributed systems source"
+  },
+  {
+    "company": "HashiCorp",
+    "homepage_url": "https://www.hashicorp.com",
+    "careers_url": "https://www.hashicorp.com/careers",
+    "priority": 8,
+    "industries": ["developer tools", "cloud", "infrastructure"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "infra tooling source"
+  },
+  {
+    "company": "Vercel",
+    "homepage_url": "https://vercel.com",
+    "careers_url": "https://vercel.com/careers",
+    "priority": 7,
+    "industries": ["developer tools", "frontend", "cloud"],
+    "target_roles": ["software engineering", "platform", "frontend"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "frontend platform source"
+  },
+  {
+    "company": "Cloudinary",
+    "homepage_url": "https://cloudinary.com",
+    "careers_url": "https://cloudinary.com/company/careers",
+    "priority": 6,
+    "industries": ["media", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "platform", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "mid-size platform source"
+  },
+  {
+    "company": "DigitalOcean",
+    "homepage_url": "https://www.digitalocean.com",
+    "careers_url": "https://www.digitalocean.com/careers",
+    "priority": 7,
+    "industries": ["cloud", "developer tools", "infrastructure"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "cloud platform source"
+  },
+  {
+    "company": "Fastly",
+    "homepage_url": "https://www.fastly.com",
+    "careers_url": "https://www.fastly.com/about/careers",
+    "priority": 7,
+    "industries": ["networking", "edge", "cloud"],
+    "target_roles": ["software engineering", "network", "security"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "network and edge source"
+  },
+  {
+    "company": "Akamai",
+    "homepage_url": "https://www.akamai.com",
+    "careers_url": "https://www.akamai.com/careers",
+    "priority": 7,
+    "industries": ["networking", "security", "cloud"],
+    "target_roles": ["software engineering", "security", "network"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "broad infra source"
+  },
+  {
+    "company": "Dropbox",
+    "homepage_url": "https://www.dropbox.com",
+    "careers_url": "https://jobs.dropbox.com/",
+    "priority": 7,
+    "industries": ["storage", "collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "product and infra source"
+  },
+  {
+    "company": "Box",
+    "homepage_url": "https://www.box.com",
+    "careers_url": "https://careers.box.com/",
+    "priority": 6,
+    "industries": ["storage", "enterprise saas"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "enterprise cloud source"
+  },
+  {
+    "company": "Asana",
+    "homepage_url": "https://asana.com",
+    "careers_url": "https://asana.com/jobs",
+    "priority": 7,
+    "industries": ["productivity", "collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "product engineering source"
+  },
+  {
+    "company": "Slack",
+    "homepage_url": "https://slack.com",
+    "careers_url": "https://slack.com/careers",
+    "priority": 7,
+    "industries": ["collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "collaboration product source"
+  },
+  {
+    "company": "Zoom",
+    "homepage_url": "https://zoom.us",
+    "careers_url": "https://careers.zoom.us/home",
+    "priority": 7,
+    "industries": ["communications", "saas"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "communications platform source"
+  },
+  {
+    "company": "Airbnb",
+    "homepage_url": "https://www.airbnb.com",
+    "careers_url": "https://careers.airbnb.com/",
+    "priority": 9,
+    "industries": ["marketplace", "travel", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-value consumer tech source"
+  },
+  {
+    "company": "Uber",
+    "homepage_url": "https://www.uber.com",
+    "careers_url": "https://www.uber.com/us/en/careers/",
+    "priority": 9,
+    "industries": ["mobility", "marketplace", "logistics"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "high-volume technical source"
+  },
+  {
+    "company": "Lyft",
+    "homepage_url": "https://www.lyft.com",
+    "careers_url": "https://www.lyft.com/careers",
+    "priority": 8,
+    "industries": ["mobility", "marketplace"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "consumer platform source"
+  },
+  {
+    "company": "DoorDash",
+    "homepage_url": "https://www.doordash.com",
+    "careers_url": "https://careersatdoordash.com/",
+    "priority": 8,
+    "industries": ["logistics", "marketplace", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "logistics and ml source"
+  },
+  {
+    "company": "Instacart",
+    "homepage_url": "https://www.instacart.com",
+    "careers_url": "https://www.instacart.careers/",
+    "priority": 8,
+    "industries": ["logistics", "marketplace", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer and logistics source"
+  },
+  {
+    "company": "Robinhood",
+    "homepage_url": "https://robinhood.com",
+    "careers_url": "https://careers.robinhood.com/",
+    "priority": 8,
+    "industries": ["fintech", "consumer finance"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states"],
+    "notes": "fintech technical source"
+  },
+  {
+    "company": "Coinbase",
+    "homepage_url": "https://www.coinbase.com",
+    "careers_url": "https://www.coinbase.com/careers",
+    "priority": 7,
+    "industries": ["crypto", "fintech", "security"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "crypto and infra source"
+  },
+  {
+    "company": "Block",
+    "homepage_url": "https://block.xyz",
+    "careers_url": "https://block.xyz/careers",
+    "priority": 8,
+    "industries": ["fintech", "payments", "consumer"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "payments and developer platform source"
+  },
+  {
+    "company": "Plaid",
+    "homepage_url": "https://plaid.com",
+    "careers_url": "https://plaid.com/careers/",
+    "priority": 8,
+    "industries": ["fintech", "api", "payments"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "api-driven fintech source"
+  },
+  {
+    "company": "Chime",
+    "homepage_url": "https://www.chime.com",
+    "careers_url": "https://www.chime.com/careers/",
+    "priority": 7,
+    "industries": ["fintech", "consumer finance"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer fintech source"
+  },
+  {
+    "company": "Brex",
+    "homepage_url": "https://www.brex.com",
+    "careers_url": "https://www.brex.com/careers",
+    "priority": 7,
+    "industries": ["fintech", "saas"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "startup-style fintech source"
+  },
+  {
+    "company": "Ramp",
+    "homepage_url": "https://ramp.com",
+    "careers_url": "https://ramp.com/careers",
+    "priority": 7,
+    "industries": ["fintech", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "high-growth fintech source"
+  },
+  {
+    "company": "Datadog",
+    "homepage_url": "https://www.datadoghq.com",
+    "careers_url": "https://careers.datadoghq.com/",
+    "priority": 9,
+    "industries": ["observability", "cloud", "developer tools"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "strong observability source"
+  },
+  {
+    "company": "New Relic",
+    "homepage_url": "https://newrelic.com",
+    "careers_url": "https://newrelic.com/careers",
+    "priority": 7,
+    "industries": ["observability", "cloud"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "observability source"
+  },
+  {
+    "company": "Sentry",
+    "homepage_url": "https://sentry.io",
+    "careers_url": "https://sentry.io/careers/",
+    "priority": 7,
+    "industries": ["developer tools", "observability"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "developer tooling source"
+  },
+  {
+    "company": "Grafana Labs",
+    "homepage_url": "https://grafana.com",
+    "careers_url": "https://grafana.com/about/careers/",
+    "priority": 7,
+    "industries": ["observability", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "open-source infrastructure source"
+  },
+  {
+    "company": "Samsara",
+    "homepage_url": "https://www.samsara.com",
+    "careers_url": "https://www.samsara.com/company/careers",
+    "priority": 8,
+    "industries": ["iot", "logistics", "cloud"],
+    "target_roles": ["software engineering", "data", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "iot and platform source"
+  },
+  {
+    "company": "Twilio",
+    "homepage_url": "https://www.twilio.com",
+    "careers_url": "https://www.twilio.com/company/jobs",
+    "priority": 7,
+    "industries": ["communications", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "api platform source"
+  },
+  {
+    "company": "Miro",
+    "homepage_url": "https://miro.com",
+    "careers_url": "https://miro.com/careers/",
+    "priority": 6,
+    "industries": ["collaboration", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "europe", "remote"],
+    "notes": "collaboration product source"
+  },
+  {
+    "company": "HubSpot",
+    "homepage_url": "https://www.hubspot.com",
+    "careers_url": "https://www.hubspot.com/careers",
+    "priority": 7,
+    "industries": ["saas", "crm", "marketing"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "large saas source"
+  },
+  {
+    "company": "Coda",
+    "homepage_url": "https://coda.io",
+    "careers_url": "https://coda.io/careers",
+    "priority": 6,
+    "industries": ["productivity", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "smaller productivity source"
+  },
+  {
+    "company": "Linear",
+    "homepage_url": "https://linear.app",
+    "careers_url": "https://linear.app/careers",
+    "priority": 6,
+    "industries": ["developer tools", "productivity"],
+    "target_roles": ["software engineering", "product engineering", "frontend"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "small but relevant product engineering source"
+  },
+  {
+    "company": "Webflow",
+    "homepage_url": "https://webflow.com",
+    "careers_url": "https://webflow.com/careers",
+    "priority": 6,
+    "industries": ["frontend", "saas", "developer tools"],
+    "target_roles": ["software engineering", "frontend", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "frontend tooling source"
+  },
+  {
+    "company": "Discord",
+    "homepage_url": "https://discord.com",
+    "careers_url": "https://discord.com/jobs",
+    "priority": 7,
+    "industries": ["consumer", "communications", "gaming"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states"],
+    "notes": "consumer real-time systems source"
+  },
+  {
+    "company": "Reddit",
+    "homepage_url": "https://www.redditinc.com",
+    "careers_url": "https://www.redditinc.com/careers",
+    "priority": 7,
+    "industries": ["consumer", "social", "advertising"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer and recommender source"
+  },
+  {
+    "company": "Snap",
+    "homepage_url": "https://snap.com",
+    "careers_url": "https://careers.snap.com/",
+    "priority": 7,
+    "industries": ["consumer", "social", "ar"],
+    "target_roles": ["software engineering", "machine learning", "computer vision"],
+    "preferred_regions": ["united states"],
+    "notes": "cv and consumer source"
+  },
+  {
+    "company": "Pinterest",
+    "homepage_url": "https://www.pinterest.com",
+    "careers_url": "https://www.pinterestcareers.com/",
+    "priority": 7,
+    "industries": ["consumer", "social", "advertising"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "recommendation-heavy consumer source"
+  },
+  {
+    "company": "Spotify",
+    "homepage_url": "https://www.spotify.com",
+    "careers_url": "https://www.lifeatspotify.com/jobs",
+    "priority": 7,
+    "industries": ["consumer", "media", "recommendation"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "europe", "remote"],
+    "notes": "recsys-friendly source"
+  },
+  {
+    "company": "Duolingo",
+    "homepage_url": "https://www.duolingo.com",
+    "careers_url": "https://careers.duolingo.com/",
+    "priority": 7,
+    "industries": ["consumer", "education", "ai"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "consumer ml and product source"
+  },
+  {
+    "company": "Coursera",
+    "homepage_url": "https://www.coursera.org",
+    "careers_url": "https://careers.coursera.com/",
+    "priority": 6,
+    "industries": ["education", "saas", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "edtech source"
+  },
+  {
+    "company": "Khan Academy",
+    "homepage_url": "https://www.khanacademy.org",
+    "careers_url": "https://www.khanacademy.org/careers",
+    "priority": 5,
+    "industries": ["education", "nonprofit", "consumer"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "mission-driven edtech source"
+  },
+  {
+    "company": "Zillow",
+    "homepage_url": "https://www.zillow.com",
+    "careers_url": "https://www.zillow.com/careers/",
+    "priority": 6,
+    "industries": ["real estate", "consumer", "marketplace"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer marketplace source"
+  },
+  {
+    "company": "Redfin",
+    "homepage_url": "https://www.redfin.com",
+    "careers_url": "https://www.redfin.com/careers",
+    "priority": 5,
+    "industries": ["real estate", "consumer", "marketplace"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "consumer marketplace source"
+  },
+  {
+    "company": "Opendoor",
+    "homepage_url": "https://www.opendoor.com",
+    "careers_url": "https://www.opendoor.com/careers",
+    "priority": 6,
+    "industries": ["real estate", "fintech", "consumer"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "real estate platform source"
+  },
+  {
+    "company": "Cruise",
+    "homepage_url": "https://getcruise.com",
+    "careers_url": "https://getcruise.com/careers/",
+    "priority": 8,
+    "industries": ["autonomous driving", "robotics", "ai"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "autonomy source"
+  },
+  {
+    "company": "Aurora",
+    "homepage_url": "https://aurora.tech",
+    "careers_url": "https://aurora.tech/careers/",
+    "priority": 8,
+    "industries": ["autonomous driving", "robotics", "ai"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "autonomy and systems source"
+  },
+  {
+    "company": "Zoox",
+    "homepage_url": "https://zoox.com",
+    "careers_url": "https://zoox.com/careers/",
+    "priority": 8,
+    "industries": ["autonomous driving", "robotics", "ai"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "autonomy source"
+  },
+  {
+    "company": "Nuro",
+    "homepage_url": "https://nuro.ai",
+    "careers_url": "https://www.nuro.ai/careers",
+    "priority": 8,
+    "industries": ["robotics", "autonomous driving", "logistics"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "robotics source"
+  },
+  {
+    "company": "Glean",
+    "homepage_url": "https://www.glean.com",
+    "careers_url": "https://www.glean.com/careers",
+    "priority": 8,
+    "industries": ["search", "ai", "enterprise"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "enterprise ai search source"
+  },
+  {
+    "company": "Perplexity",
+    "homepage_url": "https://www.perplexity.ai",
+    "careers_url": "https://www.perplexity.ai/careers",
+    "priority": 8,
+    "industries": ["ai", "search", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states"],
+    "notes": "emerging ai search source"
+  },
+  {
+    "company": "Hugging Face",
+    "homepage_url": "https://huggingface.co",
+    "careers_url": "https://huggingface.co/jobs",
+    "priority": 8,
+    "industries": ["ai", "open source", "developer tools"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "open-source ai source"
+  },
+  {
+    "company": "Cohere",
+    "homepage_url": "https://cohere.com",
+    "careers_url": "https://cohere.com/careers",
+    "priority": 8,
+    "industries": ["ai", "enterprise"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "enterprise llm source"
+  },
+  {
+    "company": "Replicate",
+    "homepage_url": "https://replicate.com",
+    "careers_url": "https://replicate.com/careers",
+    "priority": 6,
+    "industries": ["ai", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "machine learning", "platform"],
+    "preferred_regions": ["remote", "united states"],
+    "notes": "small ai platform source"
+  },
+  {
+    "company": "Runway",
+    "homepage_url": "https://runwayml.com",
+    "careers_url": "https://runwayml.com/careers/",
+    "priority": 7,
+    "industries": ["ai", "media", "video"],
+    "target_roles": ["software engineering", "machine learning", "computer vision"],
+    "preferred_regions": ["united states"],
+    "notes": "genai media source"
+  },
+  {
+    "company": "Anduril",
+    "homepage_url": "https://www.anduril.com",
+    "careers_url": "https://www.anduril.com/careers/",
+    "priority": 9,
+    "industries": ["defense", "robotics", "ai"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "defense systems source"
+  },
+  {
+    "company": "Palantir",
+    "homepage_url": "https://www.palantir.com",
+    "careers_url": "https://www.palantir.com/careers/",
+    "priority": 9,
+    "industries": ["data", "defense", "enterprise"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "high-value data systems source"
+  },
+  {
+    "company": "ServiceNow",
+    "homepage_url": "https://www.servicenow.com",
+    "careers_url": "https://careers.servicenow.com/",
+    "priority": 7,
+    "industries": ["enterprise saas", "workflow", "cloud"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "large enterprise saas source"
+  },
+  {
+    "company": "Adobe",
+    "homepage_url": "https://www.adobe.com",
+    "careers_url": "https://careers.adobe.com/",
+    "priority": 8,
+    "industries": ["creative tools", "saas", "ai"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "strong product and ai source"
+  },
+  {
+    "company": "Autodesk",
+    "homepage_url": "https://www.autodesk.com",
+    "careers_url": "https://www.autodesk.com/careers",
+    "priority": 6,
+    "industries": ["design", "engineering software", "saas"],
+    "target_roles": ["software engineering", "machine learning", "graphics"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "design tooling source"
+  },
+  {
+    "company": "Workday",
+    "homepage_url": "https://www.workday.com",
+    "careers_url": "https://workday.wd5.myworkdayjobs.com/Workday",
+    "priority": 6,
+    "industries": ["enterprise saas", "hr", "finance"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "large enterprise source"
+  },
+  {
+    "company": "Braze",
+    "homepage_url": "https://www.braze.com",
+    "careers_url": "https://www.braze.com/company/careers",
+    "priority": 6,
+    "industries": ["saas", "marketing", "data"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "data-intensive saas source"
+  },
+  {
+    "company": "Mistral AI",
+    "homepage_url": "https://mistral.ai",
+    "careers_url": "https://mistral.ai/careers",
+    "priority": 7,
+    "industries": ["ai", "research"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["europe", "remote"],
+    "notes": "european ai source"
+  },
+  {
+    "company": "DeepMind",
+    "homepage_url": "https://deepmind.google",
+    "careers_url": "https://deepmind.google/about/careers/",
+    "priority": 9,
+    "industries": ["ai", "research"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states", "europe"],
+    "notes": "top-tier ai research source"
+  },
+  {
+    "company": "xAI",
+    "homepage_url": "https://x.ai",
+    "careers_url": "https://x.ai/careers",
+    "priority": 7,
+    "industries": ["ai", "research"],
+    "target_roles": ["software engineering", "machine learning", "research"],
+    "preferred_regions": ["united states"],
+    "notes": "emerging ai source"
+  },
+  {
+    "company": "Benchling",
+    "homepage_url": "https://www.benchling.com",
+    "careers_url": "https://www.benchling.com/careers",
+    "priority": 6,
+    "industries": ["biotech", "saas", "data"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states"],
+    "notes": "biotech software source"
+  },
+  {
+    "company": "Vanta",
+    "homepage_url": "https://www.vanta.com",
+    "careers_url": "https://www.vanta.com/careers",
+    "priority": 6,
+    "industries": ["security", "compliance", "saas"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "security saas source"
+  },
+  {
+    "company": "Checkr",
+    "homepage_url": "https://checkr.com",
+    "careers_url": "https://checkr.com/company/careers",
+    "priority": 6,
+    "industries": ["hrtech", "saas", "fintech"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "mid-size platform source"
+  },
+  {
+    "company": "Rippling",
+    "homepage_url": "https://www.rippling.com",
+    "careers_url": "https://www.rippling.com/careers",
+    "priority": 7,
+    "industries": ["hrtech", "fintech", "enterprise saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "high-growth enterprise source"
+  },
+  {
+    "company": "Gusto",
+    "homepage_url": "https://gusto.com",
+    "careers_url": "https://gusto.com/about/careers",
+    "priority": 6,
+    "industries": ["hrtech", "fintech", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "smaller fintech platform source"
+  },
+  {
+    "company": "Toast",
+    "homepage_url": "https://pos.toasttab.com",
+    "careers_url": "https://careers.toasttab.com/",
+    "priority": 6,
+    "industries": ["fintech", "hospitality", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "payments and vertical saas source"
+  },
+  {
+    "company": "Mercury",
+    "homepage_url": "https://mercury.com",
+    "careers_url": "https://mercury.com/careers",
+    "priority": 6,
+    "industries": ["fintech", "banking", "saas"],
+    "target_roles": ["software engineering", "data", "security"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "startup fintech source"
+  },
+  {
+    "company": "Affirm",
+    "homepage_url": "https://www.affirm.com",
+    "careers_url": "https://www.affirm.com/careers",
+    "priority": 7,
+    "industries": ["fintech", "consumer finance"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer fintech and ml source"
+  },
+  {
+    "company": "Klarna",
+    "homepage_url": "https://www.klarna.com",
+    "careers_url": "https://www.klarna.com/careers/",
+    "priority": 6,
+    "industries": ["fintech", "consumer finance"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["europe", "remote", "united states"],
+    "notes": "global fintech source"
+  },
+  {
+    "company": "Wise",
+    "homepage_url": "https://wise.com",
+    "careers_url": "https://wise.jobs/",
+    "priority": 7,
+    "industries": ["fintech", "payments"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["europe", "united states", "remote"],
+    "notes": "global fintech infrastructure source"
+  },
+  {
+    "company": "WiseTech Global",
+    "homepage_url": "https://www.wisetechglobal.com",
+    "careers_url": "https://www.wisetechglobal.com/careers/",
+    "priority": 5,
+    "industries": ["logistics", "enterprise software"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["apac", "europe", "united states"],
+    "notes": "logistics software source"
+  },
+  {
+    "company": "Booking.com",
+    "homepage_url": "https://www.booking.com",
+    "careers_url": "https://careers.booking.com/",
+    "priority": 6,
+    "industries": ["travel", "marketplace", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["europe", "united states"],
+    "notes": "global consumer marketplace source"
+  },
+  {
+    "company": "Expedia Group",
+    "homepage_url": "https://www.expediagroup.com",
+    "careers_url": "https://careers.expediagroup.com/",
+    "priority": 6,
+    "industries": ["travel", "marketplace", "consumer"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "large consumer travel source"
+  },
+  {
+    "company": "StubHub",
+    "homepage_url": "https://www.stubhub.com",
+    "careers_url": "https://www.stubhub.com/careers",
+    "priority": 5,
+    "industries": ["marketplace", "consumer", "tickets"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "marketplace source"
+  },
+  {
+    "company": "Eventbrite",
+    "homepage_url": "https://www.eventbrite.com",
+    "careers_url": "https://www.eventbritecareers.com/",
+    "priority": 5,
+    "industries": ["marketplace", "consumer", "events"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "consumer marketplace source"
+  },
+  {
+    "company": "Robin AI",
+    "homepage_url": "https://www.robinai.com",
+    "careers_url": "https://www.robinai.com/careers",
+    "priority": 5,
+    "industries": ["ai", "legaltech", "enterprise"],
+    "target_roles": ["software engineering", "machine learning", "product engineering"],
+    "preferred_regions": ["europe", "united states"],
+    "notes": "smaller ai enterprise source"
+  },
+  {
+    "company": "ScaleFlux",
+    "homepage_url": "https://scaleflux.com",
+    "careers_url": "https://scaleflux.com/careers/",
+    "priority": 4,
+    "industries": ["hardware", "storage", "systems"],
+    "target_roles": ["software engineering", "systems", "hardware"],
+    "preferred_regions": ["united states"],
+    "notes": "smaller systems source"
+  },
+  {
+    "company": "Cerebras",
+    "homepage_url": "https://www.cerebras.net",
+    "careers_url": "https://www.cerebras.net/careers/",
+    "priority": 7,
+    "industries": ["ai", "hardware", "semiconductors"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "ai hardware source"
+  },
+  {
+    "company": "Groq",
+    "homepage_url": "https://groq.com",
+    "careers_url": "https://groq.com/careers/",
+    "priority": 7,
+    "industries": ["ai", "hardware", "systems"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "ai inference hardware source"
+  },
+  {
+    "company": "Lambda",
+    "homepage_url": "https://lambda.ai",
+    "careers_url": "https://lambda.ai/careers",
+    "priority": 7,
+    "industries": ["ai", "cloud", "hardware"],
+    "target_roles": ["software engineering", "machine learning", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "gpu cloud and ai source"
+  },
+  {
+    "company": "CoreWeave",
+    "homepage_url": "https://www.coreweave.com",
+    "careers_url": "https://www.coreweave.com/careers",
+    "priority": 7,
+    "industries": ["cloud", "ai", "infrastructure"],
+    "target_roles": ["software engineering", "machine learning", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "gpu cloud infrastructure source"
+  },
+  {
+    "company": "Crusoe",
+    "homepage_url": "https://www.crusoe.ai",
+    "careers_url": "https://www.crusoe.ai/careers",
+    "priority": 6,
+    "industries": ["cloud", "ai", "infrastructure"],
+    "target_roles": ["software engineering", "machine learning", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "infra-heavy ai source"
+  },
+  {
+    "company": "Replit",
+    "homepage_url": "https://replit.com",
+    "careers_url": "https://replit.com/careers",
+    "priority": 6,
+    "industries": ["developer tools", "education", "ai"],
+    "target_roles": ["software engineering", "product engineering", "platform"],
+    "preferred_regions": ["remote", "united states"],
+    "notes": "developer product source"
+  },
+  {
+    "company": "Postman",
+    "homepage_url": "https://www.postman.com",
+    "careers_url": "https://www.postman.com/careers/",
+    "priority": 6,
+    "industries": ["developer tools", "api", "saas"],
+    "target_roles": ["software engineering", "data", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "api tooling source"
+  },
+  {
+    "company": "Sourcegraph",
+    "homepage_url": "https://sourcegraph.com",
+    "careers_url": "https://about.sourcegraph.com/careers",
+    "priority": 6,
+    "industries": ["developer tools", "ai", "search"],
+    "target_roles": ["software engineering", "machine learning", "product engineering"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "code search and ai developer source"
+  },
+  {
+    "company": "PlanetScale",
+    "homepage_url": "https://planetscale.com",
+    "careers_url": "https://planetscale.com/careers",
+    "priority": 6,
+    "industries": ["database", "developer tools", "cloud"],
+    "target_roles": ["software engineering", "data", "distributed systems"],
+    "preferred_regions": ["remote", "united states"],
+    "notes": "database platform source"
+  },
+  {
+    "company": "Neon",
+    "homepage_url": "https://neon.tech",
+    "careers_url": "https://neon.tech/careers",
+    "priority": 5,
+    "industries": ["database", "cloud", "developer tools"],
+    "target_roles": ["software engineering", "data", "distributed systems"],
+    "preferred_regions": ["remote", "europe", "united states"],
+    "notes": "smaller database source"
+  },
+  {
+    "company": "Supabase",
+    "homepage_url": "https://supabase.com",
+    "careers_url": "https://supabase.com/careers",
+    "priority": 6,
+    "industries": ["developer tools", "database", "backend"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "open-source backend platform source"
+  },
+  {
+    "company": "Planet",
+    "homepage_url": "https://www.planet.com",
+    "careers_url": "https://www.planet.com/company/careers/",
+    "priority": 6,
+    "industries": ["space", "geospatial", "data"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states"],
+    "notes": "geospatial data source"
+  },
+  {
+    "company": "Rocket Lab",
+    "homepage_url": "https://www.rocketlabusa.com",
+    "careers_url": "https://www.rocketlabusa.com/careers/",
+    "priority": 6,
+    "industries": ["space", "hardware", "systems"],
+    "target_roles": ["software engineering", "systems", "hardware"],
+    "preferred_regions": ["united states"],
+    "notes": "space systems source"
+  },
+  {
+    "company": "Relativity Space",
+    "homepage_url": "https://www.relativityspace.com",
+    "careers_url": "https://www.relativityspace.com/careers",
+    "priority": 6,
+    "industries": ["space", "hardware", "manufacturing"],
+    "target_roles": ["software engineering", "systems", "manufacturing software"],
+    "preferred_regions": ["united states"],
+    "notes": "space manufacturing source"
+  },
+  {
+    "company": "Zipline",
+    "homepage_url": "https://www.flyzipline.com",
+    "careers_url": "https://www.flyzipline.com/careers/",
+    "priority": 6,
+    "industries": ["robotics", "logistics", "healthtech"],
+    "target_roles": ["software engineering", "machine learning", "systems"],
+    "preferred_regions": ["united states"],
+    "notes": "robotics and logistics source"
+  },
+  {
+    "company": "Flexport",
+    "homepage_url": "https://www.flexport.com",
+    "careers_url": "https://www.flexport.com/careers/",
+    "priority": 6,
+    "industries": ["logistics", "marketplace", "enterprise"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "logistics platform source"
+  },
+  {
+    "company": "Netskope",
+    "homepage_url": "https://www.netskope.com",
+    "careers_url": "https://www.netskope.com/company/careers",
+    "priority": 7,
+    "industries": ["security", "cloud"],
+    "target_roles": ["software engineering", "security", "network"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "security source"
+  },
+  {
+    "company": "Armis",
+    "homepage_url": "https://www.armis.com",
+    "careers_url": "https://www.armis.com/company/careers/",
+    "priority": 6,
+    "industries": ["security", "iot"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "security and iot source"
+  },
+  {
+    "company": "SentinelOne",
+    "homepage_url": "https://www.sentinelone.com",
+    "careers_url": "https://www.sentinelone.com/company/careers/",
+    "priority": 7,
+    "industries": ["security", "cloud"],
+    "target_roles": ["software engineering", "security", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "security source"
+  },
+  {
+    "company": "Snyk",
+    "homepage_url": "https://snyk.io",
+    "careers_url": "https://snyk.io/careers/",
+    "priority": 7,
+    "industries": ["security", "developer tools"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote", "europe"],
+    "notes": "developer security source"
+  },
+  {
+    "company": "1Password",
+    "homepage_url": "https://1password.com",
+    "careers_url": "https://1password.com/jobs",
+    "priority": 6,
+    "industries": ["security", "consumer", "enterprise"],
+    "target_roles": ["software engineering", "security", "product engineering"],
+    "preferred_regions": ["remote", "united states", "canada"],
+    "notes": "security product source"
+  },
+  {
+    "company": "DuckDuckGo",
+    "homepage_url": "https://duckduckgo.com",
+    "careers_url": "https://duckduckgo.com/hiring",
+    "priority": 5,
+    "industries": ["search", "privacy", "consumer"],
+    "target_roles": ["software engineering", "security", "product engineering"],
+    "preferred_regions": ["remote", "united states"],
+    "notes": "privacy-focused remote source"
+  },
+  {
+    "company": "Brax",
+    "homepage_url": "https://www.brex.com",
+    "careers_url": "https://www.brex.com/careers",
+    "priority": 4,
+    "industries": ["fintech", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "placeholder duplicate-style seed; remove if redundant"
+  },
+  {
+    "company": "Motive",
+    "homepage_url": "https://gomotive.com",
+    "careers_url": "https://gomotive.com/company/careers/",
+    "priority": 6,
+    "industries": ["logistics", "iot", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["united states"],
+    "notes": "fleet and iot source"
+  },
+  {
+    "company": "Persona",
+    "homepage_url": "https://withpersona.com",
+    "careers_url": "https://withpersona.com/careers",
+    "priority": 5,
+    "industries": ["identity", "security", "saas"],
+    "target_roles": ["software engineering", "security", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "identity platform source"
+  },
+  {
+    "company": "Retool",
+    "homepage_url": "https://retool.com",
+    "careers_url": "https://retool.com/careers",
+    "priority": 5,
+    "industries": ["developer tools", "enterprise"],
+    "target_roles": ["software engineering", "product engineering", "platform"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "internal tools platform source"
+  },
+  {
+    "company": "Algolia",
+    "homepage_url": "https://www.algolia.com",
+    "careers_url": "https://www.algolia.com/careers/",
+    "priority": 6,
+    "industries": ["search", "developer tools", "saas"],
+    "target_roles": ["software engineering", "data", "platform"],
+    "preferred_regions": ["remote", "united states", "europe"],
+    "notes": "search infrastructure source"
+  },
+  {
+    "company": "Grammarly",
+    "homepage_url": "https://www.grammarly.com",
+    "careers_url": "https://www.grammarly.com/careers",
+    "priority": 7,
+    "industries": ["ai", "consumer", "productivity"],
+    "target_roles": ["software engineering", "machine learning", "data"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "nlp and consumer product source"
+  },
+  {
+    "company": "Airtable AI",
+    "homepage_url": "https://www.airtable.com",
+    "careers_url": "https://www.airtable.com/careers",
+    "priority": 4,
+    "industries": ["productivity", "ai", "saas"],
+    "target_roles": ["software engineering", "machine learning", "product engineering"],
+    "preferred_regions": ["united states", "remote"],
+    "notes": "duplicate-style exploratory seed; remove if redundant"
+  }
+]
