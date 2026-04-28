@@ -18,7 +18,9 @@ InternLens currently supports:
 - one-command corpus refresh across Lever and Greenhouse registries
 - company-seed-based source discovery for candidate ATS sources
 - checkpointed source discovery with structured warning summaries
+- high-intent same-site discovery link following for student, internship, campus, and early-career pages
 - opt-in direct ATS probing and blocked-page manual review records for broad seed scans
+- dry-run source promotion diagnostics with internship signal examples
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
@@ -35,7 +37,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `145 passed`
+- current total: `158 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -112,7 +114,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source promotion tests
 - source pipeline tests
 - profile API tests
-- full suite currently passing: `145 passed`
+- full suite currently passing: `158 passed`
 - frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -322,7 +324,9 @@ Useful notes:
 - the current working seed draft contains `144` companies to stress-test discovery breadth before later pruning
 - a full discovery run over the larger seed draft is currently slow because page fetches are sequential
 - some company careers pages now return `403` or `429`, so partial discovery results are expected during wide scans
-- Greenhouse embed URLs such as `boards.greenhouse.io/embed/...` can currently be misclassified as source candidates and should be treated as noisy output until discovery rules are tightened
+- Greenhouse embed/helper URLs such as `boards.greenhouse.io/embed/...` are rejected as non-board URLs
+- discovery follows a limited number of same-site high-intent links such as student, internship, campus, university, jobs, and early-career pages
+- discovery output includes a method summary so broad scans show whether candidates came from careers pages, priority links, direct seed URLs, or direct ATS probes
 
 ### Validate discovered ATS source candidates
 
@@ -334,6 +338,7 @@ Useful notes:
 - the script reads `data/source_registry/discovered_sources.json`
 - by default it validates only sources whose status is `candidate`
 - validation checks fetch success, non-empty results, normalization success, and internship density
+- validation records `internship_signal_examples` and includes those titles in `validation_notes` when internship-like postings are detected
 - active registry duplicates are noted in `validation_notes` but are not auto-promoted or removed
 
 ### Promote validated sources into active registries
@@ -345,8 +350,10 @@ python scripts/promote_sources.py
 Useful notes:
 - the script reads `data/source_registry/discovered_sources.json`
 - only sources with status `validated` are promotable
-- by default the source must meet a minimum score and have at least some internship signal
-- matching inactive registry entries are reactivated instead of duplicated
+- by default the source must meet a minimum score and a minimum internship-likelihood threshold
+- direct ATS probe candidates must meet stricter score and internship-likelihood safeguards
+- matching inactive registry entries are skipped by default; use `--reactivate-inactive-sources` to explicitly reactivate them
+- use `--dry-run` to inspect promotion decisions without writing registry files
 
 ### Run the full source lifecycle in one command
 
@@ -359,6 +366,7 @@ Useful notes:
 - each stage can be skipped with `--skip-discovery`, `--skip-validation`, `--skip-promotion`, or `--skip-refresh`
 - use `--greenhouse-only` or `--lever-only` to limit the refresh step
 - use `--refresh-limit` to cap per-source fetch volume during a dry run or smoke test
+- source discovery and promotion safeguards can be tuned with flags such as `--priority-follow-limit`, `--min-internship-likelihood`, and direct-probe threshold options
 
 ---
 
@@ -645,7 +653,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `145 passed`
+- current total: `158 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -662,6 +670,7 @@ Current status:
 - duplicate-looking multi-location internships may still appear as separate postings
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
 - direct ATS probing improves source recall but can surface broad non-internship boards that still need validation and promotion thresholds
+- promotion dry-runs now show internship signal examples, making false positives easier to inspect before registry changes
 - blocked-page manual review records are operator cues, not promotion-ready source records
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
@@ -700,6 +709,6 @@ Planned follow-up improvements:
 - add a lightweight frontend lint or test setup
 - continue refining ranking noise for broad non-core internships
 - continue improving company, team, and location normalization
-- tune source promotion thresholds after direct ATS probing
-- reduce noisy direct-probe miss summaries during wide dry runs
+- measure source-discovery recall on larger seed subsets after priority-link following
+- refine source validation and promotion thresholds using dry-run signal examples
 - prepare cleaner demo documentation and screenshots

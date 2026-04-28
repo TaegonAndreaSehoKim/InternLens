@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `145 passed`, and the frontend production build passes with `npm run build`.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `158 passed`, and the frontend production build passes with `npm run build`.
 
 ---
 
@@ -147,9 +147,12 @@ Recent work focused on:
 - adding a Vite/React frontend with session persistence, API health status, recommendation filters, score dials, and job action buttons
 - stress-testing company-seed-based source discovery with a larger seed draft
 - hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
+- tightening source promotion safeguards for direct ATS probe candidates and inactive registry entries
+- adding high-intent same-site priority-link following for student, internship, campus, and early-career discovery pages
+- adding promotion dry-run diagnostics that show internship signal examples
 
 The latest validation state shows:
-- `145 passed`
+- `158 passed`
 - `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
@@ -225,7 +228,8 @@ It also shows good engineering discipline:
 - saved/applied/dismissed state transitions in recommendation cards can be clearer
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
-- source discovery is scriptable and now preserves partial broad-scan results, but direct ATS probe candidates still need validation and promotion thresholds before registry inclusion
+- source discovery is scriptable and now preserves partial broad-scan results, rejects non-board ATS helper URLs, follows limited high-intent same-site links, and summarizes discovery methods
+- direct ATS probe candidates are still intentionally conservative; broad boards can show internship signals without meeting automatic promotion safeguards
 - blocked-page manual review records help track `403`, `406`, and `429` pages without treating them as promotion-ready sources
 
 ---
@@ -254,9 +258,9 @@ The strongest next steps are:
    - demo screenshots or a short walkthrough
 
 5. harden source discovery
-   - tune promotion thresholds for direct ATS probe candidates
+   - measure priority-link recall on larger seed subsets
    - keep blocked/manual-review records out of automatic promotion
-   - reduce direct-probe miss noise in wide dry-run summaries
+   - use dry-run internship signal examples to tune validation and promotion thresholds
 
 ---
 

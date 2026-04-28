@@ -184,3 +184,7 @@ and Greenhouse refresh flow stable while hardening broader source acquisition:
 3. promote only high-confidence, internship-relevant sources into active registries
 4. refresh active Lever and Greenhouse registries into raw and processed data
 5. preserve CLI/API/frontend ranking behavior while generated data evolves
+
+Discovered source validation currently records `internship_likelihood` plus
+`internship_signal_examples` so operators can inspect which posting titles
+caused a source to look internship-relevant before promotion.

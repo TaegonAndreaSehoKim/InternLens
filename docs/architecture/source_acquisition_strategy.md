@@ -169,6 +169,7 @@ Suggested fields:
 | validation_notes | string | Validation result summary |
 | source_score | number | Overall source quality score |
 | internship_likelihood | number | Estimated internship relevance |
+| internship_signal_examples | list[string] | Example titles that triggered internship-signal detection |
 
 ### 3. Active refresh target
 
@@ -261,10 +262,12 @@ Input:
 Process:
 - read homepage and careers URLs
 - extract ATS links
+- follow a limited number of same-site high-intent links such as student, internship, campus, university, jobs, and early-career pages
 - classify likely source type
 - optionally probe a small number of seed-derived Lever and Greenhouse identifiers when page scanning finds no source
 - checkpoint merged results during broad scans so partial progress survives interruptions
 - preserve structured warning reasons for blocked, rate-limited, failed, or negative direct-probe lookups
+- summarize discovery methods so operators can see whether candidates came from direct seed URLs, careers page scans, priority-link scans, or direct ATS probes
 - store candidate source records
 
 Primary targets:
@@ -283,8 +286,9 @@ Current implementation caveats observed during a wide seed dry run:
 Recent broad-scan probe result:
 - baseline discovery found `14` candidates from `144` seeds, with `13` validating successfully
 - discovery with direct ATS probing and blocked-page review records found `82` records
-- validation of that probe produced `68` validated sources, `1` rejected source, and `13` blocked manual-review records
-- promotion-like candidates increased from `3` to `15` under the existing score and internship-signal heuristics
+- validation of that probe with stricter internship-signal rules and a wider validation sample produced `68` validated sources, `1` rejected source, and `13` blocked manual-review records
+- promotion dry-run with conservative safeguards promoted `0` new sources from the latest probe file; Cloudflare remains skipped as an inactive registry entry, and Zoox is blocked by the direct-probe safeguard
+- small seed-subset smoke testing showed the new priority-link following did not add candidates for that subset, so broader recall measurement is still needed
 
 ### Phase 2: source validation
 
@@ -293,6 +297,7 @@ For each discovered candidate:
 - check whether payload is non-empty
 - check whether job pages normalize correctly
 - estimate internship density
+- preserve example titles that triggered internship-signal detection
 
 If validation passes:
 - mark as `validated`
@@ -305,9 +310,12 @@ Only promoted sources should enter:
 
 Promotion conditions can be:
 - successful fetch
-- at least one meaningful internship-like posting
+- minimum source score
+- minimum internship-likelihood threshold
+- stricter direct-probe score and internship-likelihood thresholds
 - acceptable data quality
 - no obvious duplication with an existing active source
+- no implicit reactivation of inactive registry entries unless explicitly requested
 
 ---
 

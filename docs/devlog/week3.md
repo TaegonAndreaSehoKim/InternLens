@@ -140,7 +140,7 @@ InternLens now supports:
 
 ### Latest quality checkpoint
 - Frontend production build passing through `npm run build`
-- Backend test suite stable at **145 passed** on the latest local recheck
+- Backend test suite stable at **158 passed** on the latest local recheck
 - Python environment stabilized on Python 3.13
 
 ### Remaining next steps
@@ -218,3 +218,45 @@ Blocked-page records now preserve useful operator-review work without pretending
 - Tune source promotion thresholds for direct-probe candidates.
 - Keep manual-review records out of automatic promotion.
 - Decide whether probe output files should stay local-only or become explicit debugging artifacts.
+
+---
+
+## Day 29 - Source Promotion Safeguards and Discovery Diagnostics
+
+### Focus
+Make broad source discovery safer to inspect before any new sources are promoted into active registries.
+
+### What was done
+- Added `promote_sources.py --dry-run` so promotion decisions can be inspected without writing registry files.
+- Added direct-probe-specific promotion safeguards for minimum score and internship likelihood.
+- Added a global minimum internship-likelihood threshold for promotion.
+- Stopped inactive registry entries from being reactivated unless `--reactivate-inactive-sources` is explicitly passed.
+- Tightened Lever internship matching so words such as `internal` and `international` do not create internship false positives.
+- Aligned Greenhouse validation internship matching with the stricter refresh filter.
+- Increased the default validation sample from `25` to `100` jobs.
+- Preserved blocked/manual-review records during `--include-non-candidate` revalidation.
+- Marked promoted Lever sources as `internship_only` by default.
+- Added validation `internship_signal_examples` and surfaced those examples in promotion dry-run output.
+- Added same-site priority-link following for high-intent discovery pages such as student, internship, campus, university, jobs, and early-career pages.
+- Added discovery method summaries so broad runs show whether candidates came from careers pages, priority links, direct seed URLs, or direct ATS probes.
+
+### Probe and smoke results
+- Revalidating the existing broad probe with stricter rules kept `68` validated ATS records, `1` rejected record, and `13` blocked manual-review records.
+- Promotion dry-run on the latest probe promoted `0` new sources.
+- Cloudflare remained skipped because it is inactive in the registry by default.
+- Zoox showed internship signal examples but was still blocked by the direct-probe safeguard.
+- A small seed-subset smoke comparing `--priority-follow-limit 0` and `5` found the same Figma candidate in both cases, so the new priority-link logic is safer but still needs broader recall measurement.
+
+### Validation
+- `pytest tests/test_source_discovery.py -q` -> **23 passed**
+- `pytest tests/test_source_discovery.py tests/test_source_validation.py tests/test_source_promotion.py tests/test_run_source_pipeline.py -q` -> **44 passed**
+- `pytest -q` -> **158 passed**
+
+### Result
+Broad discovery is now more conservative and more inspectable.
+The system is better at explaining why a source looks internship-relevant, while avoiding automatic promotion of broad public boards that would likely hurt shortlist quality.
+
+### Remaining next fixes
+- Measure priority-link recall on a larger seed subset.
+- Use dry-run internship examples to tune validation and promotion thresholds.
+- Consider a repeatable promotion smoke script that fetches temporary promoted candidates and reports applyable ranking counts.
