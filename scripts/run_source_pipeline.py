@@ -19,6 +19,7 @@ from src.discovery.source_discovery import (
     merge_discovered_sources,
     resolve_seed_path,
     save_json_list,
+    summarize_discovery_methods,
     summarize_discovery_warnings,
     visible_discovery_warnings,
 )
@@ -40,6 +41,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--record-blocked-sources", action="store_true")
     parser.add_argument("--direct-probe-limit", type=int, default=1)
     parser.add_argument("--max-direct-probe-identifiers", type=int, default=2)
+    parser.add_argument("--priority-follow-limit", type=int, default=5)
     parser.add_argument("--validation-timeout", type=float, default=20.0)
     parser.add_argument("--validation-limit", type=int, default=100)
     parser.add_argument("--include-non-candidate", action="store_true")
@@ -82,6 +84,7 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
     record_blocked_sources = bool(getattr(args, "record_blocked_sources", False))
     direct_probe_limit = int(getattr(args, "direct_probe_limit", 1))
     max_direct_probe_identifiers = int(getattr(args, "max_direct_probe_identifiers", 2))
+    priority_follow_limit = int(getattr(args, "priority_follow_limit", 5))
     discovered_sources: list[Dict[str, Any]] = []
     errors: list[Dict[str, str]] = []
     merged_sources = list(existing_sources)
@@ -94,6 +97,7 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
             record_blocked_sources=record_blocked_sources,
             direct_probe_limit=direct_probe_limit,
             max_direct_probe_identifiers=max_direct_probe_identifiers,
+            priority_follow_limit=priority_follow_limit,
         )
         discovered_sources = merge_discovered_sources(discovered_sources, batch_sources)
         errors.extend(batch_errors)
@@ -109,6 +113,10 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
     print(f"Checkpoint size: {checkpoint_size}")
     print(f"Discovered source candidates: {len(discovered_sources)}")
     print(f"Total stored candidates: {len(merged_sources)}")
+    if discovered_sources:
+        print("Discovery method summary:")
+        for method, count in summarize_discovery_methods(discovered_sources).items():
+            print(f"- {method}: {count}")
     if errors:
         visible_warnings = visible_discovery_warnings(errors)
         print("Warning summary:")

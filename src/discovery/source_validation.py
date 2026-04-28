@@ -38,6 +38,16 @@ def _has_pattern_match(text: str, patterns: Sequence[str]) -> bool:
     return any(re.search(pattern, text) for pattern in patterns)
 
 
+def _coerce_display_text(value: Any) -> str:
+    return " ".join(str(value or "").strip().split())
+
+
+def _job_title(job: Dict[str, Any], source_type: str) -> str:
+    if source_type == "lever":
+        return _coerce_display_text(job.get("text", ""))
+    return _coerce_display_text(job.get("title", ""))
+
+
 def _looks_like_greenhouse_internship(job: Dict[str, Any]) -> bool:
     title = str(job.get("title", "")).lower()
     content = str(job.get("content", "")).lower()
@@ -56,6 +66,37 @@ def _looks_like_lever_internship(job: Dict[str, Any]) -> bool:
         commitment = str(categories.get("commitment", "")).lower()
     combined = f"{title} {description} {commitment}"
     return _has_pattern_match(combined, LEVER_INTERNSHIP_PATTERNS)
+
+
+def _internship_signal_examples(
+    raw_jobs: Iterable[Dict[str, Any]],
+    *,
+    source_type: str,
+    max_examples: int = 3,
+) -> List[str]:
+    examples: List[str] = []
+    seen: set[str] = set()
+
+    for job in raw_jobs:
+        if source_type == "lever":
+            has_signal = _looks_like_lever_internship(job)
+        else:
+            has_signal = _looks_like_greenhouse_internship(job)
+
+        if not has_signal:
+            continue
+
+        title = _job_title(job, source_type)
+        if not title or title in seen:
+            continue
+
+        examples.append(title)
+        seen.add(title)
+
+        if len(examples) >= max_examples:
+            break
+
+    return examples
 
 
 def _iter_normalized_jobs(
@@ -153,6 +194,7 @@ def validate_source_record(
         updated["validation_notes"] = "unsupported source type or missing source identifier"
         updated["source_score"] = 0.0
         updated["internship_likelihood"] = 0.0
+        updated["internship_signal_examples"] = []
         return updated
 
     duplicate_in_active_registry = (source_type, source_identifier) in active_registry_keys
@@ -169,6 +211,7 @@ def validate_source_record(
         updated["validation_notes"] = f"fetch failed: {exc}"
         updated["source_score"] = 0.0
         updated["internship_likelihood"] = 0.0
+        updated["internship_signal_examples"] = []
         return updated
 
     total_jobs = len(raw_jobs)
@@ -177,6 +220,7 @@ def validate_source_record(
         updated["validation_notes"] = "fetch succeeded but returned no jobs"
         updated["source_score"] = 0.0
         updated["internship_likelihood"] = 0.0
+        updated["internship_signal_examples"] = []
         return updated
 
     normalized_count, failed_count = _iter_normalized_jobs(
@@ -188,6 +232,7 @@ def validate_source_record(
     )
 
     internship_likelihood = round(internship_count / total_jobs, 2)
+    internship_examples = _internship_signal_examples(raw_jobs, source_type=source_type)
     normalized_ratio = normalized_count / total_jobs
     success = normalized_count > 0
 
@@ -198,6 +243,8 @@ def validate_source_record(
     ]
     if failed_count:
         note_parts.append(f"{failed_count} normalization failures")
+    if internship_examples:
+        note_parts.append(f"internship examples: {' | '.join(internship_examples)}")
     if duplicate_in_active_registry:
         note_parts.append("already present in active registry")
 
@@ -209,6 +256,7 @@ def validate_source_record(
         duplicate_in_active_registry=duplicate_in_active_registry,
     )
     updated["internship_likelihood"] = internship_likelihood
+    updated["internship_signal_examples"] = internship_examples
     return updated
 
 

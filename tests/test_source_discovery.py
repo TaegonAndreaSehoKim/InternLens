@@ -14,10 +14,12 @@ from src.discovery.source_discovery import (
     classify_source_url,
     discover_sources,
     extract_candidate_urls,
+    extract_priority_follow_urls,
     format_discovery_warning,
     iter_seed_batches,
     merge_discovered_sources,
     resolve_seed_path,
+    summarize_discovery_methods,
     summarize_discovery_warnings,
     visible_discovery_warnings,
 )
@@ -91,6 +93,81 @@ def test_extract_candidate_urls_collects_href_and_inline_ats_urls() -> None:
     assert "https://acme.com/careers" in urls
     assert "https://jobs.lever.co/acme" in urls
     assert "https://boards.greenhouse.io/acme" in urls
+
+
+def test_extract_priority_follow_urls_keeps_same_site_high_intent_links() -> None:
+    html = """
+    <a href="/university-recruiting">Students</a>
+    <a href="https://careers.acme.com/early-careers">Early Careers</a>
+    <script>
+      window.__ROUTES__ = {"students": "/students-and-grads"};
+      window.__CAREERS__ = {"url": "https://jobs.acme.com/campus"};
+    </script>
+    <a href="/blog/company-news">Blog</a>
+    <a href="https://example.com/internships">External internships</a>
+    <a href="/assets/logo.svg">Logo</a>
+    <a href="https://jobs.lever.co/acme">ATS</a>
+    """
+
+    urls = extract_priority_follow_urls(
+        html,
+        "https://www.acme.com/careers",
+        limit=5,
+    )
+
+    assert urls == [
+        "https://www.acme.com/university-recruiting",
+        "https://careers.acme.com/early-careers",
+        "https://jobs.acme.com/campus",
+        "https://www.acme.com/students-and-grads",
+    ]
+
+
+def test_discover_sources_follows_priority_links_to_find_nested_ats_boards() -> None:
+    seeds = [
+        {
+            "company": "Acme",
+            "homepage_url": "https://www.acme.com",
+        }
+    ]
+    html_by_url = {
+        "https://www.acme.com": '<a href="/students-and-grads">Students and grads</a>',
+        "https://www.acme.com/students-and-grads": '<a href="https://boards.greenhouse.io/acme">Jobs</a>',
+    }
+    fetched_urls: list[str] = []
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        fetched_urls.append(url)
+        return html_by_url[url]
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+    )
+
+    assert errors == []
+    assert fetched_urls == [
+        "https://www.acme.com",
+        "https://www.acme.com/students-and-grads",
+    ]
+    assert records[0]["source_type"] == "greenhouse"
+    assert records[0]["source_identifier"] == "acme"
+    assert records[0]["discovery_method"] == "priority_link_scan"
+
+
+def test_summarize_discovery_methods_counts_record_methods() -> None:
+    records = [
+        {"discovery_method": "careers_page_scan"},
+        {"discovery_method": "priority_link_scan"},
+        {"discovery_method": "priority_link_scan"},
+    ]
+
+    assert summarize_discovery_methods(records) == {
+        "careers_page_scan": 1,
+        "priority_link_scan": 2,
+    }
 
 
 def test_discover_sources_dedupes_results_and_reports_page_errors() -> None:
@@ -522,6 +599,8 @@ def test_discover_sources_script_merges_and_writes_output(
     payload = json.loads(output_path.read_text(encoding="utf-8"))
 
     assert "Source discovery complete" in output
+    assert "Discovery method summary:" in output
+    assert "- careers_page_scan: 1" in output
     assert "Warning summary:" in output
     assert "- http_403: 2" in output
     assert "- direct_probe_miss: 1" in output

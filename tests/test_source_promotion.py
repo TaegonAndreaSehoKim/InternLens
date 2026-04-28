@@ -381,6 +381,7 @@ def test_promote_sources_script_dry_run_does_not_update_files(
             "source_score": 0.47,
             "internship_likelihood": 0.08,
             "discovery_method": "direct_ats_probe",
+            "internship_signal_examples": ["MBA Product Manager Intern"],
         },
         {
             "company": "Inactive Co",
@@ -433,6 +434,7 @@ def test_promote_sources_script_dry_run_does_not_update_files(
     assert "Promote Me | lever | promoteme" in output
     assert "Skipped by direct probe safeguard:" in output
     assert "Too Broad | greenhouse | toobroad" in output
+    assert "examples=MBA Product Manager Intern" in output
     assert "Skipped inactive registry entries:" in output
     assert "Inactive Co | greenhouse | inactiveco" in output
     direct_section = output.split("Skipped by direct probe safeguard:", 1)[1].split(

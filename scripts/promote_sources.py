@@ -12,12 +12,30 @@ from src.discovery.source_discovery import load_json_list, save_json_list
 from src.discovery.source_promotion import promote_validated_sources
 
 
+def _console_safe(text: str) -> str:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
+def _format_signal_examples(record: dict) -> str:
+    examples = record.get("internship_signal_examples") or []
+    if not isinstance(examples, list):
+        return ""
+
+    clean_examples = [str(example).strip() for example in examples if str(example).strip()]
+    if not clean_examples:
+        return ""
+
+    return f" | examples={' / '.join(clean_examples[:3])}"
+
+
 def _record_label(record: dict) -> str:
     return (
         f"{record.get('company', '')} | {record.get('source_type', '')} | "
         f"{record.get('source_identifier', '')} | score={float(record.get('source_score', 0.0) or 0.0):.2f} | "
         f"internship={float(record.get('internship_likelihood', 0.0) or 0.0):.2f} | "
         f"method={record.get('discovery_method', '')}"
+        f"{_format_signal_examples(record)}"
     )
 
 
@@ -33,7 +51,7 @@ def _print_record_section(title: str, records: list[dict]) -> None:
         return
     print(title)
     for record in records:
-        print(f"- {_record_label(record)}")
+        print(_console_safe(f"- {_record_label(record)}"))
 
 
 def _parse_args() -> argparse.Namespace:

@@ -19,8 +19,42 @@ GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
 LEVER_NON_BOARD_PATHS = {"api", "embed"}
 GREENHOUSE_NON_BOARD_PATHS = {"api", "embed", "job_app", "job_board"}
 BLOCKED_REVIEW_REASONS = {"http_403", "http_406", "http_429"}
+PRIORITY_FOLLOW_KEYWORDS = (
+    "career",
+    "careers",
+    "job",
+    "jobs",
+    "intern",
+    "internship",
+    "student",
+    "students",
+    "university",
+    "early-career",
+    "early-careers",
+    "earlycareer",
+    "earlycareers",
+    "campus",
+    "graduate",
+    "graduates",
+    "new-grad",
+    "newgrad",
+)
+IGNORED_FOLLOW_EXTENSIONS = (
+    ".css",
+    ".gif",
+    ".ico",
+    ".jpeg",
+    ".jpg",
+    ".js",
+    ".pdf",
+    ".png",
+    ".svg",
+    ".webp",
+)
 
 HREF_PATTERN = re.compile(r"""href\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+INLINE_HTTP_URL_PATTERN = re.compile(r"""https?://[^\s"'<>\\)]+""", re.IGNORECASE)
+QUOTED_PATH_PATTERN = re.compile(r"""["'](/[A-Za-z0-9][^"']*)["']""")
 SOURCE_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 TRAILING_URL_PUNCTUATION = ".,;:)]}"
 COMPANY_SUFFIX_WORDS = {
@@ -50,6 +84,7 @@ PRESERVED_EXISTING_FIELDS = (
     "validation_notes",
     "source_score",
     "internship_likelihood",
+    "internship_signal_examples",
 )
 DiscoveryWarning = Dict[str, str]
 
@@ -161,6 +196,11 @@ def format_discovery_warning(warning: DiscoveryWarning) -> str:
 
 def summarize_discovery_warnings(warnings: Sequence[DiscoveryWarning]) -> Dict[str, int]:
     counts = Counter(warning.get("reason", "unknown") for warning in warnings)
+    return dict(sorted(counts.items()))
+
+
+def summarize_discovery_methods(records: Sequence[Dict[str, Any]]) -> Dict[str, int]:
+    counts = Counter(str(record.get("discovery_method", "unknown") or "unknown") for record in records)
     return dict(sorted(counts.items()))
 
 
@@ -340,6 +380,78 @@ def extract_candidate_urls(html: str, base_url: str) -> List[str]:
     return candidates
 
 
+def _host_key(host: str) -> str:
+    parts = [part for part in host.lower().split(".") if part and part != "www"]
+    if len(parts) <= 2:
+        return ".".join(parts)
+    return ".".join(parts[-2:])
+
+
+def _same_site_url(candidate_url: str, base_url: str) -> bool:
+    candidate_host = urlparse(candidate_url).netloc.lower()
+    base_host = urlparse(base_url).netloc.lower()
+    if not candidate_host or not base_host:
+        return False
+    return _host_key(candidate_host) == _host_key(base_host)
+
+
+def _looks_like_priority_follow_url(url: str) -> bool:
+    parsed = urlparse(url)
+    path = parsed.path.lower()
+    if path.endswith(IGNORED_FOLLOW_EXTENSIONS):
+        return False
+
+    target_text = f"{path} {parsed.query}".lower()
+    return any(keyword in target_text for keyword in PRIORITY_FOLLOW_KEYWORDS)
+
+
+def _iter_priority_follow_targets(html: str) -> Iterable[str]:
+    for match in HREF_PATTERN.findall(html):
+        yield match.strip()
+
+    for match in INLINE_HTTP_URL_PATTERN.findall(html):
+        yield match.strip()
+
+    for match in QUOTED_PATH_PATTERN.findall(html):
+        yield match.strip()
+
+
+def extract_priority_follow_urls(
+    html: str,
+    base_url: str,
+    *,
+    limit: int,
+) -> List[str]:
+    if limit <= 0:
+        return []
+
+    follow_urls: List[str] = []
+    seen: set[str] = {urlparse(base_url)._replace(fragment="").geturl()}
+
+    for target in _iter_priority_follow_targets(html):
+        resolved = urljoin(base_url, target)
+        parsed = urlparse(resolved)
+        if parsed.scheme not in {"http", "https"}:
+            continue
+
+        normalized = parsed._replace(fragment="").geturl()
+        if normalized in seen:
+            continue
+        if classify_source_url(normalized) is not None:
+            continue
+        if not _same_site_url(normalized, base_url):
+            continue
+        if not _looks_like_priority_follow_url(normalized):
+            continue
+
+        seen.add(normalized)
+        follow_urls.append(normalized)
+        if len(follow_urls) >= limit:
+            break
+
+    return follow_urls
+
+
 def _seed_scan_urls(seed: Dict[str, Any]) -> Iterable[tuple[str, str]]:
     seen: set[str] = set()
 
@@ -391,15 +503,24 @@ def discover_sources_from_seed(
     record_blocked_sources: bool = False,
     direct_probe_limit: int = 1,
     max_direct_probe_identifiers: int = 2,
+    priority_follow_limit: int = 5,
     lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
     greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
 ) -> List[Dict[str, Any]]:
     candidates: List[Dict[str, Any]] = []
     page_warnings: List[DiscoveryWarning] = []
     seen_source_keys: set[tuple[str, str]] = set()
+    seen_page_urls: set[str] = set()
     company = str(seed.get("company", "")).strip() or "<unknown>"
+    scan_queue = list(_seed_scan_urls(seed))
 
-    for page_url, scan_method in _seed_scan_urls(seed):
+    while scan_queue:
+        page_url, scan_method = scan_queue.pop(0)
+        normalized_page_url = urlparse(page_url)._replace(fragment="").geturl()
+        if normalized_page_url in seen_page_urls:
+            continue
+        seen_page_urls.add(normalized_page_url)
+
         direct_source = classify_source_url(page_url)
         if direct_source is not None:
             source_key = (
@@ -448,6 +569,18 @@ def discover_sources_from_seed(
                     discovered_at=discovered_at,
                 )
             )
+
+        if scan_method != "priority_link_scan":
+            remaining_follow_slots = max(0, priority_follow_limit - sum(
+                1 for _, queued_method in scan_queue if queued_method == "priority_link_scan"
+            ))
+            for follow_url in extract_priority_follow_urls(
+                html,
+                page_url,
+                limit=remaining_follow_slots,
+            ):
+                if follow_url not in seen_page_urls:
+                    scan_queue.append((follow_url, "priority_link_scan"))
 
     if probe_direct_ats and not candidates:
         for source_identifier in _company_slug_candidates(seed)[:max_direct_probe_identifiers]:
@@ -583,6 +716,7 @@ def discover_sources(
     record_blocked_sources: bool = False,
     direct_probe_limit: int = 1,
     max_direct_probe_identifiers: int = 2,
+    priority_follow_limit: int = 5,
     lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
     greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
 ) -> tuple[List[Dict[str, Any]], List[DiscoveryWarning]]:
@@ -604,6 +738,7 @@ def discover_sources(
                     record_blocked_sources=record_blocked_sources,
                     direct_probe_limit=direct_probe_limit,
                     max_direct_probe_identifiers=max_direct_probe_identifiers,
+                    priority_follow_limit=priority_follow_limit,
                     lever_probe_fn=lever_probe_fn,
                     greenhouse_probe_fn=greenhouse_probe_fn,
                 )

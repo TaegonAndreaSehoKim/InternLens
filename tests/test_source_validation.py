@@ -130,6 +130,11 @@ def test_validate_source_record_uses_strong_greenhouse_internship_signals() -> N
 
     assert updated["status"] == "validated"
     assert updated["internship_likelihood"] == 0.67
+    assert updated["internship_signal_examples"] == [
+        "Product Operations Co-op",
+        "Data Analyst",
+    ]
+    assert "internship examples: Product Operations Co-op | Data Analyst" in updated["validation_notes"]
 
 
 def test_validate_source_record_does_not_count_internal_lever_text_as_internship() -> None:
@@ -165,6 +170,8 @@ def test_validate_source_record_does_not_count_internal_lever_text_as_internship
 
     assert updated["status"] == "validated"
     assert updated["internship_likelihood"] == 0.5
+    assert updated["internship_signal_examples"] == ["Software Engineering Co-op"]
+    assert "internship examples: Software Engineering Co-op" in updated["validation_notes"]
 
 
 def test_validate_discovered_sources_skips_non_candidates_by_default() -> None:

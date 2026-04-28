@@ -16,6 +16,7 @@ from src.discovery.source_discovery import (
     merge_discovered_sources,
     resolve_seed_path,
     save_json_list,
+    summarize_discovery_methods,
     summarize_discovery_warnings,
     visible_discovery_warnings,
 )
@@ -69,6 +70,12 @@ def _parse_args() -> argparse.Namespace:
         default=2,
         help="Maximum seed-derived source identifiers to probe per company.",
     )
+    parser.add_argument(
+        "--priority-follow-limit",
+        type=int,
+        default=5,
+        help="Maximum same-site high-intent links to follow per company during discovery.",
+    )
     return parser.parse_args()
 
 
@@ -85,6 +92,7 @@ def main() -> None:
     record_blocked_sources = bool(getattr(args, "record_blocked_sources", False))
     direct_probe_limit = int(getattr(args, "direct_probe_limit", 1))
     max_direct_probe_identifiers = int(getattr(args, "max_direct_probe_identifiers", 2))
+    priority_follow_limit = int(getattr(args, "priority_follow_limit", 5))
     discovered_sources = []
     errors = []
     merged_sources = list(existing_sources)
@@ -97,6 +105,7 @@ def main() -> None:
             record_blocked_sources=record_blocked_sources,
             direct_probe_limit=direct_probe_limit,
             max_direct_probe_identifiers=max_direct_probe_identifiers,
+            priority_follow_limit=priority_follow_limit,
         )
         discovered_sources = merge_discovered_sources(discovered_sources, batch_sources)
         errors.extend(batch_errors)
@@ -112,6 +121,10 @@ def main() -> None:
     print(f"Checkpoint size: {checkpoint_size}")
     print(f"Discovered source candidates: {len(discovered_sources)}")
     print(f"Total stored candidates: {len(merged_sources)}")
+    if discovered_sources:
+        print("Discovery method summary:")
+        for method, count in summarize_discovery_methods(discovered_sources).items():
+            print(f"- {method}: {count}")
 
     if errors:
         visible_warnings = visible_discovery_warnings(errors)
