@@ -140,7 +140,7 @@ InternLens now supports:
 
 ### Latest quality checkpoint
 - Frontend production build passing through `npm run build`
-- Backend test suite stable at **124 passed**
+- Backend test suite stable at **131 passed** on the latest local recheck
 - Python environment stabilized on Python 3.13
 
 ### Remaining next steps

@@ -2,13 +2,14 @@
 
 ## Project summary
 
-InternLens is a practical internship search pipeline that connects three core pieces of work:
+InternLens is a practical internship search product prototype that connects four core pieces of work:
 
 1. public job board ingestion
 2. candidate-profile-based ranking
 3. shortlist-oriented inspection through CLI and API
+4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, and export shortlist-style results. The current validation state is `71 passed`.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `131 passed`, and the frontend production build passes with `npm run build`.
 
 ---
 
@@ -19,6 +20,7 @@ The main goals of InternLens are:
 - move beyond static toy data into real public job board ingestion
 - support iterative ranking improvements without breaking earlier behavior
 - expose results both as a scriptable CLI flow and as an API
+- support a local browser workflow for profile setup, recommendation review, and job actions
 - maintain fast iteration through small, regression-tested changes
 
 This is not meant to be a production hiring platform yet. It is a clean, extensible foundation for future internship discovery and ranking work.
@@ -58,7 +60,7 @@ The preprocessing layer loads:
 
 Candidate preferences such as role targets, graduation timing, sponsorship need, and extracted skills are turned into a baseline-friendly representation.
 
-The job parser supports recursively loading processed jobs from source-specific directories.
+The job parser supports recursively loading processed jobs from source-specific directories. It also suppresses duplicate `job_id` values and conservative content duplicates by default so older flat files and nested source/site files can coexist during development.
 
 ---
 
@@ -93,6 +95,8 @@ InternLens supports:
 - CSV export
 - API recommendation endpoint
 - job detail endpoint
+- profile, feedback, recommendation run, job action, activity, and dashboard endpoints
+- local Vite/React dashboard for the stored-profile recommendation workflow
 
 Recent CLI improvements:
 - `--eligible-only`
@@ -100,6 +104,21 @@ Recent CLI improvements:
 - `--suppress-similar-results`
 
 These filters make it easier to inspect meaningful subsets rather than dumping the full ranked list.
+
+### 5. Persistence and frontend layer
+InternLens now includes SQLite-backed local persistence for:
+- profiles
+- feedback events
+- recommendation run snapshots
+- saved, dismissed, and applied job states
+
+The frontend uses these APIs to support:
+- profile setup and restoration
+- API health checks
+- dashboard summary review
+- recommendation runs and historical run loading
+- filtering by `Apply Now`, `Apply Later`, and `Skip`
+- job actions for save, applied, and dismiss
 
 ---
 
@@ -113,6 +132,9 @@ These filters make it easier to inspect meaningful subsets rather than dumping t
 - tests are strong enough to support iterative changes safely
 - the CLI now supports shortlist-style filtering
 - API behavior remains stable after ranking refinements
+- stored-profile, feedback, recommendation history, and job action APIs are working
+- the Vite/React frontend can exercise the main demo workflow
+- GitHub Actions runs backend tests and has a scheduled/manual corpus refresh artifact workflow
 
 ### What improved most recently
 Recent work focused on:
@@ -121,9 +143,13 @@ Recent work focused on:
 - reducing noisy fallback skill matches for non-technical internships
 - making shortlist display easier to inspect
 - tightening Cloudflare shortlist precision so non-core internship roles drop out more often
+- adding profile persistence, dashboard APIs, and recommendation run history
+- adding a Vite/React frontend with session persistence, API health status, recommendation filters, score dials, and job action buttons
+- stress-testing company-seed-based source discovery with a larger seed draft
 
 The latest validation state shows:
-- `71 passed`
+- `131 passed`
+- `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
 - Waymo shortlist remains very small and focused under applyable-only filtering
@@ -194,10 +220,11 @@ It also shows good engineering discipline:
 - structured qualification fields are often sparse
 
 ### Product limitations
-- shortlist filtering is useful, but still CLI-first
-- there is no polished front-end yet
+- shortlist filtering is useful, but the frontend still needs stronger empty states and error states
+- saved/applied/dismissed state transitions in recommendation cards can be clearer
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
+- source discovery is scriptable, but broad seed scans still need hardening around false positives, partial results, and `403`/`429` responses
 
 ---
 
@@ -220,9 +247,14 @@ The strongest next steps are:
    - feedback-aware personalization
 
 4. improve presentation
-   - cleaner API responses
-   - shortlist summaries
-   - possibly a thin front-end demo
+   - clearer frontend empty and error states
+   - clearer saved/applied/dismissed state transitions
+   - demo screenshots or a short walkthrough
+
+5. harden source discovery
+   - reject non-board Greenhouse embed/helper URLs
+   - preserve partial results during long runs
+   - handle `403` and `429` responses more gracefully
 
 ---
 
@@ -236,6 +268,8 @@ It is no longer just a script that scores static sample jobs. It now supports:
 - blocker-aware internship ranking
 - shortlist filtering
 - API access
+- stored profile and feedback workflows
+- a local frontend dashboard
 - regression-tested iteration
 
 That makes the project demoable today and extensible tomorrow.

@@ -143,9 +143,18 @@ data/
 data/
 └── processed/
     └── jobs/
-        ├── lever_<site_name>_<source_job_id>.json
-        └── greenhouse_<board_token>_<source_job_id>.json
+        ├── lever/
+        │   └── <site_name>/
+        │       └── lever_<site_name>_<source_job_id>.json
+        └── greenhouse/
+            └── <board_token>/
+                └── greenhouse_<board_token>_<source_job_id>.json
 ```
+
+Older flat processed files may still exist at the root of `data/processed/jobs`.
+The job parser recursively loads the tree and suppresses duplicate `job_id` values
+and conservative content duplicates by default, preferring nested source/site paths
+and richer records when duplicates are found.
 
 ---
 
@@ -165,11 +174,13 @@ To keep the rest of the pipeline stable:
 
 ---
 
-## Immediate implementation target
+## Current implementation target
 
-The next ingestion milestone should produce:
+The current ingestion and source-management target is to keep the existing Lever
+and Greenhouse refresh flow stable while hardening broader source acquisition:
 
-1. a source-specific fetch script for Lever
-2. raw JSON snapshots saved under `data/raw/lever/...`
-3. normalized processed job JSON files saved under `data/processed/jobs/...`
-4. processed jobs that can be loaded by the existing `job_parser.py` without breaking current ranking behavior
+1. discover candidate ATS sources from curated company seeds
+2. validate discovered sources before promotion
+3. promote only high-confidence, internship-relevant sources into active registries
+4. refresh active Lever and Greenhouse registries into raw and processed data
+5. preserve CLI/API/frontend ranking behavior while generated data evolves
