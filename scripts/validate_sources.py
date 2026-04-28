@@ -30,7 +30,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--limit",
         type=int,
-        default=25,
+        default=100,
         help="Optional per-source fetch limit for validation.",
     )
     parser.add_argument(

@@ -95,6 +95,78 @@ def test_validate_source_record_marks_fetch_failure_as_rejected() -> None:
     assert updated["source_score"] == 0.0
 
 
+def test_validate_source_record_uses_strong_greenhouse_internship_signals() -> None:
+    record = {
+        "company": "Broad Board",
+        "source_type": "greenhouse",
+        "source_identifier": "broad",
+        "status": "candidate",
+    }
+
+    def fake_fetch(board_token: str, *, timeout: float, limit: int | None, content: bool):
+        return [
+            {
+                "title": "Software Engineer",
+                "content": "Partner with intern managers and internal teams.",
+            },
+            {
+                "title": "Product Operations Co-op",
+                "content": "Student role on the operations team.",
+            },
+            {
+                "title": "Data Analyst",
+                "content": "Join our summer internship program.",
+            },
+        ]
+
+    updated = validate_source_record(
+        record,
+        timeout=20.0,
+        limit=5,
+        active_registry_keys=set(),
+        greenhouse_fetch_fn=fake_fetch,
+        greenhouse_normalize_fn=lambda job, source_identifier: {"ok": True},
+    )
+
+    assert updated["status"] == "validated"
+    assert updated["internship_likelihood"] == 0.67
+
+
+def test_validate_source_record_does_not_count_internal_lever_text_as_internship() -> None:
+    record = {
+        "company": "Mistral",
+        "source_type": "lever",
+        "source_identifier": "mistral",
+        "status": "candidate",
+    }
+
+    def fake_fetch(site_name: str, *, timeout: float, limit: int | None):
+        return [
+            {
+                "text": "Internal Tools Engineer",
+                "descriptionPlain": "Build internal platforms for international teams.",
+                "categories": {"commitment": "Full-time"},
+            },
+            {
+                "text": "Software Engineering Co-op",
+                "descriptionPlain": "Student engineering role.",
+                "categories": {"commitment": "Temporary"},
+            },
+        ]
+
+    updated = validate_source_record(
+        record,
+        timeout=20.0,
+        limit=5,
+        active_registry_keys=set(),
+        lever_fetch_fn=fake_fetch,
+        lever_normalize_fn=lambda job, source_identifier: {"ok": True},
+    )
+
+    assert updated["status"] == "validated"
+    assert updated["internship_likelihood"] == 0.5
+
+
 def test_validate_discovered_sources_skips_non_candidates_by_default() -> None:
     records = [
         {
@@ -126,6 +198,39 @@ def test_validate_discovered_sources_skips_non_candidates_by_default() -> None:
     assert summary == {"attempted": 1, "validated": 1, "rejected": 0, "skipped": 1}
     assert validated_records[0]["status"] == "validated"
     assert validated_records[1]["status"] == "active"
+
+
+def test_validate_discovered_sources_preserves_unsupported_records_when_revalidating() -> None:
+    records = [
+        {
+            "company": "Blocked Co",
+            "source_type": "manual_review",
+            "source_identifier": "blockedco",
+            "status": "blocked",
+        },
+        {
+            "company": "Waymo",
+            "source_type": "greenhouse",
+            "source_identifier": "waymo",
+            "status": "validated",
+        },
+    ]
+
+    validated_records, summary = validate_discovered_sources(
+        records,
+        timeout=20.0,
+        limit=10,
+        active_registry_keys=set(),
+        include_non_candidate=True,
+        greenhouse_fetch_fn=lambda board_token, *, timeout, limit, content: [
+            {"title": "Engineering Intern", "content": "Internship"}
+        ],
+        greenhouse_normalize_fn=lambda job, source_identifier: {"ok": True},
+    )
+
+    assert summary == {"attempted": 1, "validated": 1, "rejected": 0, "skipped": 1}
+    assert validated_records[0]["status"] == "blocked"
+    assert validated_records[1]["status"] == "validated"
 
 
 def test_validate_sources_script_updates_discovered_sources_file(

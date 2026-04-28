@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -17,6 +18,19 @@ from src.ingestion.lever_client import (
 )
 
 
+INTERNSHIP_PATTERNS = [
+    r"\bintern\b",
+    r"\binternship\b",
+    r"\bsummer intern(ship)?\b",
+    r"\bstudent intern\b",
+    r"\bco[- ]?op\b",
+]
+
+
+def _has_internship_signal(text: str) -> bool:
+    return any(re.search(pattern, text) for pattern in INTERNSHIP_PATTERNS)
+
+
 def _looks_like_internship(job: Dict[str, Any]) -> bool:
     # Keep postings that look like internships based on title, description, or commitment text.
     title = str(job.get("text", "")).lower()
@@ -29,14 +43,7 @@ def _looks_like_internship(job: Dict[str, Any]) -> bool:
 
     combined = f"{title} {description} {commitment}"
 
-    internship_keywords = [
-        "intern",
-        "internship",
-        "summer intern",
-        "student intern",
-    ]
-
-    return any(keyword in combined for keyword in internship_keywords)
+    return _has_internship_signal(combined)
 
 
 def _filter_internship_jobs(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

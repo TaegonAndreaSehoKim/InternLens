@@ -29,11 +29,10 @@ def _promotion_note(record: Dict[str, Any], promoted_at: str) -> str:
 
 
 def _build_lever_registry_entry(record: Dict[str, Any], promoted_at: str) -> Dict[str, Any]:
-    internship_likelihood = float(record.get("internship_likelihood", 0.0) or 0.0)
     return {
         "site_name": str(record.get("source_identifier", "")).strip(),
         "active": True,
-        "internship_only": internship_likelihood >= 0.5,
+        "internship_only": True,
         "notes": _promotion_note(record, promoted_at),
     }
 
@@ -46,7 +45,19 @@ def _build_greenhouse_registry_entry(record: Dict[str, Any], promoted_at: str) -
     }
 
 
-def _promotable(record: Dict[str, Any], *, min_score: float, require_internship_signal: bool) -> tuple[bool, str]:
+def _is_direct_probe_record(record: Dict[str, Any]) -> bool:
+    return str(record.get("discovery_method", "")).strip().lower() == "direct_ats_probe"
+
+
+def _promotable(
+    record: Dict[str, Any],
+    *,
+    min_score: float,
+    require_internship_signal: bool,
+    min_internship_likelihood: float,
+    direct_probe_min_score: float,
+    direct_probe_min_internship_likelihood: float,
+) -> tuple[bool, str]:
     status = str(record.get("status", "")).strip().lower()
     if status != "validated":
         return False, "status"
@@ -56,13 +67,19 @@ def _promotable(record: Dict[str, Any], *, min_score: float, require_internship_
         return False, "score"
 
     internship_likelihood = float(record.get("internship_likelihood", 0.0) or 0.0)
-    if require_internship_signal and internship_likelihood <= 0.0:
+    if require_internship_signal and internship_likelihood < min_internship_likelihood:
         return False, "internship"
 
     source_type = str(record.get("source_type", "")).strip().lower()
     source_identifier = str(record.get("source_identifier", "")).strip()
     if source_type not in {"lever", "greenhouse"} or not source_identifier:
         return False, "unsupported"
+
+    if _is_direct_probe_record(record):
+        if source_score < direct_probe_min_score:
+            return False, "direct_probe"
+        if require_internship_signal and internship_likelihood < direct_probe_min_internship_likelihood:
+            return False, "direct_probe"
 
     return True, ""
 
@@ -74,6 +91,10 @@ def promote_validated_sources(
     greenhouse_registry: Sequence[Dict[str, Any]],
     min_score: float,
     require_internship_signal: bool,
+    min_internship_likelihood: float = 0.08,
+    direct_probe_min_score: float = 0.5,
+    direct_probe_min_internship_likelihood: float = 0.12,
+    reactivate_inactive_sources: bool = False,
     promoted_at: str | None = None,
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, int]]:
     promoted_at_value = promoted_at or utc_now_iso()
@@ -96,9 +117,11 @@ def promote_validated_sources(
         "promoted": 0,
         "reactivated": 0,
         "already_active": 0,
+        "skipped_inactive": 0,
         "skipped_status": 0,
         "skipped_score": 0,
         "skipped_internship": 0,
+        "skipped_direct_probe": 0,
         "skipped_unsupported": 0,
     }
 
@@ -108,6 +131,9 @@ def promote_validated_sources(
             record,
             min_score=min_score,
             require_internship_signal=require_internship_signal,
+            min_internship_likelihood=min_internship_likelihood,
+            direct_probe_min_score=direct_probe_min_score,
+            direct_probe_min_internship_likelihood=direct_probe_min_internship_likelihood,
         )
 
         if not can_promote:
@@ -117,6 +143,8 @@ def promote_validated_sources(
                 summary["skipped_score"] += 1
             elif reason == "internship":
                 summary["skipped_internship"] += 1
+            elif reason == "direct_probe":
+                summary["skipped_direct_probe"] += 1
             else:
                 summary["skipped_unsupported"] += 1
             updated_discovered.append(updated_record)
@@ -137,11 +165,12 @@ def promote_validated_sources(
                 existing_entry["notes"] = _merge_notes(str(existing_entry.get("notes", "")), promotion_note)
                 summary["already_active"] += 1
             else:
+                if not reactivate_inactive_sources:
+                    summary["skipped_inactive"] += 1
+                    updated_discovered.append(updated_record)
+                    continue
                 existing_entry["active"] = True
-                existing_entry["internship_only"] = (
-                    bool(existing_entry.get("internship_only", False))
-                    or float(record.get("internship_likelihood", 0.0) or 0.0) >= 0.5
-                )
+                existing_entry["internship_only"] = True
                 existing_entry["notes"] = _merge_notes(str(existing_entry.get("notes", "")), promotion_note)
                 summary["reactivated"] += 1
         else:
@@ -155,6 +184,10 @@ def promote_validated_sources(
                 existing_entry["notes"] = _merge_notes(str(existing_entry.get("notes", "")), promotion_note)
                 summary["already_active"] += 1
             else:
+                if not reactivate_inactive_sources:
+                    summary["skipped_inactive"] += 1
+                    updated_discovered.append(updated_record)
+                    continue
                 existing_entry["active"] = True
                 existing_entry["notes"] = _merge_notes(str(existing_entry.get("notes", "")), promotion_note)
                 summary["reactivated"] += 1

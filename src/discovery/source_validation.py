@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Sequence
 
@@ -9,13 +10,41 @@ from src.ingestion.lever_client import fetch_lever_postings, normalize_lever_pos
 from .source_discovery import load_json_list, utc_now_iso
 
 
+GREENHOUSE_INTERNSHIP_TITLE_PATTERNS = [
+    r"\bintern\b",
+    r"\binternship\b",
+    r"\bco[- ]?op\b",
+]
+
+GREENHOUSE_INTERNSHIP_CONTENT_PATTERNS = [
+    r"\bthis internship\b",
+    r"\binternship program\b",
+    r"\bsummer internship\b",
+    r"\bco[- ]?op program\b",
+    r"\bintern class\b",
+    r"\bintern cohort\b",
+]
+
+LEVER_INTERNSHIP_PATTERNS = [
+    r"\bintern\b",
+    r"\binternship\b",
+    r"\bsummer intern(ship)?\b",
+    r"\bstudent intern\b",
+    r"\bco[- ]?op\b",
+]
+
+
+def _has_pattern_match(text: str, patterns: Sequence[str]) -> bool:
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
 def _looks_like_greenhouse_internship(job: Dict[str, Any]) -> bool:
     title = str(job.get("title", "")).lower()
     content = str(job.get("content", "")).lower()
-    return any(
-        marker in f"{title} {content}"
-        for marker in (" intern ", " internship", "co-op", "co op", "summer internship")
-    ) or title.startswith("intern") or " intern" in title
+    return _has_pattern_match(title, GREENHOUSE_INTERNSHIP_TITLE_PATTERNS) or _has_pattern_match(
+        content,
+        GREENHOUSE_INTERNSHIP_CONTENT_PATTERNS,
+    )
 
 
 def _looks_like_lever_internship(job: Dict[str, Any]) -> bool:
@@ -26,7 +55,7 @@ def _looks_like_lever_internship(job: Dict[str, Any]) -> bool:
     if isinstance(categories, dict):
         commitment = str(categories.get("commitment", "")).lower()
     combined = f"{title} {description} {commitment}"
-    return any(marker in combined for marker in ("intern", "internship", "summer intern", "student intern"))
+    return _has_pattern_match(combined, LEVER_INTERNSHIP_PATTERNS)
 
 
 def _iter_normalized_jobs(
@@ -204,7 +233,9 @@ def validate_discovered_sources(
 
     for record in records:
         status = str(record.get("status", "candidate")).strip().lower()
-        should_validate = include_non_candidate or status == "candidate"
+        source_type = str(record.get("source_type", "")).strip().lower()
+        is_supported_source = source_type in {"lever", "greenhouse"}
+        should_validate = is_supported_source and (include_non_candidate or status == "candidate")
 
         if not should_validate:
             validated_records.append(dict(record))

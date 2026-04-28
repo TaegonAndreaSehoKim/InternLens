@@ -41,6 +41,30 @@ def test_filter_internship_jobs_keeps_only_internship_like_postings() -> None:
     assert filtered[1]["text"] == "Data Analyst"
 
 
+def test_filter_internship_jobs_does_not_match_internal_or_international_text() -> None:
+    jobs = [
+        {
+            "text": "Internal Tools Engineer",
+            "descriptionPlain": "Build internal developer platforms.",
+            "categories": {"commitment": "Full-time"},
+        },
+        {
+            "text": "International Deployment Strategist",
+            "descriptionPlain": "Work with international enterprise teams.",
+            "categories": {"commitment": "Full-time"},
+        },
+        {
+            "text": "Software Engineering Co-op",
+            "descriptionPlain": "Student engineering role.",
+            "categories": {"commitment": "Temporary"},
+        },
+    ]
+
+    filtered = registry_script._filter_internship_jobs(jobs)
+
+    assert [job["text"] for job in filtered] == ["Software Engineering Co-op"]
+
+
 def test_load_registry_reads_valid_entries_and_skips_invalid_rows(tmp_path: Path) -> None:
     # Load valid registry rows and skip rows without a site_name.
     registry_path = tmp_path / "lever_targets.json"

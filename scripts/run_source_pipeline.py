@@ -41,10 +41,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--direct-probe-limit", type=int, default=1)
     parser.add_argument("--max-direct-probe-identifiers", type=int, default=2)
     parser.add_argument("--validation-timeout", type=float, default=20.0)
-    parser.add_argument("--validation-limit", type=int, default=25)
+    parser.add_argument("--validation-limit", type=int, default=100)
     parser.add_argument("--include-non-candidate", action="store_true")
     parser.add_argument("--promotion-min-score", type=float, default=0.45)
     parser.add_argument("--allow-non-internship-sources", action="store_true")
+    parser.add_argument("--min-internship-likelihood", type=float, default=0.08)
     parser.add_argument("--refresh-timeout", type=float, default=60.0)
     parser.add_argument("--refresh-limit", type=int, default=None)
     parser.add_argument("--refresh-include-inactive", action="store_true")
@@ -55,6 +56,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-validation", action="store_true")
     parser.add_argument("--skip-promotion", action="store_true")
     parser.add_argument("--skip-refresh", action="store_true")
+    parser.add_argument("--direct-probe-min-score", type=float, default=0.5)
+    parser.add_argument("--direct-probe-min-internship-likelihood", type=float, default=0.12)
+    parser.add_argument("--reactivate-inactive-sources", action="store_true")
     return parser.parse_args()
 
 
@@ -164,6 +168,10 @@ def _run_promotion(args: argparse.Namespace) -> Dict[str, int]:
         greenhouse_registry=greenhouse_registry,
         min_score=args.promotion_min_score,
         require_internship_signal=not args.allow_non_internship_sources,
+        min_internship_likelihood=args.min_internship_likelihood,
+        direct_probe_min_score=args.direct_probe_min_score,
+        direct_probe_min_internship_likelihood=args.direct_probe_min_internship_likelihood,
+        reactivate_inactive_sources=args.reactivate_inactive_sources,
     )
 
     save_json_list(discovered_path, updated_discovered)
@@ -174,9 +182,11 @@ def _run_promotion(args: argparse.Namespace) -> Dict[str, int]:
     print(f"Promoted: {summary['promoted']}")
     print(f"Reactivated: {summary['reactivated']}")
     print(f"Already active: {summary['already_active']}")
+    print(f"Skipped inactive registry entries: {summary['skipped_inactive']}")
     print(f"Skipped for status: {summary['skipped_status']}")
     print(f"Skipped for score: {summary['skipped_score']}")
     print(f"Skipped for internship signal: {summary['skipped_internship']}")
+    print(f"Skipped for direct probe safeguard: {summary['skipped_direct_probe']}")
     print(f"Skipped unsupported: {summary['skipped_unsupported']}")
     print()
 
