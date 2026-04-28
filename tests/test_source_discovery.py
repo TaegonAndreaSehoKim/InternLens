@@ -26,6 +26,11 @@ def test_classify_source_url_recognizes_lever_and_greenhouse() -> None:
     assert classify_source_url("https://example.com/careers") is None
 
 
+def test_classify_source_url_rejects_greenhouse_embed_helpers() -> None:
+    assert classify_source_url("https://boards.greenhouse.io/embed/job_board?for=acme") is None
+    assert classify_source_url("https://job-boards.greenhouse.io/embed/job_app?for=acme") is None
+
+
 def test_extract_candidate_urls_collects_href_and_inline_ats_urls() -> None:
     html = """
     <html>
@@ -79,6 +84,69 @@ def test_discover_sources_dedupes_results_and_reports_page_errors() -> None:
     assert len(records) == 2
     assert {record["source_type"] for record in records} == {"lever", "greenhouse"}
     assert any("Broken Co" in error for error in errors)
+
+
+def test_discover_sources_preserves_partial_seed_results_after_page_error() -> None:
+    seeds = [
+        {
+            "company": "Acme",
+            "careers_url": "https://jobs.lever.co/acme",
+            "homepage_url": "https://acme.com",
+        }
+    ]
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        raise RuntimeError(f"cannot fetch {url}")
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+    )
+
+    assert records == [
+        {
+            "company": "Acme",
+            "source_type": "lever",
+            "source_identifier": "acme",
+            "careers_url": "https://jobs.lever.co/acme",
+            "discovery_url": "https://jobs.lever.co/acme",
+            "discovered_at": "2026-04-04T00:00:00Z",
+            "discovery_method": "direct_seed_url",
+            "status": "candidate",
+            "validation_notes": "",
+            "source_score": 0.0,
+            "internship_likelihood": 0.0,
+        }
+    ]
+    assert len(errors) == 2
+    assert all("Acme: failed to fetch" in error for error in errors)
+
+
+def test_discover_sources_ignores_greenhouse_embed_candidates() -> None:
+    seeds = [
+        {
+            "company": "Acme",
+            "homepage_url": "https://acme.com",
+        }
+    ]
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        return """
+        <a href="https://boards.greenhouse.io/embed/job_board?for=acme">Embedded board</a>
+        <a href="https://boards.greenhouse.io/acme">Real board</a>
+        """
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+    )
+
+    assert errors == []
+    assert [record["source_identifier"] for record in records] == ["acme"]
 
 
 def test_merge_discovered_sources_preserves_existing_status_and_scores() -> None:

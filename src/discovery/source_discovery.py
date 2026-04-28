@@ -12,6 +12,7 @@ import httpx
 
 LEVER_HOST = "jobs.lever.co"
 GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
+GREENHOUSE_NON_BOARD_PATHS = {"embed"}
 
 HREF_PATTERN = re.compile(r"""href\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
 LEVER_URL_PATTERN = re.compile(
@@ -96,6 +97,9 @@ def classify_source_url(url: str) -> Dict[str, str] | None:
         }
 
     if host in GREENHOUSE_HOSTS:
+        if path_parts[0].lower() in GREENHOUSE_NON_BOARD_PATHS:
+            return None
+
         return {
             "source_type": "greenhouse",
             "source_identifier": path_parts[0],
@@ -170,9 +174,11 @@ def discover_sources_from_seed(
     timeout: float,
     fetch_html_fn: Callable[[str, float], str],
     discovered_at: str,
+    errors: List[str] | None = None,
 ) -> List[Dict[str, Any]]:
     candidates: List[Dict[str, Any]] = []
     seen_source_keys: set[tuple[str, str]] = set()
+    company = str(seed.get("company", "")).strip() or "<unknown>"
 
     for page_url, scan_method in _seed_scan_urls(seed):
         direct_source = classify_source_url(page_url)
@@ -194,7 +200,13 @@ def discover_sources_from_seed(
                     )
                 )
 
-        html = fetch_html_fn(page_url, timeout)
+        try:
+            html = fetch_html_fn(page_url, timeout)
+        except Exception as exc:
+            if errors is not None:
+                errors.append(f"{company}: failed to fetch {page_url}: {exc}")
+            continue
+
         for candidate_url in extract_candidate_urls(html, page_url):
             source = classify_source_url(candidate_url)
             if source is None:
@@ -279,6 +291,7 @@ def discover_sources(
                     timeout=timeout,
                     fetch_html_fn=fetch_html_fn,
                     discovered_at=discovered_at_value,
+                    errors=errors,
                 )
             )
         except Exception as exc:
