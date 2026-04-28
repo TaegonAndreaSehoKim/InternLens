@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `134 passed`, and the frontend production build passes with `npm run build`.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `145 passed`, and the frontend production build passes with `npm run build`.
 
 ---
 
@@ -146,9 +146,10 @@ Recent work focused on:
 - adding profile persistence, dashboard APIs, and recommendation run history
 - adding a Vite/React frontend with session persistence, API health status, recommendation filters, score dials, and job action buttons
 - stress-testing company-seed-based source discovery with a larger seed draft
+- hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
 
 The latest validation state shows:
-- `134 passed`
+- `145 passed`
 - `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
@@ -224,7 +225,8 @@ It also shows good engineering discipline:
 - saved/applied/dismissed state transitions in recommendation cards can be clearer
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
-- source discovery is scriptable, but broad seed scans still need hardening around false positives, partial results, and `403`/`429` responses
+- source discovery is scriptable and now preserves partial broad-scan results, but direct ATS probe candidates still need validation and promotion thresholds before registry inclusion
+- blocked-page manual review records help track `403`, `406`, and `429` pages without treating them as promotion-ready sources
 
 ---
 
@@ -252,9 +254,9 @@ The strongest next steps are:
    - demo screenshots or a short walkthrough
 
 5. harden source discovery
-   - reject non-board Greenhouse embed/helper URLs
-   - preserve partial results during long runs
-   - handle `403` and `429` responses more gracefully
+   - tune promotion thresholds for direct ATS probe candidates
+   - keep blocked/manual-review records out of automatic promotion
+   - reduce direct-probe miss noise in wide dry-run summaries
 
 ---
 

@@ -140,7 +140,7 @@ InternLens now supports:
 
 ### Latest quality checkpoint
 - Frontend production build passing through `npm run build`
-- Backend test suite stable at **134 passed** on the latest local recheck
+- Backend test suite stable at **145 passed** on the latest local recheck
 - Python environment stabilized on Python 3.13
 
 ### Remaining next steps
@@ -178,3 +178,43 @@ The larger seed list is useful as a stress harness, but the discovery pipeline s
 - preserve partial results during long runs
 - handle `403` and `429` more gracefully
 - consider limited parallelism after correctness issues are fixed first
+
+---
+
+## Day 28 - Discovery Hardening and Probe Evaluation
+
+### Focus
+Turn the wide company-seed discovery path from a fragile scan into a more inspectable candidate-generation workflow.
+
+### What was done
+- Rejected non-board ATS helper URLs such as Greenhouse `embed` paths.
+- Normalized nested Lever and Greenhouse URLs back to source identifiers.
+- Added checkpointed discovery saves through `--checkpoint-size` and `--discovery-checkpoint-size`.
+- Added structured discovery warnings with reason summaries.
+- Added opt-in direct ATS probing with `--probe-direct-ats`.
+- Added opt-in blocked-page manual review records with `--record-blocked-sources`.
+- Suppressed noisy direct-probe miss details while preserving their summary counts.
+
+### Probe results
+- Baseline discovery over `144` seeds found `14` candidates.
+- Validation of the baseline probe produced `13` validated sources and `1` rejected source.
+- Discovery with direct ATS probing and blocked-page records produced `82` records.
+- Validation of the improved probe produced:
+  - `68` validated sources
+  - `1` rejected source
+  - `13` blocked manual-review records
+- Promotion-like candidates increased from `3` to `15` under the current score and internship-signal heuristics.
+
+### Validation
+- `pytest tests/test_source_discovery.py -q` -> **20 passed**
+- `pytest tests/test_run_source_pipeline.py tests/test_source_validation.py tests/test_source_promotion.py -q` -> **12 passed**
+- `pytest -q` -> **145 passed**
+
+### Result
+Direct ATS probing materially improved source recall without changing the default discovery behavior.
+Blocked-page records now preserve useful operator-review work without pretending that blocked careers pages are validated source records.
+
+### Remaining next fixes
+- Tune source promotion thresholds for direct-probe candidates.
+- Keep manual-review records out of automatic promotion.
+- Decide whether probe output files should stay local-only or become explicit debugging artifacts.

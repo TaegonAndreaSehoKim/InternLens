@@ -262,6 +262,9 @@ Process:
 - read homepage and careers URLs
 - extract ATS links
 - classify likely source type
+- optionally probe a small number of seed-derived Lever and Greenhouse identifiers when page scanning finds no source
+- checkpoint merged results during broad scans so partial progress survives interruptions
+- preserve structured warning reasons for blocked, rate-limited, failed, or negative direct-probe lookups
 - store candidate source records
 
 Primary targets:
@@ -272,8 +275,16 @@ Primary targets:
 Current implementation caveats observed during a wide seed dry run:
 - discovery is still sequential, so large seed sets increase runtime quickly
 - some company careers pages block simple HTML fetches with `403` or rate-limit with `429`
-- Greenhouse embed helper URLs such as `boards.greenhouse.io/embed/...` should be ignored, but the current classifier can still mislabel them as candidate sources
+- Greenhouse embed/helper URLs such as `boards.greenhouse.io/embed/...` are treated as non-board URLs and excluded from candidate sources
+- direct ATS probing is opt-in and should remain limited; negative slug lookups are summarized as `direct_probe_miss` rather than printed as full page warnings
+- blocked-page manual review records are operator cues with `source_type = manual_review` and `status = blocked`; they are not promotion-ready source records
 - discovered source output should therefore be treated as operator-reviewed candidate data, not canonical truth
+
+Recent broad-scan probe result:
+- baseline discovery found `14` candidates from `144` seeds, with `13` validating successfully
+- discovery with direct ATS probing and blocked-page review records found `82` records
+- validation of that probe produced `68` validated sources, `1` rejected source, and `13` blocked manual-review records
+- promotion-like candidates increased from `3` to `15` under the existing score and internship-signal heuristics
 
 ### Phase 2: source validation
 

@@ -17,6 +17,8 @@ InternLens currently supports:
 - registry-driven batch fetching
 - one-command corpus refresh across Lever and Greenhouse registries
 - company-seed-based source discovery for candidate ATS sources
+- checkpointed source discovery with structured warning summaries
+- opt-in direct ATS probing and blocked-page manual review records for broad seed scans
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
@@ -33,7 +35,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `134 passed`
+- current total: `145 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -110,7 +112,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source promotion tests
 - source pipeline tests
 - profile API tests
-- full suite currently passing: `134 passed`
+- full suite currently passing: `145 passed`
 - frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -643,7 +645,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `134 passed`
+- current total: `145 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -659,6 +661,8 @@ Current status:
 - hybrid/in-office preference handling can still be refined further
 - duplicate-looking multi-location internships may still appear as separate postings
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
+- direct ATS probing improves source recall but can surface broad non-internship boards that still need validation and promotion thresholds
+- blocked-page manual review records are operator cues, not promotion-ready source records
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 - the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
@@ -696,5 +700,6 @@ Planned follow-up improvements:
 - add a lightweight frontend lint or test setup
 - continue refining ranking noise for broad non-core internships
 - continue improving company, team, and location normalization
-- add stronger source validation and promotion reporting
+- tune source promotion thresholds after direct ATS probing
+- reduce noisy direct-probe miss summaries during wide dry runs
 - prepare cleaner demo documentation and screenshots
