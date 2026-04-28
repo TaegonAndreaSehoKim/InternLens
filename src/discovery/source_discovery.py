@@ -2,19 +2,36 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Sequence
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 import httpx
+
+from src.ingestion.greenhouse_client import fetch_greenhouse_jobs
+from src.ingestion.lever_client import fetch_lever_postings
 
 
 LEVER_HOST = "jobs.lever.co"
 GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
-GREENHOUSE_NON_BOARD_PATHS = {"embed"}
+LEVER_NON_BOARD_PATHS = {"api", "embed"}
+GREENHOUSE_NON_BOARD_PATHS = {"api", "embed", "job_app", "job_board"}
+BLOCKED_REVIEW_REASONS = {"http_403", "http_406", "http_429"}
 
 HREF_PATTERN = re.compile(r"""href\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+SOURCE_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+TRAILING_URL_PUNCTUATION = ".,;:)]}"
+COMPANY_SUFFIX_WORDS = {
+    "ai",
+    "inc",
+    "labs",
+    "technologies",
+    "technology",
+    "group",
+    "systems",
+}
 LEVER_URL_PATTERN = re.compile(
     r"https?://jobs\.lever\.co/[A-Za-z0-9_-]+(?:/[^\s\"'<>]*)?",
     re.IGNORECASE,
@@ -34,6 +51,7 @@ PRESERVED_EXISTING_FIELDS = (
     "source_score",
     "internship_likelihood",
 )
+DiscoveryWarning = Dict[str, str]
 
 
 def utc_now_iso() -> str:
@@ -71,6 +89,104 @@ def save_json_list(path: Path, payload: Sequence[Dict[str, Any]]) -> None:
         handle.write("\n")
 
 
+def _warning_reason_for_exception(exc: Exception) -> str:
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"http_{exc.response.status_code}"
+    if isinstance(exc, httpx.TimeoutException):
+        return "timeout"
+    if isinstance(exc, httpx.NetworkError):
+        return "network_error"
+    return "fetch_error"
+
+
+def build_discovery_warning(
+    *,
+    company: str,
+    url: str,
+    reason: str,
+    message: str,
+) -> DiscoveryWarning:
+    return {
+        "company": company,
+        "url": url,
+        "reason": reason,
+        "message": message,
+    }
+
+
+def build_fetch_warning(company: str, url: str, exc: Exception) -> DiscoveryWarning:
+    return build_discovery_warning(
+        company=company,
+        url=url,
+        reason=_warning_reason_for_exception(exc),
+        message=str(exc),
+    )
+
+
+def build_direct_probe_warning(
+    company: str,
+    source_type: str,
+    source_identifier: str,
+    exc: Exception,
+) -> DiscoveryWarning:
+    if source_type == "lever":
+        url = f"https://jobs.lever.co/{source_identifier}"
+    else:
+        url = f"https://boards.greenhouse.io/{source_identifier}"
+
+    reason = "direct_probe_miss"
+    if isinstance(exc, httpx.TimeoutException):
+        reason = "direct_probe_timeout"
+    elif isinstance(exc, httpx.NetworkError):
+        reason = "direct_probe_network_error"
+
+    return build_discovery_warning(
+        company=company,
+        url=url,
+        reason=reason,
+        message=str(exc),
+    )
+
+
+def format_discovery_warning(warning: DiscoveryWarning) -> str:
+    company = warning.get("company", "<unknown>")
+    url = warning.get("url", "")
+    reason = warning.get("reason", "fetch_error")
+    message = warning.get("message", "")
+
+    if url:
+        return f"{company}: failed to fetch {url} ({reason}): {message}"
+    return f"{company}: {reason}: {message}"
+
+
+def summarize_discovery_warnings(warnings: Sequence[DiscoveryWarning]) -> Dict[str, int]:
+    counts = Counter(warning.get("reason", "unknown") for warning in warnings)
+    return dict(sorted(counts.items()))
+
+
+def visible_discovery_warnings(warnings: Sequence[DiscoveryWarning]) -> List[DiscoveryWarning]:
+    return [
+        warning
+        for warning in warnings
+        if not warning.get("reason", "").startswith("direct_probe_")
+    ]
+
+
+def iter_seed_batches(
+    seeds: Sequence[Dict[str, Any]],
+    batch_size: int | None,
+) -> Iterable[Sequence[Dict[str, Any]]]:
+    if not seeds:
+        return
+
+    if batch_size is None or batch_size <= 0:
+        yield seeds
+        return
+
+    for start_index in range(0, len(seeds), batch_size):
+        yield seeds[start_index : start_index + batch_size]
+
+
 def resolve_seed_path(requested_path: Path) -> Path:
     if requested_path.exists():
         return requested_path
@@ -82,6 +198,13 @@ def resolve_seed_path(requested_path: Path) -> Path:
     raise FileNotFoundError(f"Seed file not found: {requested_path}")
 
 
+def _normalize_source_identifier(path_part: str) -> str | None:
+    identifier = unquote(path_part).strip().rstrip(TRAILING_URL_PUNCTUATION)
+    if not SOURCE_IDENTIFIER_PATTERN.fullmatch(identifier):
+        return None
+    return identifier
+
+
 def classify_source_url(url: str) -> Dict[str, str] | None:
     parsed = urlparse(url.strip())
     host = parsed.netloc.lower()
@@ -90,22 +213,111 @@ def classify_source_url(url: str) -> Dict[str, str] | None:
     if not path_parts:
         return None
 
+    source_identifier = _normalize_source_identifier(path_parts[0])
+    if source_identifier is None:
+        return None
+
     if host == LEVER_HOST:
+        if source_identifier.lower() in LEVER_NON_BOARD_PATHS:
+            return None
+
         return {
             "source_type": "lever",
-            "source_identifier": path_parts[0],
+            "source_identifier": source_identifier,
         }
 
     if host in GREENHOUSE_HOSTS:
-        if path_parts[0].lower() in GREENHOUSE_NON_BOARD_PATHS:
+        if source_identifier.lower() in GREENHOUSE_NON_BOARD_PATHS:
             return None
 
         return {
             "source_type": "greenhouse",
-            "source_identifier": path_parts[0],
+            "source_identifier": source_identifier,
         }
 
     return None
+
+
+def _slugify_source_identifier(value: str) -> str:
+    return "".join(re.findall(r"[A-Za-z0-9]+", value)).lower()
+
+
+def _company_slug_candidates(seed: Dict[str, Any]) -> List[str]:
+    company = str(seed.get("company", "")).strip()
+    if not company:
+        return []
+
+    words = re.findall(r"[A-Za-z0-9]+", company)
+    if not words:
+        return []
+
+    candidates = [_slugify_source_identifier(company)]
+
+    trimmed_words = [
+        word
+        for word in words
+        if word.lower() not in COMPANY_SUFFIX_WORDS
+    ]
+    if trimmed_words:
+        candidates.append(_slugify_source_identifier(" ".join(trimmed_words)))
+
+    if len(words) > 1:
+        candidates.append(_slugify_source_identifier(words[0]))
+
+    seen: set[str] = set()
+    return [
+        candidate
+        for candidate in candidates
+        if candidate and candidate not in seen and not seen.add(candidate)
+    ]
+
+
+def _build_direct_probe_record(
+    *,
+    seed: Dict[str, Any],
+    source_type: str,
+    source_identifier: str,
+    discovered_at: str,
+) -> Dict[str, Any]:
+    if source_type == "lever":
+        discovery_url = f"https://jobs.lever.co/{source_identifier}"
+    else:
+        discovery_url = f"https://boards.greenhouse.io/{source_identifier}"
+
+    return _build_candidate_record(
+        seed=seed,
+        source_type=source_type,
+        source_identifier=source_identifier,
+        discovery_url=discovery_url,
+        discovery_method="direct_ats_probe",
+        discovered_at=discovered_at,
+    )
+
+
+def _build_blocked_review_record(
+    *,
+    seed: Dict[str, Any],
+    warning: DiscoveryWarning,
+    discovered_at: str,
+) -> Dict[str, Any]:
+    source_identifier = (_company_slug_candidates(seed) or ["unknown"])[0]
+    discovery_url = warning.get("url", "")
+    reason = warning.get("reason", "fetch_error")
+    careers_url = str(seed.get("careers_url", "")).strip() or discovery_url
+
+    return {
+        "company": str(seed.get("company", "")).strip(),
+        "source_type": "manual_review",
+        "source_identifier": source_identifier,
+        "careers_url": careers_url,
+        "discovery_url": discovery_url,
+        "discovered_at": discovered_at,
+        "discovery_method": "blocked_page_review",
+        "status": "blocked",
+        "validation_notes": f"page fetch blocked or rate-limited: {reason}",
+        "source_score": 0.0,
+        "internship_likelihood": 0.0,
+    }
 
 
 def extract_candidate_urls(html: str, base_url: str) -> List[str]:
@@ -174,9 +386,16 @@ def discover_sources_from_seed(
     timeout: float,
     fetch_html_fn: Callable[[str, float], str],
     discovered_at: str,
-    errors: List[str] | None = None,
+    errors: List[DiscoveryWarning] | None = None,
+    probe_direct_ats: bool = False,
+    record_blocked_sources: bool = False,
+    direct_probe_limit: int = 1,
+    max_direct_probe_identifiers: int = 2,
+    lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
+    greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
 ) -> List[Dict[str, Any]]:
     candidates: List[Dict[str, Any]] = []
+    page_warnings: List[DiscoveryWarning] = []
     seen_source_keys: set[tuple[str, str]] = set()
     company = str(seed.get("company", "")).strip() or "<unknown>"
 
@@ -203,8 +422,10 @@ def discover_sources_from_seed(
         try:
             html = fetch_html_fn(page_url, timeout)
         except Exception as exc:
+            warning = build_fetch_warning(company, page_url, exc)
+            page_warnings.append(warning)
             if errors is not None:
-                errors.append(f"{company}: failed to fetch {page_url}: {exc}")
+                errors.append(warning)
             continue
 
         for candidate_url in extract_candidate_urls(html, page_url):
@@ -224,6 +445,87 @@ def discover_sources_from_seed(
                     source_identifier=source["source_identifier"],
                     discovery_url=candidate_url,
                     discovery_method=scan_method,
+                    discovered_at=discovered_at,
+                )
+            )
+
+    if probe_direct_ats and not candidates:
+        for source_identifier in _company_slug_candidates(seed)[:max_direct_probe_identifiers]:
+            source_key = ("lever", source_identifier)
+            if source_key not in seen_source_keys:
+                try:
+                    postings = lever_probe_fn(
+                        source_identifier,
+                        timeout=timeout,
+                        limit=direct_probe_limit,
+                    )
+                except Exception as exc:
+                    if errors is not None:
+                        errors.append(
+                            build_direct_probe_warning(
+                                company,
+                                "lever",
+                                source_identifier,
+                                exc,
+                            )
+                        )
+                else:
+                    if postings:
+                        seen_source_keys.add(source_key)
+                        candidates.append(
+                            _build_direct_probe_record(
+                                seed=seed,
+                                source_type="lever",
+                                source_identifier=source_identifier,
+                                discovered_at=discovered_at,
+                            )
+                        )
+
+            source_key = ("greenhouse", source_identifier)
+            if source_key not in seen_source_keys:
+                try:
+                    jobs = greenhouse_probe_fn(
+                        source_identifier,
+                        timeout=timeout,
+                        limit=direct_probe_limit,
+                        content=False,
+                    )
+                except Exception as exc:
+                    if errors is not None:
+                        errors.append(
+                            build_direct_probe_warning(
+                                company,
+                                "greenhouse",
+                                source_identifier,
+                                exc,
+                            )
+                        )
+                else:
+                    if jobs:
+                        seen_source_keys.add(source_key)
+                        candidates.append(
+                            _build_direct_probe_record(
+                                seed=seed,
+                                source_type="greenhouse",
+                                source_identifier=source_identifier,
+                                discovered_at=discovered_at,
+                            )
+                        )
+
+    if record_blocked_sources and not candidates:
+        blocked_warning = next(
+            (
+                warning
+                for warning in page_warnings
+                if warning.get("reason") in BLOCKED_REVIEW_REASONS
+            ),
+            None,
+        )
+        if blocked_warning is not None:
+            candidates.append(
+                _build_blocked_review_record(
+                    seed=seed,
+                    warning=blocked_warning,
                     discovered_at=discovered_at,
                 )
             )
@@ -277,9 +579,15 @@ def discover_sources(
     timeout: float,
     fetch_html_fn: Callable[[str, float], str] = fetch_html,
     discovered_at: str | None = None,
-) -> tuple[List[Dict[str, Any]], List[str]]:
+    probe_direct_ats: bool = False,
+    record_blocked_sources: bool = False,
+    direct_probe_limit: int = 1,
+    max_direct_probe_identifiers: int = 2,
+    lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
+    greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
+) -> tuple[List[Dict[str, Any]], List[DiscoveryWarning]]:
     records: List[Dict[str, Any]] = []
-    errors: List[str] = []
+    errors: List[DiscoveryWarning] = []
     discovered_at_value = discovered_at or utc_now_iso()
 
     for seed in seeds:
@@ -292,9 +600,22 @@ def discover_sources(
                     fetch_html_fn=fetch_html_fn,
                     discovered_at=discovered_at_value,
                     errors=errors,
+                    probe_direct_ats=probe_direct_ats,
+                    record_blocked_sources=record_blocked_sources,
+                    direct_probe_limit=direct_probe_limit,
+                    max_direct_probe_identifiers=max_direct_probe_identifiers,
+                    lever_probe_fn=lever_probe_fn,
+                    greenhouse_probe_fn=greenhouse_probe_fn,
                 )
             )
         except Exception as exc:
-            errors.append(f"{company}: {exc}")
+            errors.append(
+                build_discovery_warning(
+                    company=company,
+                    url="",
+                    reason="seed_error",
+                    message=str(exc),
+                )
+            )
 
     return merge_discovered_sources([], records), errors

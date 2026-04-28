@@ -4,13 +4,22 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
+import pytest
+
 import scripts.discover_sources as discover_script
 from src.discovery.source_discovery import (
+    build_direct_probe_warning,
+    build_fetch_warning,
     classify_source_url,
     discover_sources,
     extract_candidate_urls,
+    format_discovery_warning,
+    iter_seed_batches,
     merge_discovered_sources,
     resolve_seed_path,
+    summarize_discovery_warnings,
+    visible_discovery_warnings,
 )
 
 
@@ -26,9 +35,42 @@ def test_classify_source_url_recognizes_lever_and_greenhouse() -> None:
     assert classify_source_url("https://example.com/careers") is None
 
 
+def test_classify_source_url_normalizes_nested_ats_urls_to_source_identifiers() -> None:
+    assert classify_source_url("https://jobs.lever.co/acme/abc123/apply?lever-source=site") == {
+        "source_type": "lever",
+        "source_identifier": "acme",
+    }
+    assert classify_source_url("https://boards.greenhouse.io/acme/jobs/123#app") == {
+        "source_type": "greenhouse",
+        "source_identifier": "acme",
+    }
+    assert classify_source_url("https://job-boards.greenhouse.io/acme/departments/engineering") == {
+        "source_type": "greenhouse",
+        "source_identifier": "acme",
+    }
+
+
+def test_classify_source_url_strips_common_trailing_url_punctuation() -> None:
+    assert classify_source_url("https://jobs.lever.co/acme);") == {
+        "source_type": "lever",
+        "source_identifier": "acme",
+    }
+    assert classify_source_url("https://boards.greenhouse.io/acme/jobs/123);") == {
+        "source_type": "greenhouse",
+        "source_identifier": "acme",
+    }
+
+
 def test_classify_source_url_rejects_greenhouse_embed_helpers() -> None:
     assert classify_source_url("https://boards.greenhouse.io/embed/job_board?for=acme") is None
     assert classify_source_url("https://job-boards.greenhouse.io/embed/job_app?for=acme") is None
+
+
+def test_classify_source_url_rejects_non_board_or_malformed_identifiers() -> None:
+    assert classify_source_url("https://jobs.lever.co/api/postings/acme") is None
+    assert classify_source_url("https://boards.greenhouse.io/api/jobs?for=acme") is None
+    assert classify_source_url("https://boards.greenhouse.io/job_app?for=acme") is None
+    assert classify_source_url("https://boards.greenhouse.io/acme.com/jobs") is None
 
 
 def test_extract_candidate_urls_collects_href_and_inline_ats_urls() -> None:
@@ -83,7 +125,7 @@ def test_discover_sources_dedupes_results_and_reports_page_errors() -> None:
 
     assert len(records) == 2
     assert {record["source_type"] for record in records} == {"lever", "greenhouse"}
-    assert any("Broken Co" in error for error in errors)
+    assert any(error["company"] == "Broken Co" for error in errors)
 
 
 def test_discover_sources_preserves_partial_seed_results_after_page_error() -> None:
@@ -121,7 +163,46 @@ def test_discover_sources_preserves_partial_seed_results_after_page_error() -> N
         }
     ]
     assert len(errors) == 2
-    assert all("Acme: failed to fetch" in error for error in errors)
+    assert all(error["company"] == "Acme" for error in errors)
+    assert all(error["reason"] == "fetch_error" for error in errors)
+
+
+def test_build_fetch_warning_classifies_common_failure_reasons() -> None:
+    request = httpx.Request("GET", "https://blocked.example.com")
+    response = httpx.Response(429, request=request)
+    http_error = httpx.HTTPStatusError("rate limited", request=request, response=response)
+
+    warnings = [
+        build_fetch_warning("Blocked", "https://blocked.example.com", http_error),
+        build_fetch_warning("Slow", "https://slow.example.com", httpx.TimeoutException("timed out")),
+        build_fetch_warning("Broken", "https://broken.example.com", RuntimeError("boom")),
+    ]
+
+    assert [warning["reason"] for warning in warnings] == [
+        "http_429",
+        "timeout",
+        "fetch_error",
+    ]
+    assert summarize_discovery_warnings(warnings) == {
+        "fetch_error": 1,
+        "http_429": 1,
+        "timeout": 1,
+    }
+    assert "http_429" in format_discovery_warning(warnings[0])
+
+
+def test_direct_probe_warnings_are_summarized_but_not_visible_by_default() -> None:
+    warnings = [
+        build_direct_probe_warning("Acme", "lever", "acme", RuntimeError("not found")),
+        build_fetch_warning("Blocked", "https://blocked.example.com", RuntimeError("blocked")),
+    ]
+
+    assert warnings[0]["reason"] == "direct_probe_miss"
+    assert summarize_discovery_warnings(warnings) == {
+        "direct_probe_miss": 1,
+        "fetch_error": 1,
+    }
+    assert visible_discovery_warnings(warnings) == [warnings[1]]
 
 
 def test_discover_sources_ignores_greenhouse_embed_candidates() -> None:
@@ -147,6 +228,137 @@ def test_discover_sources_ignores_greenhouse_embed_candidates() -> None:
 
     assert errors == []
     assert [record["source_identifier"] for record in records] == ["acme"]
+
+
+def test_discover_sources_can_probe_seed_derived_direct_ats_sources() -> None:
+    seeds = [
+        {
+            "company": "Mistral AI",
+            "homepage_url": "https://mistral.ai",
+        }
+    ]
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        return "<html>No ATS links here.</html>"
+
+    def fake_lever_probe(site_name: str, *, timeout: float, limit: int | None):
+        if site_name == "mistral":
+            return [{"text": "Research Intern"}]
+        raise RuntimeError("not found")
+
+    def fake_greenhouse_probe(board_token: str, *, timeout: float, limit: int | None, content: bool):
+        raise RuntimeError("not found")
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+        probe_direct_ats=True,
+        max_direct_probe_identifiers=2,
+        lever_probe_fn=fake_lever_probe,
+        greenhouse_probe_fn=fake_greenhouse_probe,
+    )
+
+    assert records == [
+        {
+            "company": "Mistral AI",
+            "source_type": "lever",
+            "source_identifier": "mistral",
+            "careers_url": "https://jobs.lever.co/mistral",
+            "discovery_url": "https://jobs.lever.co/mistral",
+            "discovered_at": "2026-04-04T00:00:00Z",
+            "discovery_method": "direct_ats_probe",
+            "status": "candidate",
+            "validation_notes": "",
+            "source_score": 0.0,
+            "internship_likelihood": 0.0,
+        }
+    ]
+    assert any(error["url"] == "https://jobs.lever.co/mistralai" for error in errors)
+    assert any(error["url"] == "https://boards.greenhouse.io/mistral" for error in errors)
+    assert all(error["reason"] == "direct_probe_miss" for error in errors)
+
+
+def test_discover_sources_skips_direct_probe_when_page_scan_finds_source() -> None:
+    seeds = [{"company": "Acme", "homepage_url": "https://acme.com"}]
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        return '<a href="https://boards.greenhouse.io/acme">Jobs</a>'
+
+    def fail_probe(*args, **kwargs):
+        raise AssertionError("direct probe should not run after page discovery succeeds")
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+        probe_direct_ats=True,
+        lever_probe_fn=fail_probe,
+        greenhouse_probe_fn=fail_probe,
+    )
+
+    assert errors == []
+    assert [record["discovery_method"] for record in records] == ["homepage_scan"]
+
+
+def test_discover_sources_can_record_blocked_pages_for_manual_review() -> None:
+    seeds = [
+        {
+            "company": "Blocked Co",
+            "careers_url": "https://blocked.example.com/careers",
+        }
+    ]
+    request = httpx.Request("GET", "https://blocked.example.com/careers")
+    response = httpx.Response(403, request=request)
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        raise httpx.HTTPStatusError("Forbidden", request=request, response=response)
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+        record_blocked_sources=True,
+    )
+
+    assert records == [
+        {
+            "company": "Blocked Co",
+            "source_type": "manual_review",
+            "source_identifier": "blockedco",
+            "careers_url": "https://blocked.example.com/careers",
+            "discovery_url": "https://blocked.example.com/careers",
+            "discovered_at": "2026-04-04T00:00:00Z",
+            "discovery_method": "blocked_page_review",
+            "status": "blocked",
+            "validation_notes": "page fetch blocked or rate-limited: http_403",
+            "source_score": 0.0,
+            "internship_likelihood": 0.0,
+        }
+    ]
+    assert errors[0]["reason"] == "http_403"
+
+
+def test_discover_sources_does_not_record_blocked_pages_by_default() -> None:
+    seeds = [{"company": "Blocked Co", "careers_url": "https://blocked.example.com/careers"}]
+    request = httpx.Request("GET", "https://blocked.example.com/careers")
+    response = httpx.Response(403, request=request)
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        raise httpx.HTTPStatusError("Forbidden", request=request, response=response)
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+    )
+
+    assert records == []
+    assert errors[0]["reason"] == "http_403"
 
 
 def test_merge_discovered_sources_preserves_existing_status_and_scores() -> None:
@@ -199,6 +411,17 @@ def test_resolve_seed_path_falls_back_to_example(tmp_path: Path) -> None:
     assert resolved == example_path
 
 
+def test_iter_seed_batches_splits_seed_lists() -> None:
+    seeds = [{"company": "A"}, {"company": "B"}, {"company": "C"}]
+
+    assert list(iter_seed_batches(seeds, 2)) == [
+        [{"company": "A"}, {"company": "B"}],
+        [{"company": "C"}],
+    ]
+    assert list(iter_seed_batches(seeds, 0)) == [seeds]
+    assert list(iter_seed_batches([], 2)) == []
+
+
 def test_discover_sources_script_merges_and_writes_output(
     tmp_path: Path,
     monkeypatch,
@@ -248,12 +471,14 @@ def test_discover_sources_script_merges_and_writes_output(
             seed_file="data/source_registry/company_seeds.json",
             output_file="data/source_registry/discovered_sources.json",
             timeout=15.0,
+            checkpoint_size=25,
+            record_blocked_sources=False,
         ),
     )
     monkeypatch.setattr(
         discover_script,
         "discover_sources",
-        lambda seeds, timeout: (
+        lambda seeds, timeout, **kwargs: (
             [
                 {
                     "company": "Acme",
@@ -269,7 +494,26 @@ def test_discover_sources_script_merges_and_writes_output(
                     "internship_likelihood": 0.0,
                 }
             ],
-            [],
+            [
+                {
+                    "company": "Acme",
+                    "url": "https://careers.acme.com",
+                    "reason": "http_403",
+                    "message": "Forbidden",
+                },
+                {
+                    "company": "Acme",
+                    "url": "https://acme.com",
+                    "reason": "http_403",
+                    "message": "Forbidden",
+                },
+                {
+                    "company": "Acme",
+                    "url": "https://jobs.lever.co/acme",
+                    "reason": "direct_probe_miss",
+                    "message": "Lever request failed for site 'acme' with status 404.",
+                },
+            ],
         ),
     )
 
@@ -278,5 +522,77 @@ def test_discover_sources_script_merges_and_writes_output(
     payload = json.loads(output_path.read_text(encoding="utf-8"))
 
     assert "Source discovery complete" in output
+    assert "Warning summary:" in output
+    assert "- http_403: 2" in output
+    assert "- direct_probe_miss: 1" in output
+    assert "Acme: failed to fetch https://careers.acme.com (http_403): Forbidden" in output
+    assert "https://jobs.lever.co/acme" not in output
     assert len(payload) == 2
     assert {item["source_identifier"] for item in payload} == {"existing", "acme"}
+
+
+def test_discover_sources_script_checkpoints_after_each_seed_batch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    seeds_path = tmp_path / "data" / "source_registry" / "company_seeds.json"
+    output_path = tmp_path / "data" / "source_registry" / "discovered_sources.json"
+    seeds_path.parent.mkdir(parents=True, exist_ok=True)
+    seeds_path.write_text(
+        json.dumps(
+            [
+                {"company": "Acme", "homepage_url": "https://acme.com"},
+                {"company": "Broken", "homepage_url": "https://broken.example.com"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(discover_script, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        discover_script,
+        "_parse_args",
+        lambda: SimpleNamespace(
+            seed_file="data/source_registry/company_seeds.json",
+            output_file="data/source_registry/discovered_sources.json",
+            timeout=15.0,
+            checkpoint_size=1,
+            record_blocked_sources=False,
+        ),
+    )
+
+    calls = 0
+
+    def fake_discover_sources(seeds, timeout, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("interrupted")
+        return (
+            [
+                {
+                    "company": "Acme",
+                    "source_type": "greenhouse",
+                    "source_identifier": "acme",
+                    "careers_url": "https://acme.com",
+                    "discovery_url": "https://boards.greenhouse.io/acme",
+                    "discovered_at": "2026-04-04T00:00:00Z",
+                    "discovery_method": "homepage_scan",
+                    "status": "candidate",
+                    "validation_notes": "",
+                    "source_score": 0.0,
+                    "internship_likelihood": 0.0,
+                }
+            ],
+            [],
+        )
+
+    monkeypatch.setattr(discover_script, "discover_sources", fake_discover_sources)
+
+    with pytest.raises(RuntimeError, match="interrupted"):
+        discover_script.main()
+
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert calls == 2
+    assert [item["source_identifier"] for item in payload] == ["acme"]

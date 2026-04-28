@@ -10,10 +10,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.discovery.source_discovery import (
     discover_sources,
+    format_discovery_warning,
+    iter_seed_batches,
     load_json_list,
     merge_discovered_sources,
     resolve_seed_path,
     save_json_list,
+    summarize_discovery_warnings,
+    visible_discovery_warnings,
 )
 
 
@@ -37,6 +41,34 @@ def _parse_args() -> argparse.Namespace:
         default=20.0,
         help="Request timeout in seconds for each scanned page.",
     )
+    parser.add_argument(
+        "--checkpoint-size",
+        type=int,
+        default=25,
+        help="Save merged discovery output after this many seed companies. Use 0 to save only at the end.",
+    )
+    parser.add_argument(
+        "--probe-direct-ats",
+        action="store_true",
+        help="Try a small number of seed-derived Lever/Greenhouse board tokens when page scanning finds no source.",
+    )
+    parser.add_argument(
+        "--record-blocked-sources",
+        action="store_true",
+        help="Record blocked or rate-limited seed pages as manual_review records for later operator review.",
+    )
+    parser.add_argument(
+        "--direct-probe-limit",
+        type=int,
+        default=1,
+        help="Maximum jobs to fetch per direct ATS probe.",
+    )
+    parser.add_argument(
+        "--max-direct-probe-identifiers",
+        type=int,
+        default=2,
+        help="Maximum seed-derived source identifiers to probe per company.",
+    )
     return parser.parse_args()
 
 
@@ -48,20 +80,48 @@ def main() -> None:
 
     seeds = load_json_list(resolved_seed_path)
     existing_sources = load_json_list(output_path)
-    discovered_sources, errors = discover_sources(seeds, timeout=args.timeout)
-    merged_sources = merge_discovered_sources(existing_sources, discovered_sources)
-    save_json_list(output_path, merged_sources)
+    checkpoint_size = int(getattr(args, "checkpoint_size", 25))
+    probe_direct_ats = bool(getattr(args, "probe_direct_ats", False))
+    record_blocked_sources = bool(getattr(args, "record_blocked_sources", False))
+    direct_probe_limit = int(getattr(args, "direct_probe_limit", 1))
+    max_direct_probe_identifiers = int(getattr(args, "max_direct_probe_identifiers", 2))
+    discovered_sources = []
+    errors = []
+    merged_sources = list(existing_sources)
+
+    for seed_batch in iter_seed_batches(seeds, checkpoint_size):
+        batch_sources, batch_errors = discover_sources(
+            seed_batch,
+            timeout=args.timeout,
+            probe_direct_ats=probe_direct_ats,
+            record_blocked_sources=record_blocked_sources,
+            direct_probe_limit=direct_probe_limit,
+            max_direct_probe_identifiers=max_direct_probe_identifiers,
+        )
+        discovered_sources = merge_discovered_sources(discovered_sources, batch_sources)
+        errors.extend(batch_errors)
+        merged_sources = merge_discovered_sources(merged_sources, batch_sources)
+        save_json_list(output_path, merged_sources)
+
+    if not seeds:
+        save_json_list(output_path, merged_sources)
 
     print("##### Source discovery complete #####")
     print(f"Seed file used: {resolved_seed_path}")
     print(f"Seed companies scanned: {len(seeds)}")
+    print(f"Checkpoint size: {checkpoint_size}")
     print(f"Discovered source candidates: {len(discovered_sources)}")
     print(f"Total stored candidates: {len(merged_sources)}")
 
     if errors:
-        print("Warnings:")
-        for error in errors:
-            print(f"- {error}")
+        visible_warnings = visible_discovery_warnings(errors)
+        print("Warning summary:")
+        for reason, count in summarize_discovery_warnings(errors).items():
+            print(f"- {reason}: {count}")
+        if visible_warnings:
+            print("Warnings:")
+            for error in visible_warnings:
+                print(f"- {format_discovery_warning(error)}")
 
 
 if __name__ == "__main__":

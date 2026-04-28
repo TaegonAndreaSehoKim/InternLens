@@ -13,10 +13,14 @@ from scripts.fetch_greenhouse_registry import run_registry_fetch as run_greenhou
 from scripts.fetch_lever_registry import run_registry_fetch as run_lever_registry_fetch
 from src.discovery.source_discovery import (
     discover_sources,
+    format_discovery_warning,
+    iter_seed_batches,
     load_json_list,
     merge_discovered_sources,
     resolve_seed_path,
     save_json_list,
+    summarize_discovery_warnings,
+    visible_discovery_warnings,
 )
 from src.discovery.source_promotion import promote_validated_sources
 from src.discovery.source_validation import load_active_registry_keys, validate_discovered_sources
@@ -31,6 +35,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lever-registry", default="data/source_registry/lever_targets.json")
     parser.add_argument("--greenhouse-registry", default="data/source_registry/greenhouse_targets.json")
     parser.add_argument("--discovery-timeout", type=float, default=20.0)
+    parser.add_argument("--discovery-checkpoint-size", type=int, default=25)
+    parser.add_argument("--probe-direct-ats", action="store_true")
+    parser.add_argument("--record-blocked-sources", action="store_true")
+    parser.add_argument("--direct-probe-limit", type=int, default=1)
+    parser.add_argument("--max-direct-probe-identifiers", type=int, default=2)
     parser.add_argument("--validation-timeout", type=float, default=20.0)
     parser.add_argument("--validation-limit", type=int, default=25)
     parser.add_argument("--include-non-candidate", action="store_true")
@@ -64,19 +73,47 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
 
     seeds = load_json_list(resolved_seed_path)
     existing_sources = load_json_list(discovered_path)
-    discovered_sources, errors = discover_sources(seeds, timeout=args.discovery_timeout)
-    merged_sources = merge_discovered_sources(existing_sources, discovered_sources)
-    save_json_list(discovered_path, merged_sources)
+    checkpoint_size = int(getattr(args, "discovery_checkpoint_size", 25))
+    probe_direct_ats = bool(getattr(args, "probe_direct_ats", False))
+    record_blocked_sources = bool(getattr(args, "record_blocked_sources", False))
+    direct_probe_limit = int(getattr(args, "direct_probe_limit", 1))
+    max_direct_probe_identifiers = int(getattr(args, "max_direct_probe_identifiers", 2))
+    discovered_sources: list[Dict[str, Any]] = []
+    errors: list[Dict[str, str]] = []
+    merged_sources = list(existing_sources)
+
+    for seed_batch in iter_seed_batches(seeds, checkpoint_size):
+        batch_sources, batch_errors = discover_sources(
+            seed_batch,
+            timeout=args.discovery_timeout,
+            probe_direct_ats=probe_direct_ats,
+            record_blocked_sources=record_blocked_sources,
+            direct_probe_limit=direct_probe_limit,
+            max_direct_probe_identifiers=max_direct_probe_identifiers,
+        )
+        discovered_sources = merge_discovered_sources(discovered_sources, batch_sources)
+        errors.extend(batch_errors)
+        merged_sources = merge_discovered_sources(merged_sources, batch_sources)
+        save_json_list(discovered_path, merged_sources)
+
+    if not seeds:
+        save_json_list(discovered_path, merged_sources)
 
     print("##### Discovery step complete #####")
     print(f"Seed file used: {resolved_seed_path}")
     print(f"Seed companies scanned: {len(seeds)}")
+    print(f"Checkpoint size: {checkpoint_size}")
     print(f"Discovered source candidates: {len(discovered_sources)}")
     print(f"Total stored candidates: {len(merged_sources)}")
     if errors:
-        print("Warnings:")
-        for error in errors:
-            print(f"- {error}")
+        visible_warnings = visible_discovery_warnings(errors)
+        print("Warning summary:")
+        for reason, count in summarize_discovery_warnings(errors).items():
+            print(f"- {reason}: {count}")
+        if visible_warnings:
+            print("Warnings:")
+            for error in visible_warnings:
+                print(f"- {format_discovery_warning(error)}")
     print()
 
     return {
