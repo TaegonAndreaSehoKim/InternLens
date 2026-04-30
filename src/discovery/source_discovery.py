@@ -19,11 +19,7 @@ GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
 LEVER_NON_BOARD_PATHS = {"api", "embed"}
 GREENHOUSE_NON_BOARD_PATHS = {"api", "embed", "job_app", "job_board"}
 BLOCKED_REVIEW_REASONS = {"http_403", "http_406", "http_429"}
-PRIORITY_FOLLOW_KEYWORDS = (
-    "career",
-    "careers",
-    "job",
-    "jobs",
+HIGH_VALUE_FOLLOW_KEYWORDS = (
     "intern",
     "internship",
     "student",
@@ -39,6 +35,13 @@ PRIORITY_FOLLOW_KEYWORDS = (
     "new-grad",
     "newgrad",
 )
+GENERAL_FOLLOW_KEYWORDS = (
+    "career",
+    "careers",
+    "job",
+    "jobs",
+)
+PRIORITY_FOLLOW_KEYWORDS = HIGH_VALUE_FOLLOW_KEYWORDS + GENERAL_FOLLOW_KEYWORDS
 IGNORED_FOLLOW_EXTENSIONS = (
     ".css",
     ".gif",
@@ -405,6 +408,19 @@ def _looks_like_priority_follow_url(url: str) -> bool:
     return any(keyword in target_text for keyword in PRIORITY_FOLLOW_KEYWORDS)
 
 
+def _priority_follow_score(url: str) -> int:
+    parsed = urlparse(url)
+    target_text = f"{parsed.path} {parsed.query}".lower()
+    score = 0
+
+    if any(keyword in target_text for keyword in HIGH_VALUE_FOLLOW_KEYWORDS):
+        score += 100
+    if any(keyword in target_text for keyword in GENERAL_FOLLOW_KEYWORDS):
+        score += 10
+
+    return score
+
+
 def _iter_priority_follow_targets(html: str) -> Iterable[str]:
     for match in HREF_PATTERN.findall(html):
         yield match.strip()
@@ -425,10 +441,10 @@ def extract_priority_follow_urls(
     if limit <= 0:
         return []
 
-    follow_urls: List[str] = []
+    follow_candidates: List[tuple[int, int, str]] = []
     seen: set[str] = {urlparse(base_url)._replace(fragment="").geturl()}
 
-    for target in _iter_priority_follow_targets(html):
+    for index, target in enumerate(_iter_priority_follow_targets(html)):
         resolved = urljoin(base_url, target)
         parsed = urlparse(resolved)
         if parsed.scheme not in {"http", "https"}:
@@ -445,11 +461,10 @@ def extract_priority_follow_urls(
             continue
 
         seen.add(normalized)
-        follow_urls.append(normalized)
-        if len(follow_urls) >= limit:
-            break
+        follow_candidates.append((_priority_follow_score(normalized), index, normalized))
 
-    return follow_urls
+    sorted_candidates = sorted(follow_candidates, key=lambda item: (-item[0], item[1], item[2]))
+    return [url for _, _, url in sorted_candidates[:limit]]
 
 
 def _seed_scan_urls(seed: Dict[str, Any]) -> Iterable[tuple[str, str]]:

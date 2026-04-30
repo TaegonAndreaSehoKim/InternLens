@@ -116,10 +116,31 @@ def test_extract_priority_follow_urls_keeps_same_site_high_intent_links() -> Non
     )
 
     assert urls == [
-        "https://www.acme.com/university-recruiting",
         "https://careers.acme.com/early-careers",
+        "https://www.acme.com/university-recruiting",
         "https://jobs.acme.com/campus",
         "https://www.acme.com/students-and-grads",
+    ]
+
+
+def test_extract_priority_follow_urls_prefers_student_links_over_general_jobs() -> None:
+    html = """
+    <a href="/jobs">Jobs</a>
+    <a href="/careers">Careers</a>
+    <a href="/blog/intern-experience">Intern blog</a>
+    <a href="/university-recruiting">University Recruiting</a>
+    <a href="/campus">Campus</a>
+    """
+
+    urls = extract_priority_follow_urls(
+        html,
+        "https://www.acme.com/",
+        limit=2,
+    )
+
+    assert urls == [
+        "https://www.acme.com/blog/intern-experience",
+        "https://www.acme.com/university-recruiting",
     ]
 
 
