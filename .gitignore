@@ -33,6 +33,7 @@ AGENTS.md
 # Keep these tracked if you want demo artifacts in the repo.
 # outputs/
 outputs/discovered_sources_probe*.json
+outputs/discovery_recall_compare*.json
 
 # Frontend dependencies / build output
 frontend/node_modules/
