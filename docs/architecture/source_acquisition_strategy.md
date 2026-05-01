@@ -288,7 +288,8 @@ Recent broad-scan probe result:
 - discovery with direct ATS probing and blocked-page review records found `82` records
 - validation of that probe with stricter internship-signal rules and a wider validation sample produced `68` validated sources, `1` rejected source, and `13` blocked manual-review records
 - promotion dry-run with conservative safeguards promoted `0` new sources from the latest probe file; Cloudflare remains skipped as an inactive registry entry, and Zoox is blocked by the direct-probe safeguard
-- small seed-subset smoke testing showed the new priority-link following did not add candidates for that subset, so broader recall measurement is still needed
+- a 30-seed priority-link comparison found two additional `priority_link_scan` candidates, Anthropic and GitLab, while adding four extra `404` warnings
+- validation and promotion-candidate smoke testing showed those two added candidates were general Greenhouse boards with `internship_likelihood = 0.00`, so they were not promoted
 
 ### Phase 2: source validation
 
@@ -316,6 +317,15 @@ Promotion conditions can be:
 - acceptable data quality
 - no obvious duplication with an existing active source
 - no implicit reactivation of inactive registry entries unless explicitly requested
+
+After promotion decisions, candidate quality can be checked with a temporary
+promotion smoke:
+
+1. compute promotable discovered sources
+2. write only those candidates into temporary Lever/Greenhouse registries
+3. fetch the temporary registries into a temporary data tree
+4. rank the fetched jobs against the example profile
+5. report processed job counts, action-label counts, blocker counts, and top results
 
 ---
 

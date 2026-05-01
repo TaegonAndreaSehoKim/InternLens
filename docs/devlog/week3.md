@@ -140,7 +140,7 @@ InternLens now supports:
 
 ### Latest quality checkpoint
 - Frontend production build passing through `npm run build`
-- Backend test suite stable at **158 passed** on the latest local recheck
+- Backend test suite stable at **163 passed** on the latest local recheck
 - Python environment stabilized on Python 3.13
 
 ### Remaining next steps
@@ -260,3 +260,45 @@ The system is better at explaining why a source looks internship-relevant, while
 - Measure priority-link recall on a larger seed subset.
 - Use dry-run internship examples to tune validation and promotion thresholds.
 - Consider a repeatable promotion smoke script that fetches temporary promoted candidates and reports applyable ranking counts.
+
+---
+
+## Day 30 - Discovery Recall Measurement and Promotion Smoke
+
+### Focus
+Turn discovery recall and promotion quality checks into repeatable scripts instead of one-off manual command chains.
+
+### What was done
+- Added `scripts/compare_discovery_recall.py`.
+- Added ignored comparison reports under `outputs/discovery_recall_compare*.json`.
+- Added `scripts/smoke_promotion_candidates.py`.
+- Added ignored promotion smoke reports under `outputs/promotion_candidate_smoke*.json`.
+- Added tests for discovery recall comparison and promotion-candidate smoke reports.
+- Prioritized high-intent discovery links so student, intern, university, campus, early-career, and new-grad URLs are followed before generic jobs/careers links.
+
+### Smoke results
+- A 30-seed recall comparison found:
+  - baseline candidates: `2`
+  - priority-follow candidates: `4`
+  - added candidates: Anthropic and GitLab Greenhouse boards
+  - warnings: `5 -> 9`, mainly because high-intent follow added extra `404` fetches
+- The added Anthropic/GitLab candidates validated successfully as fetchable boards, but both had:
+  - `source_score = 0.40`
+  - `internship_likelihood = 0.00`
+- Promotion-candidate smoke on those added sources reported:
+  - `Promotion candidates: 0`
+  - `Processed jobs: 0`
+
+### Validation
+- `pytest tests/test_compare_discovery_recall.py tests/test_source_discovery.py -q` -> **25 passed**
+- `pytest tests/test_smoke_promotion_candidates.py tests/test_source_promotion.py -q` -> **12 passed**
+- `pytest -q` -> **163 passed**
+
+### Result
+Discovery recall is now measurable, and promotion quality can be checked through a temporary fetch/rank smoke without touching tracked registries or generated corpus data.
+The first measured result shows the priority-follow logic improves recall, but the newly found sources can still be general boards rather than internship-rich sources.
+
+### Remaining next fixes
+- Run recall comparison on larger seed windows and inspect whether high-intent links find internship-rich boards outside the first 30 seeds.
+- Consider reducing avoidable `404` follow noise if broad comparisons become too noisy.
+- Use promotion-candidate smoke output as the default gate before adding newly discovered sources to active registries.

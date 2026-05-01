@@ -188,3 +188,7 @@ and Greenhouse refresh flow stable while hardening broader source acquisition:
 Discovered source validation currently records `internship_likelihood` plus
 `internship_signal_examples` so operators can inspect which posting titles
 caused a source to look internship-relevant before promotion.
+
+Source-quality smoke reports under `outputs/promotion_candidate_smoke*.json`
+summarize temporary promotion/fetch/ranking checks. These reports are local
+debug artifacts rather than canonical fixtures.

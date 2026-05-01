@@ -21,6 +21,7 @@ InternLens currently supports:
 - high-intent same-site discovery link following for student, internship, campus, and early-career pages
 - opt-in direct ATS probing and blocked-page manual review records for broad seed scans
 - dry-run source promotion diagnostics with internship signal examples
+- discovery recall comparison and promotion-candidate smoke scripts for source-quality measurement
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
@@ -37,7 +38,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `158 passed`
+- current total: `163 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -113,8 +114,9 @@ The current implementation is intentionally simple and transparent. It is design
 - source validation tests
 - source promotion tests
 - source pipeline tests
+- source recall and promotion smoke tests
 - profile API tests
-- full suite currently passing: `158 passed`
+- full suite currently passing: `163 passed`
 - frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -354,6 +356,30 @@ Useful notes:
 - direct ATS probe candidates must meet stricter score and internship-likelihood safeguards
 - matching inactive registry entries are skipped by default; use `--reactivate-inactive-sources` to explicitly reactivate them
 - use `--dry-run` to inspect promotion decisions without writing registry files
+
+### Compare discovery recall with priority-link following
+
+```bash
+python scripts/compare_discovery_recall.py --seed-limit 30
+```
+
+Useful notes:
+- this compares source discovery with `--priority-follow-limit 0` against the configured priority-follow limit
+- the report includes candidate-count delta, warning-count delta, method summaries, and added/removed source records
+- generated reports are written under `outputs/discovery_recall_compare*.json` and are ignored by git
+- a recent 30-seed smoke found two additional `priority_link_scan` Greenhouse candidates, Anthropic and GitLab, while also adding four extra `404` warnings
+
+### Smoke test promotion candidates through fetch and ranking
+
+```bash
+python scripts/smoke_promotion_candidates.py --input-file data/source_registry/discovered_sources.json
+```
+
+Useful notes:
+- this computes promotion candidates, writes temporary registries, fetches into a temporary workspace, ranks the temporary processed jobs, and writes a compact report
+- it does not modify the tracked registries or generated corpus
+- generated reports are written under `outputs/promotion_candidate_smoke*.json` and are ignored by git
+- recent Anthropic/GitLab recall candidates validated as general boards with `internship_likelihood=0.00`, so the smoke reported `Promotion candidates: 0`
 
 ### Run the full source lifecycle in one command
 
@@ -653,7 +679,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `158 passed`
+- current total: `163 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -671,6 +697,7 @@ Current status:
 - source discovery, validation, and promotion are now scriptable, but source quality thresholds still need human tuning
 - direct ATS probing improves source recall but can surface broad non-internship boards that still need validation and promotion thresholds
 - promotion dry-runs now show internship signal examples, making false positives easier to inspect before registry changes
+- promotion-candidate smoke reports now connect source promotion decisions to temporary fetch and ranking results
 - blocked-page manual review records are operator cues, not promotion-ready source records
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
@@ -709,6 +736,6 @@ Planned follow-up improvements:
 - add a lightweight frontend lint or test setup
 - continue refining ranking noise for broad non-core internships
 - continue improving company, team, and location normalization
-- measure source-discovery recall on larger seed subsets after priority-link following
-- refine source validation and promotion thresholds using dry-run signal examples
+- measure source-discovery recall on larger seed subsets and use promotion-candidate smoke reports to judge quality
+- refine source validation and promotion thresholds using dry-run signal examples and applyable ranking counts
 - prepare cleaner demo documentation and screenshots
