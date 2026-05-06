@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import {
+  ACTION_FILTERS,
+  actionClass,
+  actionLabel,
+  actionValue,
+  displayScore,
+  recommendationCounts,
+  visibleRecommendations
+} from "./recommendationHelpers";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
-const ACTION_FILTERS = [
-  { value: "all", label: "All" },
-  { value: "apply_now", label: "Apply Now" },
-  { value: "apply_later", label: "Apply Later" },
-  { value: "skip", label: "Skip" }
-];
 
 const JOB_STATE_LABELS = {
   saved: "Saved",
@@ -70,23 +73,6 @@ function writeStoredState(state) {
   } catch {
     // Storage can be unavailable in private browsing or locked-down environments.
   }
-}
-
-function actionClass(value = "") {
-  return value.toLowerCase().replace(/\s+/g, "-");
-}
-
-function actionValue(job) {
-  return job.recommendation ?? actionClass(job.action_label).replace(/-/g, "_");
-}
-
-function actionLabel(job) {
-  return job.action_label ?? ACTION_FILTERS.find((filter) => filter.value === job.recommendation)?.label;
-}
-
-function displayScore(job) {
-  const score = job.reranked_score ?? job.score;
-  return typeof score === "number" ? Math.round(score) : null;
 }
 
 async function api(path, options = {}) {
@@ -465,11 +451,8 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
 
 function RecommendationPanel({ recommendations, selectedRun, filter, onFilterChange, busy, onAction }) {
   const jobs = recommendations?.results ?? [];
-  const counts = ACTION_FILTERS.reduce((current, item) => {
-    current[item.value] = item.value === "all" ? jobs.length : jobs.filter((job) => actionValue(job) === item.value).length;
-    return current;
-  }, {});
-  const visibleJobs = filter === "all" ? jobs : jobs.filter((job) => actionValue(job) === filter);
+  const counts = recommendationCounts(jobs);
+  const visibleJobs = visibleRecommendations(jobs, filter);
 
   return (
     <section className="panel results-panel">
