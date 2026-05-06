@@ -104,6 +104,17 @@ button:disabled {
   font-weight: 700;
 }
 
+.status-card.success {
+  border-color: rgba(86, 107, 67, 0.24);
+}
+
+.status-card.error {
+  border-color: rgba(158, 78, 50, 0.36);
+  background:
+    linear-gradient(135deg, rgba(158, 78, 50, 0.1), transparent 42%),
+    var(--card);
+}
+
 .status-topline,
 .status-footer {
   display: flex;
@@ -408,6 +419,21 @@ textarea {
   font-weight: 900;
 }
 
+.state-pill.saved {
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.16);
+}
+
+.state-pill.applied {
+  color: #5c4312;
+  background: rgba(214, 154, 53, 0.24);
+}
+
+.state-pill.dismissed {
+  color: var(--cedar);
+  background: rgba(158, 78, 50, 0.13);
+}
+
 .action-pill.apply-now {
   color: #fffaf0;
   background: var(--cedar);
@@ -447,6 +473,19 @@ textarea {
 
 .job-card.skip {
   opacity: 0.74;
+}
+
+.job-card.state-saved {
+  box-shadow: inset 5px 0 0 rgba(86, 107, 67, 0.34);
+}
+
+.job-card.state-applied {
+  box-shadow: inset 5px 0 0 rgba(214, 154, 53, 0.46);
+}
+
+.job-card.state-dismissed {
+  opacity: 0.68;
+  box-shadow: inset 5px 0 0 rgba(158, 78, 50, 0.32);
 }
 
 .job-meta {
@@ -577,17 +616,33 @@ textarea {
   background: rgba(23, 33, 28, 0.08);
 }
 
+.job-actions button:disabled {
+  cursor: default;
+}
+
 .job-actions a {
   color: #fffaf0;
   background: var(--moss);
 }
 
+.job-actions .subtle-action {
+  color: var(--muted);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(23, 33, 28, 0.13);
+}
+
 .empty-state {
+  display: grid;
+  gap: 6px;
   border: 1px dashed rgba(23, 33, 28, 0.28);
   border-radius: 22px;
   padding: 30px;
   color: var(--muted);
   text-align: center;
+}
+
+.empty-state strong {
+  color: var(--ink);
 }
 
 @keyframes rise-in {

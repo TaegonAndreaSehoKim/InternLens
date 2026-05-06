@@ -11,6 +11,19 @@ const ACTION_FILTERS = [
   { value: "skip", label: "Skip" }
 ];
 
+const JOB_STATE_LABELS = {
+  saved: "Saved",
+  applied: "Applied",
+  dismissed: "Dismissed"
+};
+
+const JOB_ACTION_LABELS = {
+  save: "saved",
+  apply: "marked applied",
+  dismiss: "dismissed",
+  clear: "cleared"
+};
+
 const defaultProfile = {
   profile_id: "user_001",
   resume_text: "Graduate student with Python, machine learning, ranking systems, and data analysis experience.",
@@ -102,20 +115,24 @@ function App() {
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
   const [recommendationFilter, setRecommendationFilter] = useState(() => storedState.recommendationFilter ?? "all");
   const [status, setStatus] = useState("Checking API connection...");
+  const [statusTone, setStatusTone] = useState("info");
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
 
   async function runTask(label, task) {
     setBusy(true);
     setStatus(label);
+    setStatusTone("info");
     try {
       await task();
       setApiHealth("online");
+      setStatusTone("success");
     } catch (error) {
       if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
       }
       setStatus(error.message);
+      setStatusTone("error");
     } finally {
       setBusy(false);
     }
@@ -186,7 +203,7 @@ function App() {
     if (recommendations && selectedRun) {
       await loadRun(selectedRun);
     }
-    setStatus(`${action} recorded for ${jobId}.`);
+    setStatus(`Job ${JOB_ACTION_LABELS[action] ?? action}: ${jobId}.`);
   }
 
   useEffect(() => {
@@ -201,6 +218,7 @@ function App() {
 
         if (!storedState.profileId) {
           setStatus("API online. Save a profile to start recommendations.");
+          setStatusTone("success");
           return;
         }
 
@@ -208,6 +226,7 @@ function App() {
         if (cancelled) return;
         setDashboard(restoredDashboard);
         setStatus(`Restored profile ${storedState.profileId}.`);
+        setStatusTone("success");
 
         if (storedState.selectedRun) {
           try {
@@ -215,6 +234,7 @@ function App() {
             if (cancelled) return;
             setRecommendations(restoredRun);
             setStatus(`Restored run ${storedState.selectedRun}.`);
+            setStatusTone("success");
           } catch {
             if (!cancelled) {
               setSelectedRun(null);
@@ -225,6 +245,7 @@ function App() {
         if (cancelled) return;
         setApiHealth("offline");
         setStatus(`API offline: ${error.message}`);
+        setStatusTone("error");
       }
     }
 
@@ -249,7 +270,7 @@ function App() {
             and keep applied roles out of the next pass.
           </p>
         </div>
-        <div className="status-card">
+        <div className={`status-card ${statusTone}`}>
           <div className="status-topline">
             <span className={busy ? "pulse-dot active" : "pulse-dot"} />
             <span className={`health-pill ${apiHealth}`}>{apiHealth}</span>
@@ -280,6 +301,7 @@ function App() {
         />
         <DashboardPanel
           dashboard={dashboard}
+          profileId={profileId}
           busy={busy}
           onRefresh={() => runTask("Refreshing dashboard...", () => loadDashboard(profileId))}
           onRun={() => runTask("Running recommendations...", runRecommendations)}
@@ -378,13 +400,16 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
           <p className="eyebrow">Dashboard</p>
           <h2>Current application board</h2>
         </div>
-        <button className="ghost-action" disabled={busy} onClick={onRefresh}>
+        <button className="ghost-action" disabled={busy || !dashboard} onClick={onRefresh}>
           Refresh
         </button>
       </div>
 
       {!dashboard ? (
-        <div className="empty-state">Save or load a profile to open the dashboard.</div>
+        <div className="empty-state">
+          <strong>No profile loaded</strong>
+          <span>Save the candidate profile to open the dashboard.</span>
+        </div>
       ) : (
         <>
           <div className="metric-row">
@@ -395,12 +420,19 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
           </div>
 
           <div className="next-actions">
-            {dashboard.recommended_next_actions.map((action) => (
-              <article key={`${action.action}-${action.target_job_id ?? action.target_run_id ?? "none"}`}>
-                <span>{action.label}</span>
-                <p>{action.description}</p>
+            {dashboard.recommended_next_actions.length === 0 ? (
+              <article>
+                <span>No pending actions</span>
+                <p>The current board has no saved or applied follow-up items.</p>
               </article>
-            ))}
+            ) : (
+              dashboard.recommended_next_actions.map((action) => (
+                <article key={`${action.action}-${action.target_job_id ?? action.target_run_id ?? "none"}`}>
+                  <span>{action.label}</span>
+                  <p>{action.description}</p>
+                </article>
+              ))
+            )}
           </div>
 
           <button className="primary-action" disabled={busy} onClick={onRun}>
@@ -415,7 +447,7 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
           <div className="run-list">
             <h3>Recent runs</h3>
             {dashboard.recent_runs.length === 0 ? (
-              <p className="muted">No recommendation runs yet.</p>
+              <p className="muted">No recommendation runs yet. Start one from this dashboard.</p>
             ) : (
               dashboard.recent_runs.map((run) => (
                 <button key={run.run_id} onClick={() => onLoadRun(run.run_id)}>
@@ -450,7 +482,10 @@ function RecommendationPanel({ recommendations, selectedRun, filter, onFilterCha
       </div>
 
       {!recommendations ? (
-        <div className="empty-state">Run recommendations to see ranked internship leads.</div>
+        <div className="empty-state">
+          <strong>No run loaded</strong>
+          <span>Run recommendations or load a recent run to review ranked internship leads.</span>
+        </div>
       ) : (
         <>
           <div className="filter-bar" aria-label="Recommendation filters">
@@ -467,7 +502,14 @@ function RecommendationPanel({ recommendations, selectedRun, filter, onFilterCha
           </div>
 
           {visibleJobs.length === 0 ? (
-            <div className="empty-state">No jobs match this filter.</div>
+            <div className="empty-state">
+              <strong>No jobs shown</strong>
+              <span>
+                {jobs.length === 0
+                  ? "This run returned no visible jobs. Applied and dismissed jobs are excluded from new runs."
+                  : "No jobs match the selected recommendation filter."}
+              </span>
+            </div>
           ) : (
             <div className="job-list">
               {visibleJobs.map((job) => (
@@ -485,17 +527,21 @@ function JobCard({ job, busy, onAction }) {
   const score = displayScore(job);
   const label = actionLabel(job);
   const action = actionValue(job);
+  const currentState = job.user_job_state;
   const watchouts = job.watchouts ?? job.blocking_issues ?? [];
+  const isSaved = currentState === "saved";
+  const isApplied = currentState === "applied";
+  const isDismissed = currentState === "dismissed";
 
   return (
-    <article className={`job-card ${actionClass(label ?? action)}`}>
+    <article className={`job-card ${actionClass(label ?? action)} ${currentState ? `state-${currentState}` : ""}`}>
       <div>
         <div className="job-meta">
           <span>{job.company}</span>
           <span>{job.location}</span>
           <span>{job.fit_level}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
-          {job.user_job_state && <span className="state-pill">{job.user_job_state}</span>}
+          {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
         </div>
         <h3>{job.title}</h3>
         <p>{job.summary}</p>
@@ -513,9 +559,20 @@ function JobCard({ job, busy, onAction }) {
               Open
             </a>
           )}
-          <button disabled={busy} onClick={() => onAction(job.job_id, "save")}>Save</button>
-          <button disabled={busy} onClick={() => onAction(job.job_id, "apply")}>Applied</button>
-          <button disabled={busy} onClick={() => onAction(job.job_id, "dismiss")}>Dismiss</button>
+          <button disabled={busy || isSaved || isApplied || isDismissed} onClick={() => onAction(job.job_id, "save")}>
+            {isSaved ? "Saved" : "Save"}
+          </button>
+          <button disabled={busy || isApplied || isDismissed} onClick={() => onAction(job.job_id, "apply")}>
+            {isApplied ? "Applied" : "Mark applied"}
+          </button>
+          <button disabled={busy || isDismissed || isApplied} onClick={() => onAction(job.job_id, "dismiss")}>
+            {isDismissed ? "Dismissed" : "Dismiss"}
+          </button>
+          {currentState && (
+            <button className="subtle-action" disabled={busy} onClick={() => onAction(job.job_id, "clear")}>
+              Clear state
+            </button>
+          )}
         </div>
       </div>
     </article>
