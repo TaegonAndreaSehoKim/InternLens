@@ -38,7 +38,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `163 passed`
+- current total: `171 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -471,6 +471,17 @@ http://localhost:5173
 The frontend expects the API at `http://127.0.0.1:8000` by default.
 Set `VITE_API_BASE_URL` if the backend is running somewhere else.
 
+Deployment-relevant environment variables:
+
+```text
+INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+INTERNLENS_JOBS_DIR=data/processed/jobs
+INTERNLENS_DB_PATH=data/app/internlens.db
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+See `.env.example`, `frontend/.env.example`, and `docs/deployment/aws_staging.md` for staging notes.
+
 Main endpoints:
 - `POST /recommend`
 - `GET /jobs/{id}`
@@ -679,7 +690,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `163 passed`
+- current total: `171 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -703,6 +714,36 @@ Current status:
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 - the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
 - persisted user data is currently SQLite-based and intended for local or prototype use rather than multi-user production deployment
+
+---
+
+## Staging deployment
+
+InternLens is ready for a small staging/demo deployment, but not yet production hardening.
+
+Recommended first cut:
+- host the frontend with AWS Amplify Hosting or S3/CloudFront
+- run the FastAPI backend on Elastic Beanstalk, Lightsail, or a small EC2 instance
+- keep SQLite only for single-server staging
+- run source refresh and promotion scripts manually, not as public web actions
+
+The backend includes a `Procfile`:
+
+```text
+web: uvicorn src.api.app:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+Before deploying:
+
+```bash
+python -m pytest -q
+cd frontend
+npm run lint
+npm test
+npm run build
+```
+
+For details, see `docs/deployment/aws_staging.md`.
 
 ---
 

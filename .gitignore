@@ -25,6 +25,8 @@ Thumbs.db
 # Local env files
 .env
 .env.*
+!.env.example
+!frontend/.env.example
 
 # Local agent guidance
 AGENTS.md

@@ -45,7 +45,11 @@ from src.ranking.feedback_reranker import (
     load_feedback_profile,
     normalize_feedback_profile,
 )
+from src.api.settings import DEFAULT_CORS_ORIGINS, DEFAULT_JOBS_DIR, env_list, env_value, resolve_project_path
 
+
+DEFAULT_API_JOBS_DIR = env_value("INTERNLENS_JOBS_DIR", DEFAULT_JOBS_DIR)
+CORS_ORIGINS = env_list("INTERNLENS_CORS_ORIGINS", DEFAULT_CORS_ORIGINS)
 
 app = FastAPI(
     title="InternLens API",
@@ -55,10 +59,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -114,7 +115,7 @@ class RecommendRequest(BaseModel):
         description="Inline candidate profile payload. If provided, this is used instead of profile_path.",
     )
     jobs_dir: str = Field(
-        default="data/processed/jobs",
+        default=DEFAULT_API_JOBS_DIR,
         description="Path to the directory containing job posting JSON files, relative to the project root.",
     )
     feedback_path: Optional[str] = Field(
@@ -197,7 +198,7 @@ class JobActionRequest(BaseModel):
 
 class ProfileRecommendRequest(BaseModel):
     jobs_dir: str = Field(
-        default="data/processed/jobs",
+        default=DEFAULT_API_JOBS_DIR,
         description="Path to the directory containing job posting JSON files, relative to the project root.",
     )
     eligible_only: bool = Field(default=False)
@@ -421,6 +422,9 @@ class JobDetailResponse(BaseModel):
 
 
 def _database_path() -> Path:
+    configured_path = env_value("INTERNLENS_DB_PATH", "")
+    if configured_path:
+        return resolve_project_path(PROJECT_ROOT, configured_path)
     return default_database_path(PROJECT_ROOT)
 
 
@@ -910,7 +914,7 @@ def _build_recommend_response(
     job_state_by_id: Optional[Dict[str, Dict[str, Any]]] = None,
     run_id: Optional[str] = None,
 ) -> RecommendResponse:
-    jobs_dir_path = PROJECT_ROOT / jobs_dir
+    jobs_dir_path = resolve_project_path(PROJECT_ROOT, jobs_dir)
 
     jobs = load_all_job_postings(jobs_dir_path)
     ranked_jobs = rank_jobs(profile, jobs)
@@ -1342,7 +1346,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             profile = _build_profile_from_payload(request.profile_data)
             profile_source = "inline_profile_payload"
         else:
-            profile_path = PROJECT_ROOT / str(request.profile_path)
+            profile_path = resolve_project_path(PROJECT_ROOT, str(request.profile_path))
             profile = load_candidate_profile(profile_path)
             profile_source = str(request.profile_path)
 
@@ -1352,7 +1356,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             feedback_profile = _build_feedback_from_payload(request.feedback_data)
             feedback_source = "inline_feedback_payload"
         elif request.feedback_path is not None:
-            feedback_path = PROJECT_ROOT / request.feedback_path
+            feedback_path = resolve_project_path(PROJECT_ROOT, request.feedback_path)
             feedback_profile = load_feedback_profile(feedback_path)
             feedback_source = str(request.feedback_path)
 
@@ -1462,9 +1466,9 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
 
 
 @app.get("/jobs/{job_id}", response_model=JobDetailResponse)
-def get_job(job_id: str, jobs_dir: str = "data/processed/jobs") -> JobDetailResponse:
+def get_job(job_id: str, jobs_dir: str = DEFAULT_API_JOBS_DIR) -> JobDetailResponse:
     # Read one job from the processed jobs directory tree.
-    jobs_dir_path = PROJECT_ROOT / jobs_dir
+    jobs_dir_path = resolve_project_path(PROJECT_ROOT, jobs_dir)
 
     try:
         jobs = load_all_job_postings(
