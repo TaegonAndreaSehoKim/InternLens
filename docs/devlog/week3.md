@@ -339,3 +339,40 @@ The recall gain is real, but the warning growth confirms that broader priority-l
 - Try another seed window with `--seed-offset 60 --seed-limit 60` to see whether the result generalizes beyond the first company block.
 - Add a warning budget or per-domain failed-link cap if priority-follow runs remain noisy.
 - Continue using promotion-candidate smoke output as the gate before registry promotion.
+
+---
+
+## Day 32 - Priority-Follow Warning Budget and Offset Recall Check
+
+### Focus
+Reduce noisy priority-link discovery fetches and compare recall on a different company-seed window.
+
+### What was done
+- Added a per-company priority-follow warning budget.
+- Added a per-host priority-follow warning budget so repeated failures on one host stop additional priority-link fetches from that host.
+- Exposed the new budget controls through:
+  - `scripts/discover_sources.py`
+  - `scripts/compare_discovery_recall.py`
+- Ran a second 60-seed recall comparison against the `60-120` seed window.
+
+### Offset recall result
+- Command:
+  - `.\.venv\Scripts\python.exe scripts\compare_discovery_recall.py --seed-offset 60 --seed-limit 60 --timeout 20 --priority-follow-limit 5 --output-file outputs/discovery_recall_compare_60_120.json`
+- Baseline candidates: `7`
+- Priority-follow candidates: `9`
+- Added candidates: `2`
+  - Checkr Greenhouse board: `checkr`
+  - Checkr-linked Greenhouse board: `chile`
+- Removed candidates: `0`
+- Warning count increased from `14` to `29`.
+- Warning summary changed from `http_403: 12, network_error: 2` to `http_403: 14, http_404: 13, network_error: 2`.
+
+### Result
+The second seed window confirms that priority-link following continues to improve raw source recall.
+It also surfaced a likely quality issue: a Checkr priority page linked to a Greenhouse board identifier `chile`, which may be a regional or unrelated board rather than a clean company source.
+This reinforces that recall output should feed validation and promotion smoke, not automatic registry promotion.
+
+### Remaining next fixes
+- Run promotion-candidate smoke directly against the added-source set from recall reports.
+- Consider validating whether discovered source company and board identifier agree before promotion.
+- Continue monitoring warning growth as priority-follow scan windows get larger.
