@@ -6,6 +6,7 @@
   --paper: #f7f1e5;
   --card: rgba(255, 250, 239, 0.86);
   --line: rgba(23, 33, 28, 0.13);
+  --steel: #3f5f66;
   --moss: #566b43;
   --cedar: #9e4e32;
   --gold: #d69a35;
@@ -22,9 +23,7 @@ body {
   color: var(--ink);
   font-family: "IBM Plex Sans", "Aptos", sans-serif;
   background:
-    radial-gradient(circle at 10% 10%, rgba(214, 154, 53, 0.24), transparent 26rem),
-    radial-gradient(circle at 90% 0%, rgba(183, 206, 215, 0.45), transparent 30rem),
-    linear-gradient(135deg, #f7f1e5 0%, #ece3cf 48%, #d7ded4 100%);
+    linear-gradient(135deg, #eef3f1 0%, #f6f4ef 44%, #dde9eb 100%);
   min-height: 100vh;
 }
 
@@ -49,29 +48,28 @@ button:disabled {
   padding: 36px 0 56px;
 }
 
-.hero {
+.app-header {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
   gap: 24px;
-  align-items: stretch;
+  align-items: end;
   margin-bottom: 24px;
   animation: rise-in 520ms ease both;
 }
 
-.hero h1 {
-  max-width: 900px;
+.product-title h1 {
   margin: 8px 0 14px;
   font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(3.2rem, 8vw, 7.7rem);
-  line-height: 0.86;
-  letter-spacing: -0.07em;
+  font-size: clamp(2.4rem, 5vw, 4.6rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
 }
 
 .hero-copy {
-  max-width: 760px;
+  max-width: 680px;
   margin: 0;
   color: var(--muted);
-  font-size: 1.12rem;
+  font-size: 1rem;
 }
 
 .eyebrow {
@@ -95,8 +93,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-radius: 30px;
-  padding: 24px;
+  min-height: 150px;
+  border-radius: 20px;
+  padding: 18px;
 }
 
 .status-card p {
@@ -179,7 +178,7 @@ button:disabled {
 }
 
 .panel {
-  border-radius: 32px;
+  border-radius: 22px;
   padding: 24px;
   animation: rise-in 560ms ease both;
 }
@@ -285,9 +284,9 @@ textarea {
 }
 
 .metric {
-  border-radius: 20px;
+  border-radius: 14px;
   padding: 14px;
-  background: rgba(86, 107, 67, 0.1);
+  background: rgba(63, 95, 102, 0.1);
 }
 
 .metric strong {
@@ -311,7 +310,7 @@ textarea {
 
 .next-actions article {
   border-left: 5px solid var(--gold);
-  border-radius: 18px;
+  border-radius: 14px;
   padding: 13px 15px;
   background: rgba(214, 154, 53, 0.13);
 }
@@ -335,14 +334,16 @@ textarea {
 }
 
 .preview-list,
-.run-list {
+.run-list,
+.activity-list {
   border-top: 1px solid var(--line);
   padding-top: 16px;
   margin-top: 18px;
 }
 
 .preview-list h3,
-.run-list h3 {
+.run-list h3,
+.activity-list h3 {
   margin: 0 0 10px;
 }
 
@@ -367,6 +368,69 @@ textarea {
   background: rgba(183, 206, 215, 0.4);
 }
 
+.dashboard-lower {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 14px;
+}
+
+.activity-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.activity-list article {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.activity-list strong,
+.activity-list small {
+  display: block;
+}
+
+.activity-list strong {
+  overflow-wrap: anywhere;
+}
+
+.activity-list small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.activity-badge {
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 8px;
+  color: var(--steel);
+  background: rgba(63, 95, 102, 0.12);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.activity-badge.saved {
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.14);
+}
+
+.activity-badge.applied,
+.activity-badge.recommendation-run {
+  color: #5c4312;
+  background: rgba(214, 154, 53, 0.2);
+}
+
+.activity-badge.dismissed {
+  color: var(--cedar);
+  background: rgba(158, 78, 50, 0.12);
+}
+
 .results-panel {
   margin-top: 22px;
 }
@@ -383,7 +447,7 @@ textarea {
   justify-content: space-between;
   align-items: center;
   border: 1px solid rgba(23, 33, 28, 0.1);
-  border-radius: 18px;
+  border-radius: 14px;
   padding: 12px 13px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.42);
@@ -456,10 +520,10 @@ textarea {
 
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 138px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(122px, 148px);
+  gap: 18px;
   border: 1px solid var(--line);
-  border-radius: 26px;
+  border-radius: 18px;
   padding: 18px;
   background: rgba(255, 255, 255, 0.46);
 }
@@ -501,13 +565,30 @@ textarea {
 .job-card h3 {
   margin: 10px 0 8px;
   font-family: "Fraunces", Georgia, serif;
-  font-size: 1.55rem;
+  font-size: 1.38rem;
   letter-spacing: -0.03em;
 }
 
 .job-card p {
   margin: 0;
   color: var(--muted);
+}
+
+.job-detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.job-detail-row span {
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--steel);
+  background: rgba(63, 95, 102, 0.1);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .evidence-grid {
@@ -519,7 +600,7 @@ textarea {
 
 .evidence-list {
   border: 1px solid rgba(23, 33, 28, 0.09);
-  border-radius: 18px;
+  border-radius: 14px;
   padding: 13px;
   background: rgba(247, 241, 229, 0.58);
 }
@@ -664,9 +745,10 @@ textarea {
 }
 
 @media (max-width: 980px) {
-  .hero,
+  .app-header,
   .grid.two,
-  .job-card {
+  .job-card,
+  .dashboard-lower {
     grid-template-columns: 1fr;
   }
 
@@ -693,8 +775,8 @@ textarea {
     padding-top: 18px;
   }
 
-  .hero h1 {
-    font-size: 3.3rem;
+  .product-title h1 {
+    font-size: 2.7rem;
   }
 
   .panel,

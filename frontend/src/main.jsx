@@ -10,6 +10,7 @@ import {
   recommendationCounts,
   visibleRecommendations
 } from "./recommendationHelpers";
+import { activityLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
@@ -247,13 +248,12 @@ function App() {
 
   return (
     <main className="shell">
-      <section className="hero">
-        <div>
+      <header className="app-header">
+        <div className="product-title">
           <p className="eyebrow">InternLens</p>
-          <h1>Internship search, shaped into a working set.</h1>
+          <h1>Internship application board</h1>
           <p className="hero-copy">
-            Build a profile, run the backend recommender, save strong leads, dismiss noise,
-            and keep applied roles out of the next pass.
+            Review ranked leads, keep useful roles in motion, and suppress noise from the next pass.
           </p>
         </div>
         <div className={`status-card ${statusTone}`}>
@@ -276,7 +276,7 @@ function App() {
             </button>
           </div>
         </div>
-      </section>
+      </header>
 
       <section className="grid two">
         <ProfilePanel
@@ -430,18 +430,9 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
             <PreviewList title="Applied jobs" items={dashboard.applied_jobs} empty="No applied jobs yet." />
           </div>
 
-          <div className="run-list">
-            <h3>Recent runs</h3>
-            {dashboard.recent_runs.length === 0 ? (
-              <p className="muted">No recommendation runs yet. Start one from this dashboard.</p>
-            ) : (
-              dashboard.recent_runs.map((run) => (
-                <button key={run.run_id} onClick={() => onLoadRun(run.run_id)}>
-                  <span>{run.run_id.slice(0, 12)}</span>
-                  <small>{run.returned_jobs} jobs</small>
-                </button>
-              ))
-            )}
+          <div className="dashboard-lower">
+            <ActivityList activities={dashboard.activity.activities} />
+            <RunList runs={dashboard.recent_runs} onLoadRun={onLoadRun} />
           </div>
         </>
       )}
@@ -528,6 +519,11 @@ function JobCard({ job, busy, onAction }) {
         </div>
         <h3>{job.title}</h3>
         <p>{job.summary}</p>
+        <div className="job-detail-row">
+          <span>{job.eligibility_status}</span>
+          <span>{job.recommendation}</span>
+          {job.user_job_state_source_run_id && <span>from run {job.user_job_state_source_run_id.slice(0, 12)}</span>}
+        </div>
 
         <div className="evidence-grid">
           <EvidenceList title="Why it fits" items={job.why_apply} empty="No strong positive signals surfaced." />
@@ -598,6 +594,47 @@ function Metric({ label, value }) {
       <strong>{value}</strong>
       <span>{label}</span>
     </div>
+  );
+}
+
+function ActivityList({ activities }) {
+  return (
+    <section className="activity-list">
+      <h3>Activity</h3>
+      {activities.length === 0 ? (
+        <p className="muted">No recent activity yet.</p>
+      ) : (
+        activities.map((activity) => (
+          <article key={`${activity.activity_type}-${activity.created_at}-${activity.job_id ?? activity.run_id ?? "none"}`}>
+            <span className={`activity-badge ${actionClass(activity.activity_type)}`}>
+              {activityLabel(activity.activity_type)}
+            </span>
+            <div>
+              <strong>{activityTitle(activity)}</strong>
+              <small>{compactTimestamp(activity.created_at)}</small>
+            </div>
+          </article>
+        ))
+      )}
+    </section>
+  );
+}
+
+function RunList({ runs, onLoadRun }) {
+  return (
+    <section className="run-list">
+      <h3>Recent runs</h3>
+      {runs.length === 0 ? (
+        <p className="muted">No recommendation runs yet. Start one from this dashboard.</p>
+      ) : (
+        runs.map((run) => (
+          <button key={run.run_id} onClick={() => onLoadRun(run.run_id)}>
+            <span>{run.run_id.slice(0, 12)}</span>
+            <small>{run.returned_jobs} jobs · {compactTimestamp(run.created_at)}</small>
+          </button>
+        ))
+      )}
+    </section>
   );
 }
 
