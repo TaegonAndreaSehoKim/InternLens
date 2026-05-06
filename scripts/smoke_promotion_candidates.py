@@ -16,6 +16,7 @@ from scripts.fetch_greenhouse_registry import run_registry_fetch as run_greenhou
 from scripts.fetch_lever_registry import run_registry_fetch as run_lever_registry_fetch
 from src.discovery.source_discovery import load_json_list, save_json_list, utc_now_iso
 from src.discovery.source_promotion import promote_validated_sources
+from src.discovery.source_validation import validate_discovered_sources
 from src.preprocessing.job_parser import load_all_job_postings
 from src.preprocessing.profile_parser import load_candidate_profile
 from src.ranking.baseline_scorer import rank_jobs
@@ -26,6 +27,12 @@ def _parse_args() -> argparse.Namespace:
         description="Smoke test discovered-source promotion candidates through fetch and ranking in a temp workspace."
     )
     parser.add_argument("--input-file", default="data/source_registry/discovered_sources.json")
+    parser.add_argument(
+        "--input-format",
+        choices=["discovered", "recall-added"],
+        default="discovered",
+        help="Use discovered source records directly, or use added_sources from a discovery recall comparison report.",
+    )
     parser.add_argument("--lever-registry", default="data/source_registry/lever_targets.json")
     parser.add_argument("--greenhouse-registry", default="data/source_registry/greenhouse_targets.json")
     parser.add_argument("--profile-path", default="data/processed/candidate_profile_example.json")
@@ -36,6 +43,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--direct-probe-min-score", type=float, default=0.5)
     parser.add_argument("--direct-probe-min-internship-likelihood", type=float, default=0.12)
     parser.add_argument("--reactivate-inactive-sources", action="store_true")
+    parser.add_argument(
+        "--validate-input",
+        action="store_true",
+        help="Validate input candidate records before applying promotion smoke thresholds.",
+    )
+    parser.add_argument("--validation-timeout", type=float, default=20.0)
+    parser.add_argument("--validation-limit", type=int, default=100)
     parser.add_argument("--fetch-timeout", type=float, default=60.0)
     parser.add_argument("--fetch-limit", type=int, default=None)
     parser.add_argument("--greenhouse-all-jobs", action="store_true")
@@ -57,6 +71,56 @@ def _source_key(record: Dict[str, Any]) -> tuple[str, str]:
         str(record.get("source_type", "")).strip().lower(),
         str(record.get("source_identifier", "")).strip(),
     )
+
+
+def _active_registry_keys(
+    *,
+    lever_registry: Sequence[Dict[str, Any]],
+    greenhouse_registry: Sequence[Dict[str, Any]],
+) -> set[tuple[str, str]]:
+    keys: set[tuple[str, str]] = set()
+    for entry in lever_registry:
+        if not bool(entry.get("active", True)):
+            continue
+        site_name = str(entry.get("site_name", "")).strip()
+        if site_name:
+            keys.add(("lever", site_name))
+    for entry in greenhouse_registry:
+        if not bool(entry.get("active", True)):
+            continue
+        board_token = str(entry.get("board_token", "")).strip()
+        if board_token:
+            keys.add(("greenhouse", board_token))
+    return keys
+
+
+def _load_input_records(path: Path, *, input_format: str) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    if input_format == "discovered":
+        records = load_json_list(path)
+        return records, {
+            "input_format": input_format,
+            "input_record_count": len(records),
+            "source": str(path),
+        }
+
+    with path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected a recall comparison JSON object in {path}")
+
+    added_sources = payload.get("added_sources", [])
+    if not isinstance(added_sources, list):
+        raise ValueError(f"Expected added_sources to be a list in {path}")
+
+    records = [item for item in added_sources if isinstance(item, dict)]
+    return records, {
+        "input_format": input_format,
+        "input_record_count": len(records),
+        "source": str(path),
+        "recall_generated_at": payload.get("generated_at"),
+        "recall_seed_count": (payload.get("config") or {}).get("seed_count") if isinstance(payload.get("config"), dict) else None,
+    }
 
 
 def _candidate_keys(
@@ -171,6 +235,8 @@ def build_promotion_candidate_smoke(
     fetch_limit: int | None,
     greenhouse_all_jobs: bool,
     top_k: int,
+    input_summary: Dict[str, Any] | None = None,
+    validation_summary: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     promoted_at = utc_now_iso()
     updated_records, updated_lever, updated_greenhouse, promotion_summary = promote_validated_sources(
@@ -226,6 +292,11 @@ def build_promotion_candidate_smoke(
 
     return {
         "generated_at": utc_now_iso(),
+        "input_summary": input_summary or {
+            "input_format": "discovered",
+            "input_record_count": len(discovered_records),
+        },
+        "validation_summary": validation_summary,
         "promotion_summary": promotion_summary,
         "candidate_count": len(candidate_records),
         "candidate_sources": candidate_records,
@@ -265,11 +336,30 @@ def main() -> None:
     greenhouse_registry_path = PROJECT_ROOT / args.greenhouse_registry
     profile_path = PROJECT_ROOT / args.profile_path
     output_path = PROJECT_ROOT / args.output_file
+    lever_registry = load_json_list(lever_registry_path)
+    greenhouse_registry = load_json_list(greenhouse_registry_path)
+    discovered_records, input_summary = _load_input_records(
+        input_path,
+        input_format=getattr(args, "input_format", "discovered"),
+    )
+    validation_summary = None
+
+    if getattr(args, "validate_input", False):
+        discovered_records, validation_summary = validate_discovered_sources(
+            discovered_records,
+            timeout=getattr(args, "validation_timeout", 20.0),
+            limit=getattr(args, "validation_limit", 100),
+            active_registry_keys=_active_registry_keys(
+                lever_registry=lever_registry,
+                greenhouse_registry=greenhouse_registry,
+            ),
+            include_non_candidate=True,
+        )
 
     report = build_promotion_candidate_smoke(
-        discovered_records=load_json_list(input_path),
-        lever_registry=load_json_list(lever_registry_path),
-        greenhouse_registry=load_json_list(greenhouse_registry_path),
+        discovered_records=discovered_records,
+        lever_registry=lever_registry,
+        greenhouse_registry=greenhouse_registry,
         profile_path=profile_path,
         min_score=args.min_score,
         require_internship_signal=not args.allow_non_internship_sources,
@@ -281,6 +371,8 @@ def main() -> None:
         fetch_limit=args.fetch_limit,
         greenhouse_all_jobs=args.greenhouse_all_jobs,
         top_k=args.top_k,
+        input_summary=input_summary,
+        validation_summary=validation_summary,
     )
     _write_json(output_path, report)
     _print_summary(report, output_path)

@@ -79,6 +79,135 @@ def test_build_promotion_candidate_smoke_fetches_only_promotable_sources(
     assert report["ranking_summary"]["action_counts"] == {"Apply Later": 1}
 
 
+def test_load_input_records_can_read_recall_added_sources(tmp_path: Path) -> None:
+    recall_path = tmp_path / "recall.json"
+    recall_path.write_text(
+        json.dumps(
+            {
+                "generated_at": "2026-05-06T12:00:00Z",
+                "config": {"seed_count": 60},
+                "added_sources": [
+                    {
+                        "company": "Acme",
+                        "source_type": "greenhouse",
+                        "source_identifier": "acme",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    records, summary = smoke_script._load_input_records(recall_path, input_format="recall-added")
+
+    assert [record["source_identifier"] for record in records] == ["acme"]
+    assert summary == {
+        "input_format": "recall-added",
+        "input_record_count": 1,
+        "source": str(recall_path),
+        "recall_generated_at": "2026-05-06T12:00:00Z",
+        "recall_seed_count": 60,
+    }
+
+
+def test_smoke_promotion_candidates_main_can_validate_recall_added_sources(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    registry_dir = tmp_path / "data" / "source_registry"
+    registry_dir.mkdir(parents=True, exist_ok=True)
+    recall_path = tmp_path / "outputs" / "discovery_recall_compare.json"
+    recall_path.parent.mkdir(parents=True, exist_ok=True)
+    recall_path.write_text(
+        json.dumps(
+            {
+                "generated_at": "2026-05-06T12:00:00Z",
+                "config": {"seed_count": 60},
+                "added_sources": [
+                    {
+                        "company": "Acme",
+                        "source_type": "lever",
+                        "source_identifier": "acme",
+                        "status": "candidate",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (registry_dir / "lever_targets.json").write_text("[]", encoding="utf-8")
+    (registry_dir / "greenhouse_targets.json").write_text("[]", encoding="utf-8")
+    output_path = tmp_path / "outputs" / "promotion_candidate_smoke.json"
+
+    monkeypatch.setattr(smoke_script, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        smoke_script,
+        "_parse_args",
+        lambda: SimpleNamespace(
+            input_file="outputs/discovery_recall_compare.json",
+            input_format="recall-added",
+            lever_registry="data/source_registry/lever_targets.json",
+            greenhouse_registry="data/source_registry/greenhouse_targets.json",
+            profile_path="data/processed/candidate_profile_example.json",
+            output_file="outputs/promotion_candidate_smoke.json",
+            min_score=0.45,
+            allow_non_internship_sources=False,
+            min_internship_likelihood=0.08,
+            direct_probe_min_score=0.5,
+            direct_probe_min_internship_likelihood=0.12,
+            reactivate_inactive_sources=False,
+            validate_input=True,
+            validation_timeout=20.0,
+            validation_limit=100,
+            fetch_timeout=60.0,
+            fetch_limit=None,
+            greenhouse_all_jobs=False,
+            top_k=10,
+        ),
+    )
+    monkeypatch.setattr(
+        smoke_script,
+        "validate_discovered_sources",
+        lambda records, **kwargs: (
+            [
+                {
+                    **records[0],
+                    "status": "validated",
+                    "source_score": 0.8,
+                    "internship_likelihood": 0.4,
+                }
+            ],
+            {"attempted": 1, "validated": 1, "rejected": 0, "skipped": 0},
+        ),
+    )
+    monkeypatch.setattr(
+        smoke_script,
+        "build_promotion_candidate_smoke",
+        lambda **kwargs: {
+            "generated_at": "2026-05-06T12:05:00Z",
+            "input_summary": kwargs["input_summary"],
+            "validation_summary": kwargs["validation_summary"],
+            "promotion_summary": {"promoted": 1},
+            "candidate_count": 1,
+            "candidate_sources": kwargs["discovered_records"],
+            "fetch_summary": {"total_entries_fetched": 1, "total_processed_jobs": 1},
+            "ranking_summary": {
+                "processed_jobs": 1,
+                "action_counts": {"Apply Now": 1},
+                "blocker_counts": {},
+                "top_results": [],
+            },
+        },
+    )
+
+    smoke_script.main()
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert payload["input_summary"]["input_format"] == "recall-added"
+    assert payload["validation_summary"] == {"attempted": 1, "validated": 1, "rejected": 0, "skipped": 0}
+    assert payload["candidate_sources"][0]["status"] == "validated"
+
+
 def test_smoke_promotion_candidates_main_writes_report(
     tmp_path: Path,
     monkeypatch,

@@ -376,3 +376,35 @@ This reinforces that recall output should feed validation and promotion smoke, n
 - Run promotion-candidate smoke directly against the added-source set from recall reports.
 - Consider validating whether discovered source company and board identifier agree before promotion.
 - Continue monitoring warning growth as priority-follow scan windows get larger.
+
+---
+
+## Day 33 - Recall Added-Source Smoke Gate
+
+### Focus
+Make promotion smoke easier to run directly from discovery recall comparison output.
+
+### What was done
+- Added `scripts/smoke_promotion_candidates.py --input-format recall-added`.
+- Added `scripts/smoke_promotion_candidates.py --validate-input`.
+- The smoke script can now read `added_sources` from a recall comparison report, validate those candidates, then apply promotion thresholds and fetch/rank only promotable sources.
+- Added tests for recall-added input loading and validation-before-smoke behavior.
+
+### Smoke result
+- Command:
+  - `.\.venv\Scripts\python.exe scripts\smoke_promotion_candidates.py --input-file outputs\discovery_recall_compare_60_120.json --input-format recall-added --validate-input --validation-timeout 20 --validation-limit 100 --fetch-timeout 30 --fetch-limit 25 --output-file outputs\promotion_candidate_smoke_60_120_added.json`
+- Input added sources: `2`
+- Validation attempted: `2`
+- Validation succeeded: `2`
+- Promotion candidates: `0`
+- Promotion summary:
+  - `skipped_score: 2`
+- Processed jobs: `0`
+
+### Result
+The new gate confirms that the Checkr-related priority-follow additions are fetchable, but they do not clear the current promotion threshold.
+This is the intended behavior: recall discoveries can now be checked through validation and promotion smoke without manual JSON extraction or registry changes.
+
+### Remaining next fixes
+- Inspect why the Checkr `chile` Greenhouse board was associated with the Checkr page and decide whether company/board alignment should become a validation signal.
+- Consider adding an optional recall-to-smoke wrapper command if this two-command workflow becomes common.
