@@ -19,6 +19,17 @@ GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
 LEVER_NON_BOARD_PATHS = {"api", "embed"}
 GREENHOUSE_NON_BOARD_PATHS = {"api", "embed", "job_app", "job_board"}
 BLOCKED_REVIEW_REASONS = {"http_403", "http_406", "http_429"}
+PRIORITY_FOLLOW_BUDGET_REASONS = {
+    "fetch_error",
+    "http_400",
+    "http_403",
+    "http_404",
+    "http_406",
+    "http_429",
+    "http_503",
+    "network_error",
+    "timeout",
+}
 HIGH_VALUE_FOLLOW_KEYWORDS = (
     "intern",
     "internship",
@@ -390,6 +401,10 @@ def _host_key(host: str) -> str:
     return ".".join(parts[-2:])
 
 
+def _follow_budget_host(url: str) -> str:
+    return urlparse(url).netloc.lower()
+
+
 def _same_site_url(candidate_url: str, base_url: str) -> bool:
     candidate_host = urlparse(candidate_url).netloc.lower()
     base_host = urlparse(base_url).netloc.lower()
@@ -519,6 +534,8 @@ def discover_sources_from_seed(
     direct_probe_limit: int = 1,
     max_direct_probe_identifiers: int = 2,
     priority_follow_limit: int = 5,
+    priority_follow_warning_budget: int = 8,
+    priority_follow_domain_warning_budget: int = 2,
     lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
     greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
 ) -> List[Dict[str, Any]]:
@@ -526,6 +543,8 @@ def discover_sources_from_seed(
     page_warnings: List[DiscoveryWarning] = []
     seen_source_keys: set[tuple[str, str]] = set()
     seen_page_urls: set[str] = set()
+    priority_follow_warning_count = 0
+    priority_follow_host_warnings: Counter[str] = Counter()
     company = str(seed.get("company", "")).strip() or "<unknown>"
     scan_queue = list(_seed_scan_urls(seed))
 
@@ -535,6 +554,16 @@ def discover_sources_from_seed(
         if normalized_page_url in seen_page_urls:
             continue
         seen_page_urls.add(normalized_page_url)
+
+        if scan_method == "priority_link_scan":
+            page_host = _follow_budget_host(page_url)
+            if priority_follow_warning_budget > 0 and priority_follow_warning_count >= priority_follow_warning_budget:
+                continue
+            if (
+                priority_follow_domain_warning_budget > 0
+                and priority_follow_host_warnings[page_host] >= priority_follow_domain_warning_budget
+            ):
+                continue
 
         direct_source = classify_source_url(page_url)
         if direct_source is not None:
@@ -562,6 +591,9 @@ def discover_sources_from_seed(
             page_warnings.append(warning)
             if errors is not None:
                 errors.append(warning)
+            if scan_method == "priority_link_scan" and warning.get("reason") in PRIORITY_FOLLOW_BUDGET_REASONS:
+                priority_follow_warning_count += 1
+                priority_follow_host_warnings[_follow_budget_host(page_url)] += 1
             continue
 
         for candidate_url in extract_candidate_urls(html, page_url):
@@ -732,6 +764,8 @@ def discover_sources(
     direct_probe_limit: int = 1,
     max_direct_probe_identifiers: int = 2,
     priority_follow_limit: int = 5,
+    priority_follow_warning_budget: int = 8,
+    priority_follow_domain_warning_budget: int = 2,
     lever_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_lever_postings,
     greenhouse_probe_fn: Callable[..., List[Dict[str, Any]]] = fetch_greenhouse_jobs,
 ) -> tuple[List[Dict[str, Any]], List[DiscoveryWarning]]:
@@ -754,6 +788,8 @@ def discover_sources(
                     direct_probe_limit=direct_probe_limit,
                     max_direct_probe_identifiers=max_direct_probe_identifiers,
                     priority_follow_limit=priority_follow_limit,
+                    priority_follow_warning_budget=priority_follow_warning_budget,
+                    priority_follow_domain_warning_budget=priority_follow_domain_warning_budget,
                     lever_probe_fn=lever_probe_fn,
                     greenhouse_probe_fn=greenhouse_probe_fn,
                 )

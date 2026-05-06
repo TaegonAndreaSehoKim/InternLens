@@ -178,6 +178,52 @@ def test_discover_sources_follows_priority_links_to_find_nested_ats_boards() -> 
     assert records[0]["discovery_method"] == "priority_link_scan"
 
 
+def test_discover_sources_suppresses_noisy_priority_follow_domain_after_budget() -> None:
+    seeds = [
+        {
+            "company": "Noisy Co",
+            "homepage_url": "https://www.noisy.example",
+        }
+    ]
+    html_by_url = {
+        "https://www.noisy.example": """
+            <a href="/students-1">Students 1</a>
+            <a href="/students-2">Students 2</a>
+            <a href="/students-3">Students 3</a>
+            <a href="/students-4">Students 4</a>
+            <a href="https://jobs.noisy.example/campus">Campus</a>
+        """,
+        "https://jobs.noisy.example/campus": '<a href="https://boards.greenhouse.io/noisy">Jobs</a>',
+    }
+    fetched_urls: list[str] = []
+
+    def fake_fetch_html(url: str, timeout: float) -> str:
+        fetched_urls.append(url)
+        if url in html_by_url:
+            return html_by_url[url]
+        request = httpx.Request("GET", url)
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError("not found", request=request, response=response)
+
+    records, errors = discover_sources(
+        seeds,
+        timeout=10.0,
+        fetch_html_fn=fake_fetch_html,
+        discovered_at="2026-04-04T00:00:00Z",
+        priority_follow_limit=5,
+        priority_follow_domain_warning_budget=2,
+    )
+
+    assert [record["source_identifier"] for record in records] == ["noisy"]
+    assert fetched_urls == [
+        "https://www.noisy.example",
+        "https://www.noisy.example/students-1",
+        "https://www.noisy.example/students-2",
+        "https://jobs.noisy.example/campus",
+    ]
+    assert summarize_discovery_warnings(errors) == {"http_404": 2}
+
+
 def test_summarize_discovery_methods_counts_record_methods() -> None:
     records = [
         {"discovery_method": "careers_page_scan"},

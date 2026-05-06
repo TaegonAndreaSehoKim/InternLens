@@ -76,6 +76,18 @@ def _parse_args() -> argparse.Namespace:
         default=5,
         help="Maximum same-site high-intent links to follow per company during discovery.",
     )
+    parser.add_argument(
+        "--priority-follow-warning-budget",
+        type=int,
+        default=8,
+        help="Maximum failed priority-link fetches allowed per company before suppressing remaining priority links.",
+    )
+    parser.add_argument(
+        "--priority-follow-domain-warning-budget",
+        type=int,
+        default=2,
+        help="Maximum failed priority-link fetches allowed per same-site domain per company.",
+    )
     return parser.parse_args()
 
 
@@ -93,6 +105,8 @@ def main() -> None:
     direct_probe_limit = int(getattr(args, "direct_probe_limit", 1))
     max_direct_probe_identifiers = int(getattr(args, "max_direct_probe_identifiers", 2))
     priority_follow_limit = int(getattr(args, "priority_follow_limit", 5))
+    priority_follow_warning_budget = int(getattr(args, "priority_follow_warning_budget", 8))
+    priority_follow_domain_warning_budget = int(getattr(args, "priority_follow_domain_warning_budget", 2))
     discovered_sources = []
     errors = []
     merged_sources = list(existing_sources)
@@ -106,6 +120,8 @@ def main() -> None:
             direct_probe_limit=direct_probe_limit,
             max_direct_probe_identifiers=max_direct_probe_identifiers,
             priority_follow_limit=priority_follow_limit,
+            priority_follow_warning_budget=priority_follow_warning_budget,
+            priority_follow_domain_warning_budget=priority_follow_domain_warning_budget,
         )
         discovered_sources = merge_discovered_sources(discovered_sources, batch_sources)
         errors.extend(batch_errors)

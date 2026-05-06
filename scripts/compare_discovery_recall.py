@@ -30,6 +30,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=20.0)
     parser.add_argument("--baseline-priority-follow-limit", type=int, default=0)
     parser.add_argument("--priority-follow-limit", type=int, default=5)
+    parser.add_argument("--priority-follow-warning-budget", type=int, default=8)
+    parser.add_argument("--priority-follow-domain-warning-budget", type=int, default=2)
     parser.add_argument("--probe-direct-ats", action="store_true")
     parser.add_argument("--record-blocked-sources", action="store_true")
     parser.add_argument("--direct-probe-limit", type=int, default=1)
@@ -73,16 +75,20 @@ def _run_discovery(
     *,
     timeout: float,
     priority_follow_limit: int,
-    probe_direct_ats: bool,
-    record_blocked_sources: bool,
-    direct_probe_limit: int,
-    max_direct_probe_identifiers: int,
+    priority_follow_warning_budget: int,
+    priority_follow_domain_warning_budget: int,
+    probe_direct_ats: bool = False,
+    record_blocked_sources: bool = False,
+    direct_probe_limit: int = 1,
+    max_direct_probe_identifiers: int = 2,
     discovered_at: str,
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, str]]]:
     return discover_sources(
         seeds,
         timeout=timeout,
         priority_follow_limit=priority_follow_limit,
+        priority_follow_warning_budget=priority_follow_warning_budget,
+        priority_follow_domain_warning_budget=priority_follow_domain_warning_budget,
         probe_direct_ats=probe_direct_ats,
         record_blocked_sources=record_blocked_sources,
         direct_probe_limit=direct_probe_limit,
@@ -110,6 +116,8 @@ def build_recall_comparison(
     timeout: float,
     baseline_priority_follow_limit: int,
     priority_follow_limit: int,
+    priority_follow_warning_budget: int = 8,
+    priority_follow_domain_warning_budget: int = 2,
     probe_direct_ats: bool,
     record_blocked_sources: bool,
     direct_probe_limit: int,
@@ -121,6 +129,8 @@ def build_recall_comparison(
         seeds,
         timeout=timeout,
         priority_follow_limit=baseline_priority_follow_limit,
+        priority_follow_warning_budget=priority_follow_warning_budget,
+        priority_follow_domain_warning_budget=priority_follow_domain_warning_budget,
         probe_direct_ats=probe_direct_ats,
         record_blocked_sources=record_blocked_sources,
         direct_probe_limit=direct_probe_limit,
@@ -131,6 +141,8 @@ def build_recall_comparison(
         seeds,
         timeout=timeout,
         priority_follow_limit=priority_follow_limit,
+        priority_follow_warning_budget=priority_follow_warning_budget,
+        priority_follow_domain_warning_budget=priority_follow_domain_warning_budget,
         probe_direct_ats=probe_direct_ats,
         record_blocked_sources=record_blocked_sources,
         direct_probe_limit=direct_probe_limit,
@@ -150,6 +162,8 @@ def build_recall_comparison(
             "timeout": timeout,
             "baseline_priority_follow_limit": baseline_priority_follow_limit,
             "priority_follow_limit": priority_follow_limit,
+            "priority_follow_warning_budget": priority_follow_warning_budget,
+            "priority_follow_domain_warning_budget": priority_follow_domain_warning_budget,
             "probe_direct_ats": probe_direct_ats,
             "record_blocked_sources": record_blocked_sources,
             "direct_probe_limit": direct_probe_limit,
@@ -223,6 +237,8 @@ def main() -> None:
         timeout=args.timeout,
         baseline_priority_follow_limit=args.baseline_priority_follow_limit,
         priority_follow_limit=args.priority_follow_limit,
+        priority_follow_warning_budget=getattr(args, "priority_follow_warning_budget", 8),
+        priority_follow_domain_warning_budget=getattr(args, "priority_follow_domain_warning_budget", 2),
         probe_direct_ats=args.probe_direct_ats,
         record_blocked_sources=args.record_blocked_sources,
         direct_probe_limit=args.direct_probe_limit,
