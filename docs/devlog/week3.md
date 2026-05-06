@@ -302,3 +302,40 @@ The first measured result shows the priority-follow logic improves recall, but t
 - Run recall comparison on larger seed windows and inspect whether high-intent links find internship-rich boards outside the first 30 seeds.
 - Consider reducing avoidable `404` follow noise if broad comparisons become too noisy.
 - Use promotion-candidate smoke output as the default gate before adding newly discovered sources to active registries.
+
+---
+
+## Day 31 - Frontend Safety Net and Larger Discovery Recall Check
+
+### Focus
+Continue the next stabilization pass after the recommendation UI and discovery smoke tooling reached a stable checkpoint.
+
+### What was done
+- Polished frontend job-state handling for saved, applied, dismissed, and cleared jobs.
+- Added clearer empty-state and API-status treatment in the dashboard and recommendation panels.
+- Added a lightweight frontend quality setup:
+  - `npm run lint`
+  - `npm test`
+  - pure recommendation UI helper tests with Vitest
+- Ran a larger source discovery recall comparison over the first `60` company seeds.
+
+### Larger recall result
+- Command:
+  - `.\.venv\Scripts\python.exe scripts\compare_discovery_recall.py --seed-limit 60 --timeout 20 --priority-follow-limit 5 --output-file outputs/discovery_recall_compare_60.json`
+- Baseline candidates: `4`
+- Priority-follow candidates: `6`
+- Added candidates: `2`
+  - Anthropic Greenhouse board
+  - GitLab Greenhouse board
+- Removed candidates: `0`
+- Warning count increased from `17` to `36`.
+- Additional warning sources included `400`, `404`, `429`, and `503` responses introduced by following more high-intent links.
+
+### Result
+Priority-link following still improves raw source recall, but the 60-seed run did not yet find new internship-rich boards beyond the same Anthropic and GitLab general boards observed in the 30-seed check.
+The recall gain is real, but the warning growth confirms that broader priority-link scans need noise control before becoming the default broad-scan behavior.
+
+### Remaining next fixes
+- Try another seed window with `--seed-offset 60 --seed-limit 60` to see whether the result generalizes beyond the first company block.
+- Add a warning budget or per-domain failed-link cap if priority-follow runs remain noisy.
+- Continue using promotion-candidate smoke output as the gate before registry promotion.
