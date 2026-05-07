@@ -408,3 +408,73 @@ This is the intended behavior: recall discoveries can now be checked through val
 ### Remaining next fixes
 - Inspect why the Checkr `chile` Greenhouse board was associated with the Checkr page and decide whether company/board alignment should become a validation signal.
 - Consider adding an optional recall-to-smoke wrapper command if this two-command workflow becomes common.
+
+---
+
+## Day 34 - Dashboard UI Density and Activity Surface
+
+### Focus
+Improve the local frontend from a demo landing-style page into a denser application workspace.
+
+### What was done
+- Reduced the oversized hero treatment and replaced it with a smaller app-style header.
+- Added dashboard activity rendering from the existing `/profiles/{id}/dashboard` response.
+- Added compact timestamp and activity-label helpers.
+- Added recent-run timestamps in the dashboard.
+- Added more visible recommendation-card details for:
+  - eligibility status
+  - recommendation code
+  - source recommendation run for persisted job state
+- Tightened visual spacing, card radius, and dashboard layout density.
+- Added frontend tests for dashboard display helpers.
+
+### Validation
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+- `pytest tests/test_profile_api.py -q` -> **24 passed**
+
+### Result
+The frontend now feels more like an operational application board and less like a landing page.
+The dashboard uses more of the backend state already available through the API, especially activity history and recent run metadata.
+
+---
+
+## Day 35 - Staging Deployment Readiness
+
+### Focus
+Prepare InternLens for a small AWS-style staging/demo deployment without claiming production readiness.
+
+### What was done
+- Added backend configuration helpers under `src/api/settings.py`.
+- Environment-variable controls now cover:
+  - `INTERNLENS_CORS_ORIGINS`
+  - `INTERNLENS_JOBS_DIR`
+  - `INTERNLENS_DB_PATH`
+- Kept local defaults intact for current development workflows.
+- Added support for relative or absolute configured paths.
+- Added `.env.example` and `frontend/.env.example`.
+- Added a backend `Procfile` for hosts that support process declarations.
+- Added `docs/deployment/aws_staging.md` with first-cut AWS staging guidance.
+- Updated README with staging environment variables and deployment notes.
+- Added API settings tests.
+
+### Validation
+- `pytest tests/test_api_settings.py tests/test_api_and_ranking.py tests/test_profile_api.py -q` -> **50 passed**
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+- `pytest -q` -> **171 passed**
+
+### Result
+The project is now ready for a controlled staging deployment pass.
+The recommended next deployment shape is:
+- frontend on AWS Amplify Hosting or S3/CloudFront
+- FastAPI backend on Elastic Beanstalk, Lightsail, or a small EC2 instance
+- SQLite only for single-server staging
+- source refresh and promotion kept as operator-run scripts, not public web actions
+
+### Remaining next fixes
+- Choose the actual AWS backend target.
+- Add a deployment smoke checklist script if staging setup becomes repetitive.
+- Keep authentication and managed database migration as production-hardening work, not staging blockers.
