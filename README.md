@@ -7,6 +7,16 @@ It fetches public internship postings from ATS job boards, normalizes them into 
 The project started as a simple baseline recommender on static sample jobs, but it now supports multi-source ingestion, registry-driven batch fetches, blocker-aware ranking, shortlist-oriented CLI filters, and regression-tested API behavior.
 It also includes a lightweight Vite/React frontend for the stored-profile recommendation workflow.
 
+## Highlights
+
+- **Live staging app:** `https://main.d1d00e49guhewo.amplifyapp.com`
+- **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk, and CloudFront providing the HTTPS API endpoint.
+- **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
+- **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
+- **Product workflow:** stored profiles, recommendation runs, feedback, saved/applied/dismissed job actions, and dashboard activity are available through the API and frontend.
+- **Quality checkpoint:** Python suite currently passes at `177 passed`; frontend lint, tests, and production build are also passing.
+- **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
+
 ## Current status
 
 InternLens currently supports:
@@ -690,7 +700,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `174 passed`
+- current total: `177 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
