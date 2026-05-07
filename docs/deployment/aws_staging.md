@@ -29,6 +29,63 @@ Notes:
 - Relative paths are resolved from the repository root.
 - For one-server staging, SQLite is acceptable. For real multi-user production, move this to a managed database.
 
+## Elastic Beanstalk Backend Package
+
+The backend deploy artifact should contain only the runtime backend files and the staging job corpus:
+
+```text
+Procfile
+requirements.txt
+src/
+data/processed/jobs/
+```
+
+Do not upload the repository parent directory as the top-level folder inside the zip. Elastic Beanstalk expects the bundle root to contain files such as `Procfile` and `requirements.txt` directly.
+
+Create the backend source bundle from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\package_eb.py
+```
+
+The default output is:
+
+```text
+outputs/internlens_eb_backend.zip
+```
+
+Use a code-only bundle only if `INTERNLENS_JOBS_DIR` is populated on the instance by another process:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\package_eb.py --without-jobs
+```
+
+The repository also includes `.ebignore` so EB CLI packaging skips local environments, frontend files, tests, docs, raw snapshots, registries, and generated output.
+
+## Elastic Beanstalk Console Flow
+
+Use the same AWS region selected for the account setup, currently `us-east-2`.
+
+1. Open Elastic Beanstalk.
+2. Choose **Create application**.
+3. Application name: `internlens`.
+4. Environment tier: **Web server environment**.
+5. Environment name: `internlens-staging`.
+6. Platform: **Python**.
+7. Application code: **Upload your code**.
+8. Upload `outputs/internlens_eb_backend.zip`.
+9. Presets: **Single instance** for the first staging deployment.
+10. Do not attach an RDS database for the first cut.
+11. Add the backend environment variables from this document before or immediately after environment creation.
+
+After creation, open the environment URL and check:
+
+```text
+https://your-elastic-beanstalk-url/health
+```
+
+The expected response is a small JSON health payload.
+
 ## Frontend Environment
 
 Set this before building the frontend:
@@ -77,6 +134,12 @@ cd frontend
 npm run lint
 npm test
 npm run build
+```
+
+Create the backend source bundle:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\package_eb.py
 ```
 
 Smoke the backend after deploy:

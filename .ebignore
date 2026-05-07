@@ -1,0 +1,35 @@
+# Git and local environment
+.git/
+.github/
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Python caches and local test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Frontend is deployed separately through Amplify or S3/CloudFront
+frontend/
+
+# Tests, docs, and operator-only generated output are not needed at runtime
+tests/
+docs/
+outputs/
+
+# Raw snapshots and registries stay operator-managed for staging deploys
+data/raw/
+data/source_registry/
+
+# Local editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

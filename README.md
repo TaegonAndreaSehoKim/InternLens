@@ -38,7 +38,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `174 passed`
+- current total: `177 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -116,7 +116,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source pipeline tests
 - source recall and promotion smoke tests
 - profile API tests
-- full suite currently passing: `163 passed`
+- full suite currently passing: `177 passed`
 - frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -732,6 +732,14 @@ The backend includes a `Procfile`:
 ```text
 web: uvicorn src.api.app:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
+
+Create the Elastic Beanstalk backend bundle from the repository root:
+
+```bash
+python scripts/package_eb.py
+```
+
+This writes `outputs/internlens_eb_backend.zip` with `Procfile`, `requirements.txt`, `src/`, and the current `data/processed/jobs` corpus at the zip root. `.ebignore` keeps local environments, frontend assets, tests, docs, raw snapshots, and generated output out of Beanstalk packaging.
 
 Before deploying:
 
