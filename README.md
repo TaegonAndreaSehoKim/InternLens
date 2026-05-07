@@ -719,13 +719,27 @@ Current status:
 
 ## Staging deployment
 
-InternLens is ready for a small staging/demo deployment, but not yet production hardening.
+InternLens is deployed as a small AWS staging/demo environment, but it is not yet production hardened.
 
-Recommended first cut:
-- host the frontend with AWS Amplify Hosting or S3/CloudFront
-- run the FastAPI backend on Elastic Beanstalk, Lightsail, or a small EC2 instance
-- keep SQLite only for single-server staging
-- run source refresh and promotion scripts manually, not as public web actions
+Current staging shape:
+- frontend hosted with AWS Amplify Hosting
+- FastAPI backend running on Elastic Beanstalk
+- CloudFront in front of the backend to provide an HTTPS API endpoint
+- SQLite used only for single-server staging persistence
+- source refresh and promotion scripts kept as manual operator actions, not public web actions
+
+Current staging URLs:
+
+```text
+Frontend:
+https://main.d1d00e49guhewo.amplifyapp.com
+
+Backend HTTPS:
+https://d187u93cen5bw8.cloudfront.net
+
+Backend Elastic Beanstalk origin:
+http://internlens-env.eba-dmbmusq3.us-east-2.elasticbeanstalk.com
+```
 
 The backend includes a `Procfile`:
 
@@ -740,6 +754,16 @@ python scripts/package_eb.py
 ```
 
 This writes `outputs/internlens_eb_backend.zip` with `Procfile`, `requirements.txt`, `src/`, and the current `data/processed/jobs` corpus at the zip root. `.ebignore` keeps local environments, frontend assets, tests, docs, raw snapshots, and generated output out of Beanstalk packaging.
+
+The frontend deploy is configured with the root `amplify.yml`. Amplify uses `frontend` as the app root, runs `npm ci`, builds with `npm run build`, and publishes `dist`.
+
+Current deployed environment values:
+
+```text
+AMPLIFY_MONOREPO_APP_ROOT=frontend
+VITE_API_BASE_URL=https://d187u93cen5bw8.cloudfront.net
+INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://main.d1d00e49guhewo.amplifyapp.com
+```
 
 Before deploying:
 
@@ -756,8 +780,10 @@ For details, see `docs/deployment/aws_staging.md`.
 After deploying the backend, run:
 
 ```bash
-python scripts/smoke_deployment.py --base-url https://your-backend-host.example
+python scripts/smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net
 ```
+
+Latest staging smoke passed against the CloudFront backend with health, profile creation, recommendation, and dashboard checks all returning 2xx responses.
 
 ---
 
