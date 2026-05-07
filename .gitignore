@@ -36,6 +36,7 @@ AGENTS.md
 # outputs/
 outputs/discovered_sources_probe*.json
 outputs/discovery_recall_compare*.json
+outputs/deployment_smoke*.json
 outputs/promotion_candidate_smoke*.json
 
 # Frontend dependencies / build output

@@ -38,7 +38,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `171 passed`
+- current total: `174 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -690,7 +690,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `171 passed`
+- current total: `174 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -744,6 +744,12 @@ npm run build
 ```
 
 For details, see `docs/deployment/aws_staging.md`.
+
+After deploying the backend, run:
+
+```bash
+python scripts/smoke_deployment.py --base-url https://your-backend-host.example
+```
 
 ---
 

@@ -478,3 +478,38 @@ The recommended next deployment shape is:
 - Choose the actual AWS backend target.
 - Add a deployment smoke checklist script if staging setup becomes repetitive.
 - Keep authentication and managed database migration as production-hardening work, not staging blockers.
+
+---
+
+## Day 36 - Deployment Smoke Script
+
+### Focus
+Make deployed API verification repeatable before choosing the final AWS staging target.
+
+### What was done
+- Added `scripts/smoke_deployment.py`.
+- The script verifies the stored-profile product flow against a running API base URL:
+  - `GET /health`
+  - `POST /profiles` or `GET /profiles/{id}` when the smoke profile already exists
+  - `POST /profiles/{id}/recommend`
+  - `GET /profiles/{id}/dashboard`
+- Added optional JSON report output under ignored `outputs/deployment_smoke*.json`.
+- Added tests with a fake HTTP client so deployment smoke behavior is covered without live network calls.
+- Documented the command in README and `docs/deployment/aws_staging.md`.
+
+### Validation
+- `pytest tests/test_smoke_deployment.py -q` -> **3 passed**
+- `pytest -q` -> **174 passed**
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+
+### Result
+InternLens now has a reusable smoke check for staging deployments.
+After the backend is deployed, the operator can run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://your-backend-host.example --output-file outputs\deployment_smoke_staging.json
+```
+
+This gives a quick pass/fail signal for the core API workflow without manually clicking through the frontend first.

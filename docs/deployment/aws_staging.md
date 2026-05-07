@@ -88,6 +88,15 @@ POST /profiles/{profile_id}/recommend
 GET /profiles/{profile_id}/dashboard
 ```
 
+Or run the deployment smoke script:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://your-backend-host.example --output-file outputs\deployment_smoke_staging.json
+```
+
+The smoke script creates or loads a test profile, runs stored-profile recommendations, and fetches the dashboard snapshot.
+Generated deployment smoke reports under `outputs/deployment_smoke*.json` are ignored by git.
+
 ## Current Staging Limitations
 
 - No authentication yet.
