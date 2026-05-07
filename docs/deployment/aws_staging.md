@@ -81,10 +81,43 @@ Use the same AWS region selected for the account setup, currently `us-east-2`.
 After creation, open the environment URL and check:
 
 ```text
-https://your-elastic-beanstalk-url/health
+http://your-elastic-beanstalk-url/health
 ```
 
 The expected response is a small JSON health payload.
+
+## Current Staging Deployment
+
+The current staging deployment was completed on May 7, 2026.
+
+```text
+Frontend:
+https://main.d1d00e49guhewo.amplifyapp.com
+
+Backend HTTPS:
+https://d187u93cen5bw8.cloudfront.net
+
+Backend Elastic Beanstalk origin:
+http://internlens-env.eba-dmbmusq3.us-east-2.elasticbeanstalk.com
+```
+
+Current backend environment properties:
+
+```text
+INTERNLENS_JOBS_DIR=data/processed/jobs
+INTERNLENS_DB_PATH=data/app/internlens.db
+INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://main.d1d00e49guhewo.amplifyapp.com
+```
+
+Current Amplify environment variables:
+
+```text
+AMPLIFY_MONOREPO_APP_ROOT=frontend
+VITE_API_BASE_URL=https://d187u93cen5bw8.cloudfront.net
+```
+
+CloudFront is used in front of the single-instance Elastic Beanstalk backend to provide an HTTPS API endpoint for the Amplify-hosted frontend.
+The CloudFront origin is the Beanstalk environment domain over HTTP, with caching disabled and all API methods allowed.
 
 ## Frontend Environment
 
@@ -103,6 +136,8 @@ npm run build
 ```
 
 Deploy `frontend/dist` through Amplify Hosting or S3/CloudFront.
+
+For the current Amplify deployment, the root `amplify.yml` uses `appRoot: frontend`, runs `npm ci`, then `npm run build`, and publishes `dist`.
 
 ## Backend Start Command
 
@@ -159,6 +194,19 @@ Or run the deployment smoke script:
 
 The smoke script creates or loads a test profile, runs stored-profile recommendations, and fetches the dashboard snapshot.
 Generated deployment smoke reports under `outputs/deployment_smoke*.json` are ignored by git.
+
+Latest CloudFront backend smoke:
+
+```text
+Base URL: https://d187u93cen5bw8.cloudfront.net
+Profile ID: smoke_deploy_user
+Overall: passed
+- health: 200
+- profile: 201
+- recommend: 200
+- dashboard: 200
+Returned jobs: 3
+```
 
 ## Current Staging Limitations
 

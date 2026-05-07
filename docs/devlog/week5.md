@@ -1,0 +1,179 @@
+# Week 5 Devlog
+
+Week 5 covers Day 34 onward.
+The focus shifted from local UI polish to staging deployment readiness and an actual AWS-hosted demo path.
+
+## Day 34 - Dashboard UI Density and Activity Surface
+
+### Focus
+Improve the local frontend from a demo landing-style page into a denser application workspace.
+
+### What was done
+- Reduced the oversized hero treatment and replaced it with a smaller app-style header.
+- Added dashboard activity rendering from the existing `/profiles/{id}/dashboard` response.
+- Added compact timestamp and activity-label helpers.
+- Added recent-run timestamps in the dashboard.
+- Added more visible recommendation-card details for:
+  - eligibility status
+  - recommendation code
+  - source recommendation run for persisted job state
+- Tightened visual spacing, card radius, and dashboard layout density.
+- Added frontend tests for dashboard display helpers.
+
+### Validation
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+- `pytest tests/test_profile_api.py -q` -> **24 passed**
+
+### Result
+The frontend now feels more like an operational application board and less like a landing page.
+The dashboard uses more backend state already available through the API, especially activity history and recent run metadata.
+
+---
+
+## Day 35 - Staging Deployment Readiness
+
+### Focus
+Prepare InternLens for a small AWS-style staging/demo deployment without claiming production readiness.
+
+### What was done
+- Added backend configuration helpers under `src/api/settings.py`.
+- Environment-variable controls now cover:
+  - `INTERNLENS_CORS_ORIGINS`
+  - `INTERNLENS_JOBS_DIR`
+  - `INTERNLENS_DB_PATH`
+- Kept local defaults intact for current development workflows.
+- Added support for relative or absolute configured paths.
+- Added `.env.example` and `frontend/.env.example`.
+- Added a backend `Procfile` for hosts that support process declarations.
+- Added `docs/deployment/aws_staging.md` with first-cut AWS staging guidance.
+- Updated README with staging environment variables and deployment notes.
+- Added API settings tests.
+
+### Validation
+- `pytest tests/test_api_settings.py tests/test_api_and_ranking.py tests/test_profile_api.py -q` -> **50 passed**
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+- `pytest -q` -> **171 passed**
+
+### Result
+The project became ready for a controlled staging deployment pass.
+The recommended first deployment shape was:
+- frontend on AWS Amplify Hosting
+- FastAPI backend on Elastic Beanstalk
+- SQLite only for single-server staging
+- source refresh and promotion kept as operator-run scripts
+
+---
+
+## Day 36 - Deployment Smoke Script and Packaging
+
+### Focus
+Make deployed API verification and Elastic Beanstalk packaging repeatable.
+
+### What was done
+- Added `scripts/smoke_deployment.py`.
+- The smoke script verifies the stored-profile product flow against a running API base URL:
+  - `GET /health`
+  - `POST /profiles` or `GET /profiles/{id}` when the smoke profile already exists
+  - `POST /profiles/{id}/recommend`
+  - `GET /profiles/{id}/dashboard`
+- Added optional JSON report output under ignored `outputs/deployment_smoke*.json`.
+- Added tests with a fake HTTP client.
+- Added `.ebignore`.
+- Added `scripts/package_eb.py` to create an Elastic Beanstalk backend source bundle.
+- Added tests for the package script.
+- Added root `amplify.yml` for the frontend monorepo build.
+- Documented the commands in README and `docs/deployment/aws_staging.md`.
+
+### Validation
+- `pytest tests/test_smoke_deployment.py -q` -> **3 passed**
+- `pytest tests/test_package_eb.py -q` -> **3 passed**
+- `.\.venv\Scripts\python.exe scripts\package_eb.py` -> created `outputs/internlens_eb_backend.zip`
+- `pytest -q` -> **177 passed**
+- `npm run lint` -> passed
+- `npm test` -> **6 passed**
+- `npm run build` -> passed
+
+### Result
+InternLens gained a reusable smoke check and a repeatable backend packaging path for staging deploys.
+The backend source bundle contains runtime backend files and the processed job corpus at the zip root.
+
+---
+
+## Day 37 - AWS Staging Deployment Completion
+
+### Focus
+Deploy the prototype to AWS and verify the browser-to-backend flow end to end.
+
+### What was done
+- Set up the AWS account safety baseline:
+  - MFA enabled
+  - Budget alerts configured
+  - region kept at `us-east-2`
+- Deployed the backend through Elastic Beanstalk:
+  - application: `internlens`
+  - environment: `Internlens-env`
+  - platform: Python on Amazon Linux 2023
+  - process command from `Procfile`
+- Added backend environment properties:
+  - `INTERNLENS_JOBS_DIR=data/processed/jobs`
+  - `INTERNLENS_DB_PATH=data/app/internlens.db`
+  - `INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://main.d1d00e49guhewo.amplifyapp.com`
+- Added a CloudFront distribution in front of the Beanstalk backend so the API has an HTTPS endpoint.
+- Verified the HTTPS backend with the deployment smoke script.
+- Deployed the frontend through AWS Amplify Hosting.
+- Set Amplify build environment variables:
+  - `AMPLIFY_MONOREPO_APP_ROOT=frontend`
+  - `VITE_API_BASE_URL=https://d187u93cen5bw8.cloudfront.net`
+- Redeployed the Amplify frontend after environment-variable changes.
+- Verified the deployed frontend could run the InternLens workflow against the HTTPS backend.
+
+### Staging endpoints
+- Frontend: `https://main.d1d00e49guhewo.amplifyapp.com`
+- Backend HTTPS: `https://d187u93cen5bw8.cloudfront.net`
+- Backend Beanstalk origin: `http://internlens-env.eba-dmbmusq3.us-east-2.elasticbeanstalk.com`
+
+### Smoke result
+
+```text
+Base URL: https://d187u93cen5bw8.cloudfront.net
+Profile ID: smoke_deploy_user
+Overall: passed
+- health: 200
+- profile: 201
+- recommend: 200
+- dashboard: 200
+Returned jobs: 3
+```
+
+### Result
+InternLens is now reachable as a staged web app.
+The deployed frontend can call the deployed backend over HTTPS, and the backend smoke flow confirms health, profile creation, recommendation execution, and dashboard retrieval.
+
+---
+
+## Week 5 Snapshot
+
+### Current project state
+- Local development remains supported.
+- Backend packaging and deployment smoke checks are repeatable.
+- AWS staging deployment is live.
+- Frontend is hosted through Amplify.
+- Backend is hosted through Elastic Beanstalk and exposed over HTTPS through CloudFront.
+
+### Latest quality checkpoint
+- Backend tests: **177 passed**
+- Frontend checks:
+  - `npm run lint` -> passed
+  - `npm test` -> **6 passed**
+  - `npm run build` -> passed
+- Deployment smoke against CloudFront backend: passed.
+
+### Remaining next steps
+- Add authentication before any broader external sharing.
+- Move persistence off single-host SQLite before real multi-user use.
+- Decide whether to add a custom domain for frontend and API.
+- Add a short demo walkthrough or screenshots for presentation use.
