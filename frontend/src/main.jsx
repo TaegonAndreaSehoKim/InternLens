@@ -21,12 +21,20 @@ const JOB_STATE_LABELS = {
   dismissed: "Dismissed"
 };
 
-const JOB_ACTION_LABELS = {
-  save: "saved",
-  apply: "marked applied",
-  dismiss: "dismissed",
-  clear: "cleared"
+const SERVER_STATUS_LABELS = {
+  checking: "Checking",
+  online: "Online",
+  offline: "Offline"
 };
+
+const DEGREE_OPTIONS = [
+  "Associate",
+  "Bachelor's",
+  "Master's",
+  "PhD",
+  "Bootcamp / Certificate",
+  "Other"
+];
 
 const defaultProfile = {
   profile_id: "user_001",
@@ -101,41 +109,27 @@ function App() {
   const [recommendations, setRecommendations] = useState(null);
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
   const [recommendationFilter, setRecommendationFilter] = useState(() => storedState.recommendationFilter ?? "all");
-  const [status, setStatus] = useState("Checking API connection...");
-  const [statusTone, setStatusTone] = useState("info");
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
 
-  async function runTask(label, task) {
+  async function runTask(task) {
     setBusy(true);
-    setStatus(label);
-    setStatusTone("info");
     try {
       await task();
       setApiHealth("online");
-      setStatusTone("success");
     } catch (error) {
       if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
       }
-      setStatus(error.message);
-      setStatusTone("error");
     } finally {
       setBusy(false);
     }
-  }
-
-  async function checkApiHealth() {
-    setApiHealth("checking");
-    await api("/health");
-    setApiHealth("online");
   }
 
   async function loadDashboard(id = profileId) {
     const data = await api(`/profiles/${id}/dashboard`);
     setDashboard(data);
     setProfileId(id);
-    setStatus("Dashboard refreshed.");
   }
 
   async function createOrLoadProfile() {
@@ -145,13 +139,11 @@ function App() {
         method: "POST",
         body: JSON.stringify(payload)
       });
-      setStatus("Profile created.");
     } catch (error) {
       if (!String(error.message).includes("already exists")) {
         throw error;
       }
       await api(`/profiles/${payload.profile_id}`);
-      setStatus("Existing profile loaded.");
     }
     await loadDashboard(payload.profile_id);
   }
@@ -171,14 +163,12 @@ function App() {
     setRecommendations(data);
     setSelectedRun(data.run_id);
     await loadDashboard(profileId);
-    setStatus(`Recommendation run saved: ${data.run_id}`);
   }
 
   async function loadRun(runId) {
     const data = await api(`/profiles/${profileId}/recommendations/${runId}`);
     setRecommendations(data);
     setSelectedRun(runId);
-    setStatus(`Loaded run ${runId}`);
   }
 
   async function actOnJob(jobId, action) {
@@ -190,7 +180,6 @@ function App() {
     if (recommendations && selectedRun) {
       await loadRun(selectedRun);
     }
-    setStatus(`Job ${JOB_ACTION_LABELS[action] ?? action}: ${jobId}.`);
   }
 
   useEffect(() => {
@@ -204,35 +193,27 @@ function App() {
         setApiHealth("online");
 
         if (!storedState.profileId) {
-          setStatus("API online. Save a profile to start recommendations.");
-          setStatusTone("success");
           return;
         }
 
         const restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`);
         if (cancelled) return;
         setDashboard(restoredDashboard);
-        setStatus(`Restored profile ${storedState.profileId}.`);
-        setStatusTone("success");
 
         if (storedState.selectedRun) {
           try {
             const restoredRun = await api(`/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`);
             if (cancelled) return;
             setRecommendations(restoredRun);
-            setStatus(`Restored run ${storedState.selectedRun}.`);
-            setStatusTone("success");
           } catch {
             if (!cancelled) {
               setSelectedRun(null);
             }
           }
         }
-      } catch (error) {
+      } catch {
         if (cancelled) return;
         setApiHealth("offline");
-        setStatus(`API offline: ${error.message}`);
-        setStatusTone("error");
       }
     }
 
@@ -256,24 +237,11 @@ function App() {
             Review ranked leads, keep useful roles in motion, and suppress noise from the next pass.
           </p>
         </div>
-        <div className={`status-card ${statusTone}`}>
-          <div className="status-topline">
-            <span className={busy ? "pulse-dot active" : "pulse-dot"} />
-            <span className={`health-pill ${apiHealth}`}>{apiHealth}</span>
-          </div>
-          <p>{status}</p>
-          <div className="status-footer">
-            <small>API base: {API_BASE}</small>
-            <button
-              className="status-refresh"
-              disabled={busy}
-              onClick={() => runTask("Checking API...", async () => {
-                await checkApiHealth();
-                setStatus("API is online.");
-              })}
-            >
-              Check API
-            </button>
+        <div className={`status-card server-status ${apiHealth}`}>
+          <span className={busy || apiHealth === "checking" ? "pulse-dot active" : "pulse-dot"} />
+          <div>
+            <p className="eyebrow">Server</p>
+            <h2>{SERVER_STATUS_LABELS[apiHealth]}</h2>
           </div>
         </div>
       </header>
@@ -283,15 +251,15 @@ function App() {
           form={form}
           setForm={setForm}
           busy={busy}
-          onSubmit={() => runTask("Saving profile...", createOrLoadProfile)}
+          onSubmit={() => runTask(createOrLoadProfile)}
         />
         <DashboardPanel
           dashboard={dashboard}
           profileId={profileId}
           busy={busy}
-          onRefresh={() => runTask("Refreshing dashboard...", () => loadDashboard(profileId))}
-          onRun={() => runTask("Running recommendations...", runRecommendations)}
-          onLoadRun={(runId) => runTask("Loading recommendation run...", () => loadRun(runId))}
+          onRefresh={() => runTask(() => loadDashboard(profileId))}
+          onRun={() => runTask(runRecommendations)}
+          onLoadRun={(runId) => runTask(() => loadRun(runId))}
         />
       </section>
 
@@ -301,7 +269,7 @@ function App() {
         filter={recommendationFilter}
         onFilterChange={setRecommendationFilter}
         busy={busy}
-        onAction={(jobId, action) => runTask(`${action} ${jobId}...`, () => actOnJob(jobId, action))}
+        onAction={(jobId, action) => runTask(() => actOnJob(jobId, action))}
       />
     </main>
   );
@@ -316,20 +284,26 @@ function ProfilePanel({ form, setForm, busy, onSubmit }) {
     <section className="panel profile-panel">
       <div className="panel-heading">
         <p className="eyebrow">Profile Setup</p>
-        <h2>Candidate signal</h2>
+        <h2>Candidate information</h2>
       </div>
       <div className="form-grid">
         <label>
-          Profile ID
+          User ID
           <input value={form.profile_id} onChange={(event) => update("profile_id", event.target.value)} />
         </label>
         <label>
           Graduation
-          <input value={form.grad_date} onChange={(event) => update("grad_date", event.target.value)} />
+          <input type="month" value={form.grad_date} onChange={(event) => update("grad_date", event.target.value)} />
         </label>
         <label>
           Degree
-          <input value={form.degree_level} onChange={(event) => update("degree_level", event.target.value)} />
+          <select value={form.degree_level} onChange={(event) => update("degree_level", event.target.value)}>
+            {DEGREE_OPTIONS.map((degree) => (
+              <option key={degree} value={degree}>
+                {degree}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           Experience years

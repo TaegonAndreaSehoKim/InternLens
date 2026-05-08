@@ -29,6 +29,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -91,16 +92,27 @@ button:disabled {
 
 .status-card {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
   min-height: 150px;
   border-radius: 20px;
   padding: 18px;
 }
 
-.status-card p {
-  margin: 34px 0 18px;
-  font-weight: 700;
+.server-status {
+  text-align: right;
+}
+
+.server-status h2 {
+  margin: 2px 0 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2rem;
+  letter-spacing: 0;
+}
+
+.server-status .eyebrow {
+  margin: 0;
 }
 
 .status-card.success {
@@ -216,6 +228,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid rgba(23, 33, 28, 0.17);
@@ -227,9 +240,25 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--cedar);
   box-shadow: 0 0 0 4px rgba(158, 78, 50, 0.11);
+}
+
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 52%,
+    calc(100% - 13px) 52%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 38px;
 }
 
 textarea {
