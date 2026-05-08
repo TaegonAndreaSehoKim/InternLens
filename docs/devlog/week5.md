@@ -192,6 +192,85 @@ Hidden jobs are now framed as a reversible shortlist suppression action rather t
 
 ---
 
+## Day 39 - User-Scoped Persistence Foundation
+
+### Focus
+Start the account-system migration by making stored workflow data separable by user before adding Cognito.
+
+### What was done
+- Added a `user_id` scope to persisted profiles, feedback events, recommendation runs, and job states.
+- Kept local/demo compatibility through a default `local_user` scope.
+- Added migration logic so older local SQLite databases are copied into the `local_user` scope.
+- Allowed the API to accept `X-InternLens-User-Id` as a temporary development boundary for user-scoped requests.
+- Added tests proving the same `profile_id` can exist separately for different user ids.
+- Added API tests proving feedback and profile data do not leak across user headers.
+
+### Validation
+- `pytest tests/test_profile_store.py tests/test_profile_api.py -q` -> **28 passed**
+- `pytest -q` -> **179 passed**
+
+### Result
+The backend storage model is now ready for real account integration.
+The next production step is to replace the temporary user header with Cognito JWT validation and move persistence from single-host SQLite to RDS PostgreSQL.
+
+---
+
+## Day 40 - Cognito Auth Boundary Scaffold
+
+### Focus
+Prepare the backend to accept real Cognito tokens while keeping local/demo development unblocked.
+
+### What was done
+- Added `src/api/auth.py` for API user resolution.
+- Added `INTERNLENS_AUTH_MODE` with two modes:
+  - `dev`: use `X-InternLens-User-Id` or fall back to `local_user`
+  - `cognito`: require `Authorization: Bearer <Cognito JWT>`
+- Added Cognito JWT verification settings:
+  - `INTERNLENS_COGNITO_REGION`
+  - `INTERNLENS_COGNITO_USER_POOL_ID`
+  - `INTERNLENS_COGNITO_APP_CLIENT_ID`
+- Added JWT signature verification through Cognito JWKS.
+- Validated token issuer, token type, app client, and subject extraction.
+- Added auth unit tests for dev mode, missing Cognito token rejection, and Cognito subject extraction.
+
+### Validation
+- `pytest tests/test_api_auth.py tests/test_profile_store.py tests/test_profile_api.py -q` -> **31 passed**
+
+### Result
+The API now has a clean place to switch from development user scoping to real Cognito-backed account identity.
+The remaining account-system work is mostly AWS Cognito setup and frontend login/session integration.
+
+---
+
+## Day 41 - Frontend Cognito Login Scaffold
+
+### Focus
+Connect the React frontend to the Cognito OIDC flow while keeping local development in demo mode by default.
+
+### What was done
+- Added `react-oidc-context` and `oidc-client-ts`.
+- Added frontend auth environment variables:
+  - `VITE_AUTH_MODE`
+  - `VITE_COGNITO_REGION`
+  - `VITE_COGNITO_USER_POOL_ID`
+  - `VITE_COGNITO_APP_CLIENT_ID`
+- Added a sign-in gate for `VITE_AUTH_MODE=cognito`.
+- Configured Cognito authority, client id, redirect URI, logout redirect URI, authorization code flow, and `openid email` OIDC scopes.
+- Added bearer-token attachment to stored-profile API calls.
+- Added signed-in account display and sign-out action in the app header.
+- Kept `VITE_AUTH_MODE=dev` as the default so the current local/demo workflow remains available.
+
+### Validation
+- `npm run lint` -> passed
+- `npm test` -> **8 passed**
+- `npm run build` -> passed
+- `pytest tests/test_api_auth.py tests/test_profile_store.py tests/test_profile_api.py -q` -> **31 passed**
+
+### Result
+The frontend is now ready to use the created Cognito User Pool once Amplify and Elastic Beanstalk environment variables are switched from `dev` to `cognito`.
+
+---
+
 ## Week 5 Snapshot
 
 ### Current project state
@@ -202,9 +281,12 @@ Hidden jobs are now framed as a reversible shortlist suppression action rather t
 - Backend is hosted through Elastic Beanstalk and exposed over HTTPS through CloudFront.
 - Dashboard job actions now have clearer user-facing labels and reversible state transitions.
 - The dashboard can show shortlist, saved, applied, and hidden job views from the summary counts.
+- Stored workflow data is now user-scoped in preparation for Cognito-backed accounts.
+- Backend auth can now run in development header mode or Cognito JWT mode.
+- Frontend auth can now run in development mode or Cognito Hosted UI mode.
 
 ### Latest quality checkpoint
-- Backend tests: **177 passed**
+- Backend tests: **182 passed**
 - Frontend checks:
   - `npm run lint` -> passed
   - `npm test` -> **8 passed**
@@ -212,8 +294,9 @@ Hidden jobs are now framed as a reversible shortlist suppression action rather t
 - Deployment smoke against CloudFront backend: passed.
 
 ### Remaining next steps
-- Add authentication before any broader external sharing.
-- Move persistence off single-host SQLite before real multi-user use.
+- Add localhost callback/logout URLs to the Cognito app client for local auth testing.
+- Switch Amplify and Elastic Beanstalk auth environment variables to Cognito mode after local login verification.
+- Move persistence off single-host SQLite to RDS PostgreSQL before real multi-user use.
 - Decide whether to add a custom domain for frontend and API.
 - Add a short demo walkthrough or screenshots for presentation use.
 - Keep iterating on frontend empty states, error states, and dashboard copy.

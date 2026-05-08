@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `177 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `182 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -106,15 +106,19 @@ Recent CLI improvements:
 These filters make it easier to inspect meaningful subsets rather than dumping the full ranked list.
 
 ### 5. Persistence and frontend layer
-InternLens now includes SQLite-backed local persistence for:
+InternLens now includes user-scoped SQLite-backed local persistence for:
 - profiles
 - feedback events
 - recommendation run snapshots
 - saved, hidden, and applied job states
 
+The current API accepts a temporary `X-InternLens-User-Id` header in `dev` auth mode to scope stored-profile data. This preserves the local demo flow through the default `local_user` scope. When `INTERNLENS_AUTH_MODE=cognito`, the backend validates a Cognito bearer token and uses the verified JWT `sub` as the user scope.
+The frontend has the matching switch: `VITE_AUTH_MODE=dev` keeps the existing demo behavior, while `VITE_AUTH_MODE=cognito` redirects through Cognito and sends the access token to the API.
+
 The frontend uses these APIs to support:
 - profile setup and restoration
 - simple online/offline API health status
+- optional Cognito Hosted UI sign-in when `VITE_AUTH_MODE=cognito`
 - dashboard summary review
 - dashboard saved/applied/hidden job review
 - recommendation runs and historical run loading
@@ -158,7 +162,7 @@ Recent work focused on:
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
 
 The latest validation state shows:
-- `177 passed`
+- `182 passed`
 - `npm run lint`, `npm test`, and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset

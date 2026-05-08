@@ -13,8 +13,8 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 - **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk, and CloudFront providing the HTTPS API endpoint.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
-- **Product workflow:** stored profiles, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, and state-specific job views are available through the API and frontend.
-- **Quality checkpoint:** Python suite currently passes at `177 passed`; frontend lint, tests, and production build are also passing.
+- **Product workflow:** user-scoped stored profiles, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, and state-specific job views are available through the API and frontend.
+- **Quality checkpoint:** Python suite currently passes at `182 passed`; frontend lint, tests, and production build are also passing.
 - **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
 
 ## Current status
@@ -35,7 +35,7 @@ InternLens currently supports:
 - baseline ranking with internship blockers
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
-- stored profile, feedback, recommendation history, job action, and dashboard APIs
+- user-scoped stored profile, feedback, recommendation history, job action, and dashboard APIs
 - Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, and saved/applied/hidden review
 - regression-tested iteration
 
@@ -48,7 +48,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `177 passed`
+- current total: `182 passed`
 - frontend production build passing with `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -126,7 +126,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source pipeline tests
 - source recall and promotion smoke tests
 - profile API tests
-- full suite currently passing: `177 passed`
+- full suite currently passing: `182 passed`
 - frontend build check with `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -487,7 +487,15 @@ Deployment-relevant environment variables:
 INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 INTERNLENS_JOBS_DIR=data/processed/jobs
 INTERNLENS_DB_PATH=data/app/internlens.db
+INTERNLENS_AUTH_MODE=dev
+INTERNLENS_COGNITO_REGION=us-east-2
+INTERNLENS_COGNITO_USER_POOL_ID=
+INTERNLENS_COGNITO_APP_CLIENT_ID=
 VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_AUTH_MODE=dev
+VITE_COGNITO_REGION=us-east-2
+VITE_COGNITO_USER_POOL_ID=
+VITE_COGNITO_APP_CLIENT_ID=
 ```
 
 See `.env.example`, `frontend/.env.example`, and `docs/deployment/aws_staging.md` for staging notes.
@@ -615,11 +623,14 @@ GET /profiles/user_001/recommendations/run_abc123
 ```
 
 Useful notes:
+- stored-profile APIs are currently scoped by `X-InternLens-User-Id`; when the header is absent, the backend uses `local_user` for local/demo compatibility
+- set `INTERNLENS_AUTH_MODE=cognito` to require `Authorization: Bearer <Cognito JWT>` and derive the user scope from the token subject
 - stored-profile recommendation calls now save a run snapshot by default
 - set `save_run=false` when you want a one-off recommendation without history
 - saved runs let the app show prior recommendation sessions without recomputing immediately
 - stored-profile recommendation calls suppress previously hidden jobs by default
 - result items from stored-profile recommendations and saved run snapshots can include the latest `user_job_state`
+- when `VITE_AUTH_MODE=cognito`, the frontend uses Cognito Hosted UI and sends the Cognito access token as a bearer token on API requests
 
 Save, apply, or hide a job from a stored-profile workflow:
 
@@ -708,7 +719,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `177 passed`
+- current total: `182 passed`
 - frontend build passing with `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -731,7 +742,7 @@ Current status:
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 - the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
-- persisted user data is currently SQLite-based and intended for local or prototype use rather than multi-user production deployment
+- persisted user data is now user-scoped in the schema, but authentication is still not production-grade until Cognito JWT validation and managed database persistence are added
 
 ---
 

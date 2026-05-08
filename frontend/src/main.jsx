@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { AuthProvider, useAuth } from "react-oidc-context";
 import "./styles.css";
 import {
   ACTION_FILTERS,
@@ -14,6 +15,10 @@ import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboard
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? "dev";
+const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION ?? "";
+const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
+const COGNITO_APP_CLIENT_ID = import.meta.env.VITE_COGNITO_APP_CLIENT_ID ?? "";
 
 const JOB_STATE_LABELS = {
   saved: "Saved",
@@ -86,6 +91,7 @@ function csvToList(value) {
 function profilePayload(form) {
   return {
     ...form,
+    profile_id: form.profile_id?.trim() || defaultProfile.profile_id,
     preferred_roles: csvToList(form.preferred_roles),
     preferred_locations: csvToList(form.preferred_locations),
     target_industries: csvToList(form.target_industries),
@@ -184,22 +190,43 @@ function writeStoredState(state) {
   }
 }
 
-async function api(path, options = {}) {
+function oidcConfig() {
+  if (AUTH_MODE !== "cognito") {
+    return null;
+  }
+  if (!COGNITO_REGION || !COGNITO_USER_POOL_ID || !COGNITO_APP_CLIENT_ID) {
+    return null;
+  }
+
+  return {
+    authority: `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}`,
+    client_id: COGNITO_APP_CLIENT_ID,
+    redirect_uri: window.location.origin,
+    post_logout_redirect_uri: window.location.origin,
+    response_type: "code",
+    scope: "openid email"
+  };
+}
+
+async function api(path, options = {}, authToken = null) {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers ?? {})
     },
     ...options
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body.detail ?? `Request failed: ${response.status}`);
+    const error = new Error(body.detail ?? `Request failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
   return body;
 }
 
-function App() {
+function App({ authToken = null, accountEmail = "Local demo user", onSignOut = null }) {
   const [storedState] = useState(() => readStoredState());
   const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
   const [profileId, setProfileId] = useState(
@@ -229,7 +256,7 @@ function App() {
   }
 
   async function loadDashboard(id = profileId) {
-    const data = await api(`/profiles/${id}/dashboard`);
+    const data = await api(`/profiles/${id}/dashboard`, {}, authToken);
     setDashboard(data);
     setProfileId(id);
     return data;
@@ -241,7 +268,7 @@ function App() {
       return [];
     }
 
-    const data = await api(`/profiles/${id}/${endpoint}`);
+    const data = await api(`/profiles/${id}/${endpoint}`, {}, authToken);
     setDashboardJobLists((current) => ({ ...current, [view]: data.jobs }));
     return data.jobs;
   }
@@ -259,12 +286,12 @@ function App() {
       await api("/profiles", {
         method: "POST",
         body: JSON.stringify(payload)
-      });
+      }, authToken);
     } catch (error) {
       if (!String(error.message).includes("already exists")) {
         throw error;
       }
-      await api(`/profiles/${payload.profile_id}`);
+      await api(`/profiles/${payload.profile_id}`, {}, authToken);
     }
     await loadDashboard(payload.profile_id);
   }
@@ -281,7 +308,7 @@ function App() {
         include_debug: true,
         save_run: true
       })
-    });
+    }, authToken);
     setRecommendations(data);
     setSelectedRun(data.run_id);
     await loadDashboard(profileId);
@@ -291,7 +318,7 @@ function App() {
     if (activate) {
       setDashboardJobView("recommendations");
     }
-    const data = await api(`/profiles/${profileId}/recommendations/${runId}`);
+    const data = await api(`/profiles/${profileId}/recommendations/${runId}`, {}, authToken);
     setRecommendations(data);
     setSelectedRun(runId);
   }
@@ -300,7 +327,7 @@ function App() {
     const response = await api(`/profiles/${profileId}/jobs/${jobId}/action`, {
       method: "POST",
       body: JSON.stringify({ action, run_id: selectedRun })
-    });
+    }, authToken);
     setRecommendations((current) => updateRecommendationJobState(
       current,
       jobId,
@@ -322,7 +349,7 @@ function App() {
 
     async function restoreSession() {
       try {
-        await api("/health");
+        await api("/health", {}, authToken);
         if (cancelled) return;
         setApiHealth("online");
 
@@ -330,13 +357,30 @@ function App() {
           return;
         }
 
-        const restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`);
+        let restoredDashboard;
+        try {
+          restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`, {}, authToken);
+        } catch (error) {
+          if (error.status === 404) {
+            if (!cancelled) {
+              setDashboard(null);
+              setRecommendations(null);
+              setSelectedRun(null);
+            }
+            return;
+          }
+          throw error;
+        }
         if (cancelled) return;
         setDashboard(restoredDashboard);
 
         if (storedState.selectedRun) {
           try {
-            const restoredRun = await api(`/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`);
+            const restoredRun = await api(
+              `/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`,
+              {},
+              authToken
+            );
             if (cancelled) return;
             setRecommendations(restoredRun);
           } catch {
@@ -355,7 +399,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [storedState.profileId, storedState.selectedRun]);
+  }, [authToken, storedState.profileId, storedState.selectedRun]);
 
   useEffect(() => {
     writeStoredState({ form, profileId, selectedRun, recommendationFilter });
@@ -372,10 +416,16 @@ function App() {
           </p>
         </div>
         <div className={`status-card server-status ${apiHealth}`}>
-          <span className={busy || apiHealth === "checking" ? "pulse-dot active" : "pulse-dot"} />
-          <div>
-            <p className="eyebrow">Server</p>
-            <h2>{SERVER_STATUS_LABELS[apiHealth]}</h2>
+          <div className="server-status-main">
+            <span className={busy || apiHealth === "checking" ? "pulse-dot active" : "pulse-dot"} />
+            <div>
+              <p className="eyebrow">Server</p>
+              <h2>{SERVER_STATUS_LABELS[apiHealth]}</h2>
+            </div>
+          </div>
+          <div className="account-strip">
+            <span>{accountEmail}</span>
+            {onSignOut && <button onClick={onSignOut}>Sign out</button>}
           </div>
         </div>
       </header>
@@ -414,6 +464,76 @@ function App() {
   );
 }
 
+function AuthShell({ title, detail, action }) {
+  return (
+    <main className="shell auth-shell">
+      <section className="panel auth-panel">
+        <p className="eyebrow">InternLens</p>
+        <h1>{title}</h1>
+        <p>{detail}</p>
+        {action}
+      </section>
+    </main>
+  );
+}
+
+function AuthenticatedApp() {
+  const auth = useAuth();
+
+  async function signOut() {
+    try {
+      await auth.signoutRedirect();
+    } catch {
+      await auth.removeUser();
+    }
+  }
+
+  if (auth.isLoading) {
+    return <AuthShell title="Opening InternLens" detail="Checking your session." />;
+  }
+
+  if (auth.error) {
+    return (
+      <AuthShell
+        title="Sign-in problem"
+        detail={auth.error.message}
+        action={<button className="primary-action" onClick={() => auth.signinRedirect()}>Try again</button>}
+      />
+    );
+  }
+
+  if (!auth.isAuthenticated) {
+    return (
+      <AuthShell
+        title="Sign in to InternLens"
+        detail="Use your InternLens account to keep profiles, shortlists, saved jobs, and applied roles separate."
+        action={<button className="primary-action" onClick={() => auth.signinRedirect()}>Sign in</button>}
+      />
+    );
+  }
+
+  return (
+    <App
+      authToken={auth.user?.access_token}
+      accountEmail={auth.user?.profile?.email ?? "Signed in"}
+      onSignOut={signOut}
+    />
+  );
+}
+
+function Root() {
+  const config = oidcConfig();
+  if (!config) {
+    return <App />;
+  }
+
+  return (
+    <AuthProvider {...config}>
+      <AuthenticatedApp />
+    </AuthProvider>
+  );
+}
+
 function ProfilePanel({ form, setForm, busy, onSubmit }) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -426,10 +546,6 @@ function ProfilePanel({ form, setForm, busy, onSubmit }) {
         <h2>Candidate information</h2>
       </div>
       <div className="form-grid">
-        <label>
-          User ID
-          <input value={form.profile_id} onChange={(event) => update("profile_id", event.target.value)} />
-        </label>
         <label>
           Graduation
           <input type="month" value={form.grad_date} onChange={(event) => update("grad_date", event.target.value)} />
@@ -823,4 +939,4 @@ function PreviewList({ title, items, empty }) {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(<Root />);

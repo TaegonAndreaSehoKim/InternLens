@@ -21,6 +21,7 @@ Set these variables in the backend hosting environment:
 INTERNLENS_CORS_ORIGINS=https://your-frontend-host.example
 INTERNLENS_JOBS_DIR=data/processed/jobs
 INTERNLENS_DB_PATH=data/app/internlens.db
+INTERNLENS_AUTH_MODE=dev
 ```
 
 Notes:
@@ -28,6 +29,14 @@ Notes:
 - `INTERNLENS_CORS_ORIGINS` is comma-separated.
 - Relative paths are resolved from the repository root.
 - For one-server staging, SQLite is acceptable. For real multi-user production, move this to a managed database.
+- In `dev` auth mode, stored-profile APIs support temporary user scoping with the `X-InternLens-User-Id` header.
+- After creating a Cognito User Pool, set `INTERNLENS_AUTH_MODE=cognito` plus the Cognito variables below so the API requires `Authorization: Bearer <Cognito JWT>`.
+
+```text
+INTERNLENS_COGNITO_REGION=us-east-2
+INTERNLENS_COGNITO_USER_POOL_ID=your-user-pool-id
+INTERNLENS_COGNITO_APP_CLIENT_ID=your-app-client-id
+```
 
 ## Elastic Beanstalk Backend Package
 
@@ -107,6 +116,7 @@ Current backend environment properties:
 INTERNLENS_JOBS_DIR=data/processed/jobs
 INTERNLENS_DB_PATH=data/app/internlens.db
 INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://main.d1d00e49guhewo.amplifyapp.com
+INTERNLENS_AUTH_MODE=dev
 ```
 
 Current Amplify environment variables:
@@ -114,7 +124,28 @@ Current Amplify environment variables:
 ```text
 AMPLIFY_MONOREPO_APP_ROOT=frontend
 VITE_API_BASE_URL=https://d187u93cen5bw8.cloudfront.net
+VITE_AUTH_MODE=dev
 ```
+
+After enabling Cognito login in staging, add:
+
+```text
+VITE_AUTH_MODE=cognito
+VITE_COGNITO_REGION=us-east-2
+VITE_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
+VITE_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
+```
+
+Then set matching backend environment properties:
+
+```text
+INTERNLENS_AUTH_MODE=cognito
+INTERNLENS_COGNITO_REGION=us-east-2
+INTERNLENS_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
+INTERNLENS_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
+```
+
+The frontend requests only the `openid email` scopes so it works with the default Cognito quick-start app client.
 
 CloudFront is used in front of the single-instance Elastic Beanstalk backend to provide an HTTPS API endpoint for the Amplify-hosted frontend.
 The CloudFront origin is the Beanstalk environment domain over HTTP, with caching disabled and all API methods allowed.
@@ -211,8 +242,8 @@ Returned jobs: 3
 
 ## Current Staging Limitations
 
-- No authentication yet.
-- SQLite is single-host prototype persistence.
+- No production authentication yet; `X-InternLens-User-Id` is only a development bridge toward Cognito.
+- SQLite is still single-host prototype persistence, though the schema now scopes rows by user.
 - Corpus refresh is not isolated as a separate scheduled worker.
 - Generated raw/processed data can be large; avoid rewriting data directories during deploy.
 - CORS should be restricted to the deployed frontend URL, not left broad.

@@ -6,6 +6,7 @@ from pathlib import Path
 from src.storage.profile_store import (
     create_profile,
     create_recommendation_run,
+    get_profile,
     get_recommendation_run,
     initialize_database,
     list_recommendation_runs,
@@ -106,3 +107,23 @@ def test_create_recommendation_run_persists_suppress_similar_flag(tmp_path: Path
     assert listed_runs[0]["suppress_similar_results"] is True
     assert stored_run is not None
     assert stored_run["suppress_similar_results"] is True
+
+
+def test_profiles_are_scoped_by_user_id(tmp_path: Path) -> None:
+    db_path = tmp_path / "internlens.db"
+    first_profile = _profile_payload() | {"notes": "first user"}
+    second_profile = _profile_payload() | {"notes": "second user"}
+
+    create_profile(db_path, first_profile, user_id="cognito-sub-a")
+    create_profile(db_path, second_profile, user_id="cognito-sub-b")
+
+    first = get_profile(db_path, "user_001", user_id="cognito-sub-a")
+    second = get_profile(db_path, "user_001", user_id="cognito-sub-b")
+
+    assert first is not None
+    assert first["user_id"] == "cognito-sub-a"
+    assert first["notes"] == "first user"
+    assert second is not None
+    assert second["user_id"] == "cognito-sub-b"
+    assert second["notes"] == "second user"
+    assert get_profile(db_path, "user_001", user_id="missing-user") is None

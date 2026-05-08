@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 
@@ -19,6 +19,7 @@ from src.preprocessing.profile_parser import (
     normalize_candidate_profile,
 )
 from src.storage.profile_store import (
+    DEFAULT_USER_ID,
     add_feedback_events,
     clear_profile_job_state,
     create_recommendation_run,
@@ -33,6 +34,7 @@ from src.storage.profile_store import (
     upsert_profile_job_state,
     update_profile,
 )
+from src.api.auth import current_user_id
 from src.ranking.output_filters import filter_results_for_output, truncate_results
 from src.ranking.baseline_scorer import (
     _has_description_internship_signal,
@@ -688,8 +690,15 @@ def _stored_job_state_response(state_payload: Dict[str, Any]) -> StoredJobState:
     )
 
 
-def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optional[str]) -> JobActionResponse:
-    stored_profile = get_profile(_database_path(), profile_id)
+def _apply_job_action(
+    profile_id: str,
+    job_id: str,
+    action: str,
+    run_id: Optional[str],
+    *,
+    user_id: str = DEFAULT_USER_ID,
+) -> JobActionResponse:
+    stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
     if stored_profile is None:
         raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
@@ -705,12 +714,13 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
             "apply": "applied",
         }
         state = state_by_action[action]
-        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id, user_id=user_id)
         should_sync_feedback = existing_state is None or existing_state["state"] != state
         try:
             stored_state = upsert_profile_job_state(
                 _database_path(),
                 profile_id=profile_id,
+                user_id=user_id,
                 job_id=job_id,
                 state=state,
                 source_run_id=run_id,
@@ -720,6 +730,7 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
                     _database_path(),
                     profile_id,
                     [{"job_id": job_id, "feedback_label": feedback_label_by_action[action]}],
+                    user_id=user_id,
                 )
         except ValueError as e:
             detail = str(e)
@@ -736,7 +747,7 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
             feedback_label=feedback_label_by_action[action] if should_sync_feedback else None,
         )
 
-    existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+    existing_state = get_profile_job_state(_database_path(), profile_id, job_id, user_id=user_id)
     if existing_state is None:
         raise HTTPException(status_code=404, detail=f"Job state not found: {job_id}")
 
@@ -746,6 +757,7 @@ def _apply_job_action(profile_id: str, job_id: str, action: str, run_id: Optiona
             profile_id,
             job_id,
             existing_state["state"],
+            user_id=user_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -964,10 +976,13 @@ def health() -> Dict[str, str]:
 
 
 @app.post("/profiles", response_model=StoredProfileResponse, status_code=201)
-def create_profile_endpoint(profile_data: CandidateProfilePayload) -> StoredProfileResponse:
+def create_profile_endpoint(
+    profile_data: CandidateProfilePayload,
+    user_id: str = Depends(current_user_id),
+) -> StoredProfileResponse:
     try:
         normalized_profile = _build_profile_from_payload(profile_data)
-        stored_profile = create_profile(_database_path(), normalized_profile)
+        stored_profile = create_profile(_database_path(), normalized_profile, user_id=user_id)
     except ValueError as e:
         detail = str(e)
         if "already exists" in detail:
@@ -980,9 +995,12 @@ def create_profile_endpoint(profile_data: CandidateProfilePayload) -> StoredProf
 
 
 @app.get("/profiles/{profile_id}", response_model=StoredProfileResponse)
-def get_profile_endpoint(profile_id: str) -> StoredProfileResponse:
+def get_profile_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredProfileResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
 
@@ -993,9 +1011,13 @@ def get_profile_endpoint(profile_id: str) -> StoredProfileResponse:
 
 
 @app.patch("/profiles/{profile_id}", response_model=StoredProfileResponse)
-def update_profile_endpoint(profile_id: str, profile_update: ProfileUpdatePayload) -> StoredProfileResponse:
+def update_profile_endpoint(
+    profile_id: str,
+    profile_update: ProfileUpdatePayload,
+    user_id: str = Depends(current_user_id),
+) -> StoredProfileResponse:
     try:
-        existing_profile = get_profile(_database_path(), profile_id)
+        existing_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if existing_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
@@ -1003,7 +1025,7 @@ def update_profile_endpoint(profile_id: str, profile_update: ProfileUpdatePayloa
         merged_profile.update(profile_update.model_dump(exclude_none=True))
         merged_profile["profile_id"] = profile_id
         normalized_profile = normalize_candidate_profile(merged_profile)
-        stored_profile = update_profile(_database_path(), normalized_profile)
+        stored_profile = update_profile(_database_path(), normalized_profile, user_id=user_id)
     except HTTPException:
         raise
     except ValueError as e:
@@ -1015,12 +1037,15 @@ def update_profile_endpoint(profile_id: str, profile_update: ProfileUpdatePayloa
 
 
 @app.get("/profiles/{profile_id}/feedback", response_model=StoredFeedbackResponse)
-def get_profile_feedback_endpoint(profile_id: str) -> StoredFeedbackResponse:
+def get_profile_feedback_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredFeedbackResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        events = get_feedback_events(_database_path(), profile_id)
+        events = get_feedback_events(_database_path(), profile_id, user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1030,17 +1055,20 @@ def get_profile_feedback_endpoint(profile_id: str) -> StoredFeedbackResponse:
 
 
 @app.get("/profiles/{profile_id}/summary", response_model=ProfileSummaryResponse)
-def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
+def get_profile_summary_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> ProfileSummaryResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
-        feedback_events = get_feedback_events(_database_path(), profile_id)
-        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
-        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
-        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
-        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
+        feedback_events = get_feedback_events(_database_path(), profile_id, user_id=user_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id, user_id=user_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1057,20 +1085,24 @@ def get_profile_summary_endpoint(profile_id: str) -> ProfileSummaryResponse:
 
 
 @app.get("/profiles/{profile_id}/activity", response_model=ProfileActivityResponse)
-def get_profile_activity_endpoint(profile_id: str, limit: int = 20) -> ProfileActivityResponse:
+def get_profile_activity_endpoint(
+    profile_id: str,
+    limit: int = 20,
+    user_id: str = Depends(current_user_id),
+) -> ProfileActivityResponse:
     if limit < 1 or limit > 100:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 100.")
 
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
-        feedback_events = get_feedback_events(_database_path(), profile_id)
-        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
-        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
-        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
-        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
+        feedback_events = get_feedback_events(_database_path(), profile_id, user_id=user_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id, user_id=user_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1095,6 +1127,7 @@ def get_profile_dashboard_endpoint(
     saved_job_limit: int = 5,
     dismissed_job_limit: int = 5,
     applied_job_limit: int = 5,
+    user_id: str = Depends(current_user_id),
 ) -> ProfileDashboardResponse:
     if activity_limit < 1 or activity_limit > 100:
         raise HTTPException(status_code=400, detail="activity_limit must be between 1 and 100.")
@@ -1108,15 +1141,15 @@ def get_profile_dashboard_endpoint(
         raise HTTPException(status_code=400, detail="applied_job_limit must be between 1 and 50.")
 
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
-        feedback_events = get_feedback_events(_database_path(), profile_id)
-        recommendation_runs = list_recommendation_runs(_database_path(), profile_id)
-        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
-        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
-        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
+        feedback_events = get_feedback_events(_database_path(), profile_id, user_id=user_id)
+        recommendation_runs = list_recommendation_runs(_database_path(), profile_id, user_id=user_id)
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1154,13 +1187,17 @@ def get_profile_dashboard_endpoint(
 
 
 @app.post("/profiles/{profile_id}/feedback", response_model=StoredFeedbackResponse, status_code=201)
-def add_profile_feedback_endpoint(profile_id: str, feedback_data: FeedbackProfilePayload) -> StoredFeedbackResponse:
+def add_profile_feedback_endpoint(
+    profile_id: str,
+    feedback_data: FeedbackProfilePayload,
+    user_id: str = Depends(current_user_id),
+) -> StoredFeedbackResponse:
     if feedback_data.profile_id != profile_id:
         raise HTTPException(status_code=400, detail="Feedback payload profile_id must match the URL profile_id.")
 
     try:
         normalized_feedback = _build_feedback_from_payload(feedback_data)
-        events = add_feedback_events(_database_path(), profile_id, normalized_feedback["events"])
+        events = add_feedback_events(_database_path(), profile_id, normalized_feedback["events"], user_id=user_id)
     except ValueError as e:
         detail = str(e)
         if "Profile not found" in detail:
@@ -1173,12 +1210,15 @@ def add_profile_feedback_endpoint(profile_id: str, feedback_data: FeedbackProfil
 
 
 @app.get("/profiles/{profile_id}/saved-jobs", response_model=StoredJobStateListResponse)
-def list_saved_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+def list_saved_jobs_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        job_states = list_profile_job_states(_database_path(), profile_id, "saved")
+        job_states = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1192,12 +1232,15 @@ def list_saved_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
 
 
 @app.get("/profiles/{profile_id}/dismissed-jobs", response_model=StoredJobStateListResponse)
-def list_dismissed_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+def list_dismissed_jobs_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        job_states = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        job_states = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1211,12 +1254,15 @@ def list_dismissed_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
 
 
 @app.get("/profiles/{profile_id}/applied-jobs", response_model=StoredJobStateListResponse)
-def list_applied_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
+def list_applied_jobs_endpoint(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        job_states = list_profile_job_states(_database_path(), profile_id, "applied")
+        job_states = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1230,9 +1276,14 @@ def list_applied_jobs_endpoint(profile_id: str) -> StoredJobStateListResponse:
 
 
 @app.post("/profiles/{profile_id}/jobs/{job_id}/action", response_model=JobActionResponse)
-def job_action_endpoint(profile_id: str, job_id: str, job_action: JobActionRequest) -> JobActionResponse:
+def job_action_endpoint(
+    profile_id: str,
+    job_id: str,
+    job_action: JobActionRequest,
+    user_id: str = Depends(current_user_id),
+) -> JobActionResponse:
     try:
-        return _apply_job_action(profile_id, job_id, job_action.action, job_action.run_id)
+        return _apply_job_action(profile_id, job_id, job_action.action, job_action.run_id, user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1240,9 +1291,14 @@ def job_action_endpoint(profile_id: str, job_id: str, job_action: JobActionReque
 
 
 @app.post("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState, status_code=201)
-def save_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+def save_job_endpoint(
+    profile_id: str,
+    job_id: str,
+    job_state: JobStateRequest,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobState:
     try:
-        response = _apply_job_action(profile_id, job_id, "save", job_state.run_id)
+        response = _apply_job_action(profile_id, job_id, "save", job_state.run_id, user_id=user_id)
         if response.job_state is None:
             raise HTTPException(status_code=500, detail="Saved job state was not returned.")
     except Exception as e:
@@ -1254,9 +1310,14 @@ def save_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) 
 
 
 @app.post("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState, status_code=201)
-def dismiss_job_endpoint(profile_id: str, job_id: str, job_state: JobStateRequest) -> StoredJobState:
+def dismiss_job_endpoint(
+    profile_id: str,
+    job_id: str,
+    job_state: JobStateRequest,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobState:
     try:
-        response = _apply_job_action(profile_id, job_id, "dismiss", job_state.run_id)
+        response = _apply_job_action(profile_id, job_id, "dismiss", job_state.run_id, user_id=user_id)
         if response.job_state is None:
             raise HTTPException(status_code=500, detail="Dismissed job state was not returned.")
     except Exception as e:
@@ -1268,12 +1329,16 @@ def dismiss_job_endpoint(profile_id: str, job_id: str, job_state: JobStateReques
 
 
 @app.delete("/profiles/{profile_id}/jobs/{job_id}/save", response_model=StoredJobState)
-def unsave_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
+def unsave_job_endpoint(
+    profile_id: str,
+    job_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobState:
     try:
-        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id, user_id=user_id)
         if existing_state is None or existing_state["state"] != "saved":
             raise HTTPException(status_code=404, detail=f"Saved job not found: {job_id}")
-        _apply_job_action(profile_id, job_id, "clear", None)
+        _apply_job_action(profile_id, job_id, "clear", None, user_id=user_id)
     except HTTPException:
         raise
     except ValueError as e:
@@ -1285,12 +1350,16 @@ def unsave_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
 
 
 @app.delete("/profiles/{profile_id}/jobs/{job_id}/dismiss", response_model=StoredJobState)
-def undismiss_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
+def undismiss_job_endpoint(
+    profile_id: str,
+    job_id: str,
+    user_id: str = Depends(current_user_id),
+) -> StoredJobState:
     try:
-        existing_state = get_profile_job_state(_database_path(), profile_id, job_id)
+        existing_state = get_profile_job_state(_database_path(), profile_id, job_id, user_id=user_id)
         if existing_state is None or existing_state["state"] != "dismissed":
             raise HTTPException(status_code=404, detail=f"Dismissed job not found: {job_id}")
-        _apply_job_action(profile_id, job_id, "clear", None)
+        _apply_job_action(profile_id, job_id, "clear", None, user_id=user_id)
     except HTTPException:
         raise
     except ValueError as e:
@@ -1302,12 +1371,15 @@ def undismiss_job_endpoint(profile_id: str, job_id: str) -> StoredJobState:
 
 
 @app.get("/profiles/{profile_id}/recommendations", response_model=RecommendationRunListResponse)
-def list_profile_recommendations(profile_id: str) -> RecommendationRunListResponse:
+def list_profile_recommendations(
+    profile_id: str,
+    user_id: str = Depends(current_user_id),
+) -> RecommendationRunListResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        runs = list_recommendation_runs(_database_path(), profile_id)
+        runs = list_recommendation_runs(_database_path(), profile_id, user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1320,17 +1392,21 @@ def list_profile_recommendations(profile_id: str) -> RecommendationRunListRespon
 
 
 @app.get("/profiles/{profile_id}/recommendations/{run_id}", response_model=RecommendResponse, response_model_exclude_none=True)
-def get_profile_recommendation_run(profile_id: str, run_id: str) -> RecommendResponse:
+def get_profile_recommendation_run(
+    profile_id: str,
+    run_id: str,
+    user_id: str = Depends(current_user_id),
+) -> RecommendResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
-        run = get_recommendation_run(_database_path(), profile_id, run_id)
+        run = get_recommendation_run(_database_path(), profile_id, run_id, user_id=user_id)
         if run is None:
             raise HTTPException(status_code=404, detail=f"Recommendation run not found: {run_id}")
-        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
-        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
-        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -1407,9 +1483,13 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
 
 
 @app.post("/profiles/{profile_id}/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
-def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> RecommendResponse:
+def recommend_for_profile(
+    profile_id: str,
+    request: ProfileRecommendRequest,
+    user_id: str = Depends(current_user_id),
+) -> RecommendResponse:
     try:
-        stored_profile = get_profile(_database_path(), profile_id)
+        stored_profile = get_profile(_database_path(), profile_id, user_id=user_id)
         if stored_profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found: {profile_id}")
 
@@ -1420,14 +1500,14 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
         feedback_profile: Optional[Dict[str, Any]] = None
         feedback_source: Optional[str] = None
         if request.include_feedback:
-            stored_events = get_feedback_events(_database_path(), profile_id)
+            stored_events = get_feedback_events(_database_path(), profile_id, user_id=user_id)
             if stored_events:
                 feedback_profile = _build_feedback_profile_from_events(profile_id, stored_events)
                 feedback_source = "stored_feedback_events"
 
-        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
-        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
-        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved", user_id=user_id)
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed", user_id=user_id)
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied", user_id=user_id)
         job_state_by_id = {
             job_state["job_id"]: job_state
             for job_state in saved_jobs + dismissed_jobs + applied_jobs
@@ -1457,6 +1537,7 @@ def recommend_for_profile(profile_id: str, request: ProfileRecommendRequest) -> 
             persisted_run = create_recommendation_run(
                 _database_path(),
                 profile_id=profile_id,
+                user_id=user_id,
                 jobs_dir=request.jobs_dir,
                 top_k=request.top_k,
                 eligible_only=request.eligible_only,

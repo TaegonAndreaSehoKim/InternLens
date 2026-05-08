@@ -117,6 +117,40 @@ def test_profile_create_get_and_update_flow(tmp_path: Path, monkeypatch) -> None
     assert update_body["notes"] == "Updated profile note"
 
 
+def test_profile_api_scopes_data_by_user_header(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    first_profile = _profile_payload() | {"notes": "first account"}
+    second_profile = _profile_payload() | {"notes": "second account"}
+    first_headers = {"X-InternLens-User-Id": "cognito-sub-a"}
+    second_headers = {"X-InternLens-User-Id": "cognito-sub-b"}
+
+    assert client.post("/profiles", json=first_profile, headers=first_headers).status_code == 201
+    assert client.post("/profiles", json=second_profile, headers=second_headers).status_code == 201
+
+    client.post(
+        "/profiles/user_001/feedback",
+        json={
+            "profile_id": "user_001",
+            "events": [{"job_id": "job_a", "feedback_label": "saved"}],
+        },
+        headers=first_headers,
+    )
+
+    first_response = client.get("/profiles/user_001", headers=first_headers)
+    second_response = client.get("/profiles/user_001", headers=second_headers)
+    first_feedback = client.get("/profiles/user_001/feedback", headers=first_headers)
+    second_feedback = client.get("/profiles/user_001/feedback", headers=second_headers)
+
+    assert first_response.status_code == 200
+    assert first_response.json()["notes"] == "first account"
+    assert second_response.status_code == 200
+    assert second_response.json()["notes"] == "second account"
+    assert len(first_feedback.json()["events"]) == 1
+    assert second_feedback.json()["events"] == []
+
+
 def test_profile_feedback_endpoints_store_and_return_events(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
