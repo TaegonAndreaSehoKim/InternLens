@@ -10,7 +10,7 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 ## Highlights
 
 - **Live staging app:** `https://main.d1d00e49guhewo.amplifyapp.com`
-- **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk, and CloudFront providing the HTTPS API endpoint.
+- **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk behind CloudFront, and backend release automation through CodePipeline/CodeBuild.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
 - **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, and paginated shortlist review are available through the API and frontend.
@@ -38,6 +38,7 @@ InternLens currently supports:
 - user-scoped stored profile, feedback, recommendation history, job action, and dashboard APIs
 - Cognito JWT auth mode for account-scoped API access, with development auth still available for local demos
 - Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, and paginated shortlist inspection
+- AWS staging deployment with Amplify frontend auto-deploys and a CodePipeline path for backend test/package/deploy to Elastic Beanstalk
 - regression-tested iteration
 
 Current architecture planning also includes a long-term source acquisition strategy centered on:
@@ -756,6 +757,7 @@ Current staging shape:
 - frontend hosted with AWS Amplify Hosting
 - FastAPI backend running on Elastic Beanstalk
 - CloudFront in front of the backend to provide an HTTPS API endpoint
+- backend release automation through CodePipeline and CodeBuild
 - SQLite used only for single-server staging persistence
 - source refresh and promotion scripts kept as manual operator actions, not public web actions
 
@@ -788,7 +790,18 @@ This writes `outputs/internlens_eb_backend.zip` with `Procfile`, `requirements.t
 
 The frontend deploy is configured with the root `amplify.yml`. Amplify uses `frontend` as the app root, runs `npm ci`, builds with `npm run build`, and publishes `dist`.
 
-Backend deployment can be automated with AWS CodePipeline and CodeBuild using the repo-root `buildspec.yml`. The build runs the Python regression suite, validates the Elastic Beanstalk source bundle, and emits the Beanstalk runtime files as the CodeBuild output artifact.
+Backend deployment can be automated with AWS CodePipeline and CodeBuild using the repo-root `buildspec.yml`. The current staging pipeline is:
+
+```text
+GitHub main
+  -> CodePipeline: internlens-backend-staging
+  -> CodeBuild: internlens-backend-build
+  -> Elastic Beanstalk: internlens / Internlens-env
+```
+
+The build runs the Python regression suite, validates the Elastic Beanstalk source bundle, and emits the Beanstalk runtime files as the CodeBuild output artifact. The Elastic Beanstalk deploy action must use the CodeBuild output artifact, not the original GitHub source artifact. The CodePipeline service role also needs Elastic Beanstalk deploy permissions, including `elasticbeanstalk:CreateApplicationVersion`.
+
+Backend deploys are expected to run after changes are pushed to `main`. If the frontend is current but API behavior is stale, check the CodePipeline deploy status before changing frontend configuration.
 
 Current deployed environment values:
 
