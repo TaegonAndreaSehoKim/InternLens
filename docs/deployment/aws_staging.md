@@ -209,6 +209,85 @@ Create the backend source bundle:
 .\.venv\Scripts\python.exe scripts\package_eb.py
 ```
 
+## Automated Backend Deployment with CodePipeline
+
+The frontend already deploys automatically through Amplify when `main` changes.
+The backend can be brought into the same push-driven workflow with CodePipeline and CodeBuild:
+
+```text
+GitHub main push
+  -> CodePipeline source stage
+  -> CodeBuild test/package stage
+  -> Elastic Beanstalk deploy stage
+```
+
+The repository root includes `buildspec.yml` for this backend pipeline.
+It does two things:
+
+- runs `python -m pytest -q`
+- runs `python scripts/package_eb.py` as a source-bundle validation check
+
+The CodeBuild output artifact is intentionally not `outputs/internlens_eb_backend.zip`.
+CodePipeline packages the selected artifact files for the next action, so the artifact should expose the Beanstalk source-bundle layout directly:
+
+```text
+Procfile
+requirements.txt
+src/**/*
+data/processed/jobs/**/*
+```
+
+### Console setup checklist
+
+1. Open AWS CodePipeline in `us-east-2`.
+2. Create a pipeline named something like `internlens-backend-staging`.
+3. Choose or create a service role for CodePipeline.
+4. Choose GitHub as the source provider and connect the `InternLens` repository.
+5. Select the `main` branch.
+6. Add a build stage using AWS CodeBuild.
+7. Create a CodeBuild project named something like `internlens-backend-build`.
+8. Use a managed Linux image with Python available.
+9. Set the buildspec path to the repo-root default `buildspec.yml`.
+10. Keep the primary build artifact as the build output artifact.
+11. Add a deploy stage using Elastic Beanstalk.
+12. Select the existing Elastic Beanstalk application and the `internlens-env` environment.
+13. Use the CodeBuild output artifact as the deploy input artifact, not the original GitHub source artifact.
+14. Save the pipeline and run it once manually.
+
+### Required Elastic Beanstalk environment variables
+
+For Cognito-backed staging auth, the Beanstalk environment must have:
+
+```text
+INTERNLENS_AUTH_MODE=cognito
+INTERNLENS_COGNITO_REGION=us-east-2
+INTERNLENS_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
+INTERNLENS_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
+INTERNLENS_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://main.d1d00e49guhewo.amplifyapp.com
+```
+
+After the first successful pipeline deployment, verify that the backend is running the latest code:
+
+```powershell
+$body = @{
+  top_k = 1000
+  include_feedback = $true
+  exclude_dismissed = $true
+  exclude_applied = $true
+  include_debug = $true
+  save_run = $true
+} | ConvertTo-Json -Compress
+
+Invoke-WebRequest `
+  -Uri "https://d187u93cen5bw8.cloudfront.net/profiles/user_001/recommend" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+If Cognito mode is active, unauthenticated stored-profile calls should return `401`.
+If `top_k=1000` still returns `422`, the Beanstalk environment is still running an older backend build.
+
 Smoke the backend after deploy:
 
 ```text

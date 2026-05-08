@@ -788,6 +788,8 @@ This writes `outputs/internlens_eb_backend.zip` with `Procfile`, `requirements.t
 
 The frontend deploy is configured with the root `amplify.yml`. Amplify uses `frontend` as the app root, runs `npm ci`, builds with `npm run build`, and publishes `dist`.
 
+Backend deployment can be automated with AWS CodePipeline and CodeBuild using the repo-root `buildspec.yml`. The build runs the Python regression suite, validates the Elastic Beanstalk source bundle, and emits the Beanstalk runtime files as the CodeBuild output artifact.
+
 Current deployed environment values:
 
 ```text

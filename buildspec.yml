@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - python -m pip install --upgrade pip
+      - python -m pip install -r requirements.txt
+  build:
+    commands:
+      - python -m pytest -q
+      - python scripts/package_eb.py
+
+artifacts:
+  files:
+    - Procfile
+    - requirements.txt
+    - src/**/*
+    - data/processed/jobs/**/*
+  discard-paths: no
