@@ -13,8 +13,8 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 - **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk, and CloudFront providing the HTTPS API endpoint.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
-- **Product workflow:** user-scoped stored profiles, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, and state-specific job views are available through the API and frontend.
-- **Quality checkpoint:** Python suite currently passes at `182 passed`; frontend lint, tests, and production build are also passing.
+- **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, and paginated shortlist review are available through the API and frontend.
+- **Quality checkpoint:** Python suite currently passes at `185 passed`; frontend lint, tests, and production build are also passing.
 - **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
 
 ## Current status
@@ -36,7 +36,8 @@ InternLens currently supports:
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
 - user-scoped stored profile, feedback, recommendation history, job action, and dashboard APIs
-- Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, and saved/applied/hidden review
+- Cognito JWT auth mode for account-scoped API access, with development auth still available for local demos
+- Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, and paginated shortlist inspection
 - regression-tested iteration
 
 Current architecture planning also includes a long-term source acquisition strategy centered on:
@@ -48,8 +49,8 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `182 passed`
-- frontend production build passing with `npm run build`
+- current total: `185 passed`
+- frontend lint, Vitest, and production build passing with `npm run lint`, `npm test -- --run`, and `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -126,8 +127,8 @@ The current implementation is intentionally simple and transparent. It is design
 - source pipeline tests
 - source recall and promotion smoke tests
 - profile API tests
-- full suite currently passing: `182 passed`
-- frontend build check with `npm run build`
+- full suite currently passing: `185 passed`
+- frontend lint, test, and build checks with `npm run lint`, `npm test -- --run`, and `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
 ---
@@ -631,6 +632,7 @@ Useful notes:
 - stored-profile recommendation calls suppress previously hidden jobs by default
 - result items from stored-profile recommendations and saved run snapshots can include the latest `user_job_state`
 - when `VITE_AUTH_MODE=cognito`, the frontend uses Cognito Hosted UI and sends the Cognito access token as a bearer token on API requests
+- the frontend asks the API for a larger shortlist snapshot and paginates visible results in groups of 20, so users can review the full available result set without a long scrolling wall
 
 Save, apply, or hide a job from a stored-profile workflow:
 
@@ -719,8 +721,8 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `182 passed`
-- frontend build passing with `npm run build`
+- current total: `185 passed`
+- frontend lint, tests, and build passing with `npm run lint`, `npm test -- --run`, and `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
 
@@ -742,7 +744,7 @@ Current status:
 - `/recommend` still exposes `jobs_dir` for developer flexibility even though the default flow now uses the internal corpus
 - the API still exposes `include_debug` because development and evaluation workflows need access to raw ranking fields
 - the full source lifecycle is now scriptable, but it still depends on curated company seeds rather than broad autonomous discovery
-- persisted user data is now user-scoped in the schema, but authentication is still not production-grade until Cognito JWT validation and managed database persistence are added
+- persisted user data is user-scoped and Cognito JWT validation is available, but single-server SQLite should be replaced with managed database persistence before real multi-user use
 
 ---
 

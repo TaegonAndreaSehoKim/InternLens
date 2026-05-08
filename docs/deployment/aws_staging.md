@@ -242,7 +242,8 @@ Returned jobs: 3
 
 ## Current Staging Limitations
 
-- No production authentication yet; `X-InternLens-User-Id` is only a development bridge toward Cognito.
+- Cognito authentication mode is implemented, but staging should still be treated as a demo environment until auth rollout, callback/logout URLs, and operational settings are reviewed together.
+- `X-InternLens-User-Id` remains only a development bridge for `INTERNLENS_AUTH_MODE=dev`.
 - SQLite is still single-host prototype persistence, though the schema now scopes rows by user.
 - Corpus refresh is not isolated as a separate scheduled worker.
 - Generated raw/processed data can be large; avoid rewriting data directories during deploy.

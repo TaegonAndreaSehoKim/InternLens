@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `182 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `185 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -140,6 +140,7 @@ The frontend uses these APIs to support:
 - API behavior remains stable after ranking refinements
 - stored-profile, feedback, recommendation history, and job action APIs are working
 - the Vite/React frontend can exercise the main demo workflow, including clickable dashboard state summaries
+- Cognito JWT auth mode can scope stored workflow data by signed-in account while development auth remains available for local demos
 - GitHub Actions runs backend tests and has a scheduled/manual corpus refresh artifact workflow
 - AWS staging is live with Amplify for the frontend, Elastic Beanstalk for the backend, and CloudFront for HTTPS API access
 
@@ -154,6 +155,10 @@ Recent work focused on:
 - adding a Vite/React frontend with session persistence, API health status, recommendation filters, score dials, and job action buttons
 - cleaning up dashboard UX so users see saved/applied/hidden state transitions instead of internal run identifiers
 - making dashboard summary counts open the matching shortlist, saved, applied, or hidden job view
+- adding local Cognito login/sign-out flow validation and clearer profile-save feedback
+- expanding the active internship source corpus from priority company seeds
+- paginating full shortlist results in the frontend while increasing API result limits
+- demoting non-core marketing/communications internships that were overpromoted by broad analytics wording
 - stress-testing company-seed-based source discovery with a larger seed draft
 - hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
 - tightening source promotion safeguards for direct ATS probe candidates and inactive registry entries
@@ -162,7 +167,7 @@ Recent work focused on:
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
 
 The latest validation state shows:
-- `182 passed`
+- `185 passed`
 - `npm run lint`, `npm test`, and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
@@ -224,7 +229,7 @@ It also shows good engineering discipline:
 ### Ranking limitations
 - the baseline is still heuristic
 - fallback skill extraction can still overgeneralize in some postings
-- some broad AI-adjacent or operations internships may still remain in the shortlist
+- some broad AI-adjacent or operations internships may still remain in the shortlist, though non-core marketing and communications internships are now demoted more aggressively
 - there is no learned relevance model yet
 
 ### Data limitations
@@ -234,7 +239,7 @@ It also shows good engineering discipline:
 - structured qualification fields are often sparse
 
 ### Product limitations
-- shortlist filtering is useful, but the frontend still needs stronger empty states and error states
+- shortlist filtering and pagination are useful, but the frontend still needs stronger empty states and error states across the full workflow
 - saved/applied/hidden state transitions are now clearer, but dashboard copy and interaction polish still need iteration
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight

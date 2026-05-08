@@ -1,6 +1,6 @@
 # Week 5 Devlog
 
-Week 5 covers Day 34 onward.
+Week 5 covers Day 34-41.
 The focus shifted from local UI polish to staging deployment readiness and an actual AWS-hosted demo path.
 
 ## Day 34 - Dashboard UI Density and Activity Surface
@@ -285,7 +285,7 @@ The frontend is now ready to use the created Cognito User Pool once Amplify and 
 - Backend auth can now run in development header mode or Cognito JWT mode.
 - Frontend auth can now run in development mode or Cognito Hosted UI mode.
 
-### Latest quality checkpoint
+### Week 5 quality checkpoint
 - Backend tests: **182 passed**
 - Frontend checks:
   - `npm run lint` -> passed
@@ -294,8 +294,7 @@ The frontend is now ready to use the created Cognito User Pool once Amplify and 
 - Deployment smoke against CloudFront backend: passed.
 
 ### Remaining next steps
-- Add localhost callback/logout URLs to the Cognito app client for local auth testing.
-- Switch Amplify and Elastic Beanstalk auth environment variables to Cognito mode after local login verification.
+- Verify the staging Cognito rollout before treating authentication as production-ready.
 - Move persistence off single-host SQLite to RDS PostgreSQL before real multi-user use.
 - Decide whether to add a custom domain for frontend and API.
 - Add a short demo walkthrough or screenshots for presentation use.
