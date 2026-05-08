@@ -407,11 +407,15 @@ textarea {
   display: grid;
   align-content: start;
   gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-gutter: stable;
 }
 
 .activity-list article {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
   padding: 10px 0;
@@ -435,6 +439,7 @@ textarea {
 .activity-badge {
   display: inline-flex;
   justify-content: center;
+  max-width: 76px;
   border-radius: 999px;
   padding: 6px 8px;
   color: var(--steel);
@@ -450,12 +455,12 @@ textarea {
 }
 
 .activity-badge.applied,
-.activity-badge.recommendation-run {
+.activity-badge.shortlist {
   color: #5c4312;
   background: rgba(214, 154, 53, 0.2);
 }
 
-.activity-badge.dismissed {
+.activity-badge.hidden {
   color: var(--cedar);
   background: rgba(158, 78, 50, 0.12);
 }

@@ -10,7 +10,7 @@ import {
   recommendationCounts,
   visibleRecommendations
 } from "./recommendationHelpers";
-import { activityLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
+import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
@@ -18,7 +18,7 @@ const STORAGE_KEY = "internlens.ui.state";
 const JOB_STATE_LABELS = {
   saved: "Saved",
   applied: "Applied",
-  dismissed: "Dismissed"
+  dismissed: "Hidden"
 };
 
 const SERVER_STATUS_LABELS = {
@@ -79,6 +79,23 @@ function eligibilityLabel(value) {
     return null;
   }
   return titleCase(value);
+}
+
+function clearActionLabel(state) {
+  const labels = {
+    applied: "Undo applied",
+    dismissed: "Show again",
+    saved: "Unsave"
+  };
+  return labels[state] ?? "Undo";
+}
+
+function jobStateLookup(dashboard) {
+  const entries = [
+    ...(dashboard?.saved_jobs ?? []),
+    ...(dashboard?.applied_jobs ?? [])
+  ];
+  return Object.fromEntries(entries.map((item) => [item.job_id, item]));
 }
 
 function readStoredState() {
@@ -389,7 +406,7 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
             <Metric label="Shortlists" value={summary.recommendation_run_count} />
             <Metric label="Saved" value={summary.saved_jobs_count} />
             <Metric label="Applied" value={summary.applied_jobs_count} />
-            <Metric label="Dismissed" value={summary.dismissed_jobs_count} />
+            <Metric label="Hidden" value={summary.dismissed_jobs_count} />
           </div>
 
           <div className="next-actions">
@@ -418,8 +435,12 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
           </div>
 
           <div className="dashboard-lower">
-            <ActivityList activities={dashboard.activity.activities} />
-            <RunList runs={dashboard.recent_runs} onLoadRun={onLoadRun} />
+            <ActivityList activities={dashboard.activity.activities} jobLookup={jobStateLookup(dashboard)} />
+            <RunList
+              runs={dashboard.recent_runs}
+              totalRuns={summary.recommendation_run_count}
+              onLoadRun={onLoadRun}
+            />
           </div>
         </>
       )}
@@ -467,7 +488,7 @@ function RecommendationPanel({ recommendations, selectedRun, filter, onFilterCha
               <strong>No jobs shown</strong>
               <span>
                 {jobs.length === 0
-                  ? "This run returned no visible jobs. Applied and dismissed jobs are excluded from new runs."
+                  ? "This shortlist has no visible roles. Applied and hidden roles are excluded from new shortlists."
                   : "No jobs match the selected recommendation filter."}
               </span>
             </div>
@@ -533,11 +554,11 @@ function JobCard({ job, busy, onAction }) {
             {isApplied ? "Applied" : "Mark applied"}
           </button>
           <button disabled={busy || isDismissed || isApplied} onClick={() => onAction(job.job_id, "dismiss")}>
-            {isDismissed ? "Dismissed" : "Dismiss"}
+            {isDismissed ? "Hidden" : "Hide role"}
           </button>
           {currentState && (
             <button className="subtle-action" disabled={busy} onClick={() => onAction(job.job_id, "clear")}>
-              Clear state
+              {clearActionLabel(currentState)}
             </button>
           )}
         </div>
@@ -585,7 +606,7 @@ function Metric({ label, value }) {
   );
 }
 
-function ActivityList({ activities }) {
+function ActivityList({ activities, jobLookup }) {
   return (
     <section className="activity-list">
       <h3>Activity</h3>
@@ -594,11 +615,11 @@ function ActivityList({ activities }) {
       ) : (
         activities.map((activity) => (
           <article key={`${activity.activity_type}-${activity.created_at}-${activity.job_id ?? activity.run_id ?? "none"}`}>
-            <span className={`activity-badge ${actionClass(activity.activity_type)}`}>
-              {activityLabel(activity.activity_type)}
+            <span className={`activity-badge ${actionClass(activityBadgeLabel(activity))}`}>
+              {activityBadgeLabel(activity)}
             </span>
             <div>
-              <strong>{activityTitle(activity)}</strong>
+              <strong>{activityTitle(activity, jobLookup)}</strong>
               <small>{compactTimestamp(activity.created_at)}</small>
             </div>
           </article>
@@ -608,7 +629,7 @@ function ActivityList({ activities }) {
   );
 }
 
-function RunList({ runs, onLoadRun }) {
+function RunList({ runs, totalRuns, onLoadRun }) {
   return (
     <section className="run-list">
       <h3>Previous shortlists</h3>
@@ -617,7 +638,7 @@ function RunList({ runs, onLoadRun }) {
       ) : (
         runs.map((run, index) => (
           <button key={run.run_id} onClick={() => onLoadRun(run.run_id)}>
-            <span>Shortlist {index + 1}</span>
+            <span>Shortlist {Math.max(totalRuns - index, 1)}</span>
             <small>{run.returned_jobs} roles · {compactTimestamp(run.created_at)}</small>
           </button>
         ))
