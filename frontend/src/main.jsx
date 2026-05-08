@@ -68,6 +68,19 @@ function profilePayload(form) {
   };
 }
 
+function titleCase(value = "") {
+  return String(value)
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function eligibilityLabel(value) {
+  if (!value) {
+    return null;
+  }
+  return titleCase(value);
+}
+
 function readStoredState() {
   try {
     return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
@@ -373,7 +386,7 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
       ) : (
         <>
           <div className="metric-row">
-            <Metric label="Runs" value={summary.recommendation_run_count} />
+            <Metric label="Shortlists" value={summary.recommendation_run_count} />
             <Metric label="Saved" value={summary.saved_jobs_count} />
             <Metric label="Applied" value={summary.applied_jobs_count} />
             <Metric label="Dismissed" value={summary.dismissed_jobs_count} />
@@ -396,7 +409,7 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
           </div>
 
           <button className="primary-action" disabled={busy} onClick={onRun}>
-            Run recommendations
+            Find matches
           </button>
 
           <div className="mini-columns">
@@ -424,15 +437,15 @@ function RecommendationPanel({ recommendations, selectedRun, filter, onFilterCha
       <div className="panel-heading split">
         <div>
           <p className="eyebrow">Recommendations</p>
-          <h2>{selectedRun ? `Run ${selectedRun.slice(0, 12)}` : "No run loaded"}</h2>
+          <h2>{selectedRun ? "Current shortlist" : "No shortlist loaded"}</h2>
         </div>
         {recommendations && <span className="result-count">{visibleJobs.length} of {recommendations.returned_jobs} shown</span>}
       </div>
 
       {!recommendations ? (
         <div className="empty-state">
-          <strong>No run loaded</strong>
-          <span>Run recommendations or load a recent run to review ranked internship leads.</span>
+          <strong>No shortlist loaded</strong>
+          <span>Find matches or open a previous shortlist to review ranked internship leads.</span>
         </div>
       ) : (
         <>
@@ -477,6 +490,7 @@ function JobCard({ job, busy, onAction }) {
   const action = actionValue(job);
   const currentState = job.user_job_state;
   const watchouts = job.watchouts ?? job.blocking_issues ?? [];
+  const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
   const isApplied = currentState === "applied";
   const isDismissed = currentState === "dismissed";
@@ -487,17 +501,17 @@ function JobCard({ job, busy, onAction }) {
         <div className="job-meta">
           <span>{job.company}</span>
           <span>{job.location}</span>
-          <span>{job.fit_level}</span>
+          <span>{titleCase(job.fit_level)}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
         </div>
         <h3>{job.title}</h3>
         <p>{job.summary}</p>
-        <div className="job-detail-row">
-          <span>{job.eligibility_status}</span>
-          <span>{job.recommendation}</span>
-          {job.user_job_state_source_run_id && <span>from run {job.user_job_state_source_run_id.slice(0, 12)}</span>}
-        </div>
+        {eligibility && (
+          <div className="job-detail-row">
+            <span>{eligibility}</span>
+          </div>
+        )}
 
         <div className="evidence-grid">
           <EvidenceList title="Why it fits" items={job.why_apply} empty="No strong positive signals surfaced." />
@@ -597,14 +611,14 @@ function ActivityList({ activities }) {
 function RunList({ runs, onLoadRun }) {
   return (
     <section className="run-list">
-      <h3>Recent runs</h3>
+      <h3>Previous shortlists</h3>
       {runs.length === 0 ? (
-        <p className="muted">No recommendation runs yet. Start one from this dashboard.</p>
+        <p className="muted">No previous shortlists yet. Start one from this dashboard.</p>
       ) : (
-        runs.map((run) => (
+        runs.map((run, index) => (
           <button key={run.run_id} onClick={() => onLoadRun(run.run_id)}>
-            <span>{run.run_id.slice(0, 12)}</span>
-            <small>{run.returned_jobs} jobs · {compactTimestamp(run.created_at)}</small>
+            <span>Shortlist {index + 1}</span>
+            <small>{run.returned_jobs} roles · {compactTimestamp(run.created_at)}</small>
           </button>
         ))
       )}
@@ -621,8 +635,8 @@ function PreviewList({ title, items, empty }) {
       ) : (
         items.map((item) => (
           <div className="preview-item" key={item.job_id}>
-            <strong>{item.job_snapshot?.title ?? item.job_id}</strong>
-            <span>{item.job_snapshot?.company ?? item.state}</span>
+            <strong>{item.job_snapshot?.title ?? "Saved role"}</strong>
+            <span>{item.job_snapshot?.company ?? titleCase(item.state ?? "tracked")}</span>
           </div>
         ))
       )}
