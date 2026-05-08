@@ -19,7 +19,8 @@ const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? "dev";
 const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION ?? "";
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
 const COGNITO_APP_CLIENT_ID = import.meta.env.VITE_COGNITO_APP_CLIENT_ID ?? "";
-const RECOMMENDATION_BATCH_SIZE = 20;
+const RECOMMENDATION_FETCH_LIMIT = 1000;
+const RECOMMENDATION_PAGE_SIZE = 20;
 
 const JOB_STATE_LABELS = {
   saved: "Saved",
@@ -231,6 +232,19 @@ async function api(path, options = {}, authToken = null) {
   return body;
 }
 
+function friendlyErrorMessage(error) {
+  if (String(error.message).includes("fetch")) {
+    return "Server is offline. Check that the local API is running.";
+  }
+  if (error.status === 401) {
+    return "Sign in again, then save the profile.";
+  }
+  if (error.status === 403) {
+    return "This account cannot access that saved profile. Save a new profile for the current account.";
+  }
+  return error.message || "Something went wrong. Try again.";
+}
+
 function App({ authToken = null, accountEmail = "Local demo user", onSignOut = null }) {
   const [storedState] = useState(() => readStoredState());
   const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
@@ -245,16 +259,22 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [dashboardJobLists, setDashboardJobLists] = useState({});
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
+  const [profileStatus, setProfileStatus] = useState(null);
 
-  async function runTask(task) {
+  async function runTask(task, options = {}) {
     setBusy(true);
+    setProfileStatus(null);
     try {
       await task();
       setApiHealth("online");
+      if (options.successMessage) {
+        setProfileStatus({ type: "success", message: options.successMessage });
+      }
     } catch (error) {
       if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
       }
+      setProfileStatus({ type: "error", message: friendlyErrorMessage(error) });
     } finally {
       setBusy(false);
     }
@@ -306,7 +326,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     const data = await api(`/profiles/${profileId}/recommend`, {
       method: "POST",
       body: JSON.stringify({
-        top_k: RECOMMENDATION_BATCH_SIZE,
+        top_k: RECOMMENDATION_FETCH_LIMIT,
         include_feedback: true,
         exclude_dismissed: true,
         exclude_applied: true,
@@ -355,48 +375,51 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     async function restoreSession() {
       try {
         await api("/health", {}, authToken);
-        if (cancelled) return;
-        setApiHealth("online");
+      } catch {
+        if (!cancelled) {
+          setApiHealth("offline");
+        }
+        return;
+      }
 
-        if (!storedState.profileId) {
+      if (cancelled) return;
+      setApiHealth("online");
+
+      if (!storedState.profileId) {
+        return;
+      }
+
+      let restoredDashboard;
+      try {
+        restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`, {}, authToken);
+      } catch (error) {
+        if ([401, 403, 404].includes(error.status)) {
+          if (!cancelled) {
+            setDashboard(null);
+            setRecommendations(null);
+            setSelectedRun(null);
+          }
           return;
         }
+        return;
+      }
+      if (cancelled) return;
+      setDashboard(restoredDashboard);
 
-        let restoredDashboard;
+      if (storedState.selectedRun) {
         try {
-          restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`, {}, authToken);
-        } catch (error) {
-          if (error.status === 404) {
-            if (!cancelled) {
-              setDashboard(null);
-              setRecommendations(null);
-              setSelectedRun(null);
-            }
-            return;
-          }
-          throw error;
-        }
-        if (cancelled) return;
-        setDashboard(restoredDashboard);
-
-        if (storedState.selectedRun) {
-          try {
-            const restoredRun = await api(
-              `/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`,
-              {},
-              authToken
-            );
-            if (cancelled) return;
-            setRecommendations(restoredRun);
-          } catch {
-            if (!cancelled) {
-              setSelectedRun(null);
-            }
+          const restoredRun = await api(
+            `/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`,
+            {},
+            authToken
+          );
+          if (cancelled) return;
+          setRecommendations(restoredRun);
+        } catch {
+          if (!cancelled) {
+            setSelectedRun(null);
           }
         }
-      } catch {
-        if (cancelled) return;
-        setApiHealth("offline");
       }
     }
 
@@ -440,7 +463,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           form={form}
           setForm={setForm}
           busy={busy}
-          onSubmit={() => runTask(createOrLoadProfile)}
+          status={profileStatus}
+          onSubmit={() => runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." })}
         />
         <DashboardPanel
           dashboard={dashboard}
@@ -537,7 +561,7 @@ function Root() {
   );
 }
 
-function ProfilePanel({ form, setForm, busy, onSubmit }) {
+function ProfilePanel({ form, setForm, busy, status, onSubmit }) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -602,8 +626,9 @@ function ProfilePanel({ form, setForm, busy, onSubmit }) {
         </label>
       </div>
       <button className="primary-action" disabled={busy} onClick={onSubmit}>
-        Save profile
+        {busy ? "Saving..." : "Save profile"}
       </button>
+      {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
     </section>
   );
 }
@@ -707,6 +732,7 @@ function RecommendationPanel({
   busy,
   onAction
 }) {
+  const [page, setPage] = useState(1);
   const showingDashboardJobs = dashboardJobView !== "recommendations";
   const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
   const dashboardStateJobs = showingDashboardJobs
@@ -720,6 +746,15 @@ function RecommendationPanel({
     ? dashboardView.heading
     : selectedRun ? DASHBOARD_JOB_VIEWS.recommendations.heading : "No shortlist loaded";
   const resultTotal = showingDashboardJobs ? jobs.length : recommendations?.returned_jobs;
+  const pageCount = Math.max(1, Math.ceil(visibleJobs.length / RECOMMENDATION_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = visibleJobs.length === 0 ? 0 : (currentPage - 1) * RECOMMENDATION_PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * RECOMMENDATION_PAGE_SIZE, visibleJobs.length);
+  const pagedJobs = visibleJobs.slice(pageStart === 0 ? 0 : pageStart - 1, pageEnd);
+
+  useEffect(() => {
+    setPage(1);
+  }, [dashboardJobView, selectedRun, filter, visibleJobs.length]);
 
   return (
     <section className="panel results-panel">
@@ -728,7 +763,11 @@ function RecommendationPanel({
           <p className="eyebrow">{showingDashboardJobs ? "Dashboard jobs" : "Recommendations"}</p>
           <h2>{heading}</h2>
         </div>
-        {hasBoard && <span className="result-count">{visibleJobs.length} of {resultTotal} shown</span>}
+        {hasBoard && (
+          <span className="result-count">
+            {pageStart}-{pageEnd} of {resultTotal} shown
+          </span>
+        )}
       </div>
 
       {!hasBoard ? (
@@ -765,15 +804,53 @@ function RecommendationPanel({
               </span>
             </div>
           ) : (
-            <div className="job-list">
-              {visibleJobs.map((job) => (
-                <JobCard key={job.job_id} job={job} busy={busy} onAction={onAction} />
-              ))}
-            </div>
+            <>
+              <PaginationControls
+                currentPage={currentPage}
+                pageCount={pageCount}
+                pageStart={pageStart}
+                pageEnd={pageEnd}
+                total={visibleJobs.length}
+                onPageChange={setPage}
+              />
+              <div className="job-list">
+                {pagedJobs.map((job) => (
+                  <JobCard key={job.job_id} job={job} busy={busy} onAction={onAction} />
+                ))}
+              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                pageCount={pageCount}
+                pageStart={pageStart}
+                pageEnd={pageEnd}
+                total={visibleJobs.length}
+                onPageChange={setPage}
+              />
+            </>
           )}
         </>
       )}
     </section>
+  );
+}
+
+function PaginationControls({ currentPage, pageCount, pageStart, pageEnd, total, onPageChange }) {
+  if (pageCount <= 1) {
+    return null;
+  }
+
+  return (
+    <nav className="pagination" aria-label="Shortlist pages">
+      <button type="button" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>
+        Previous
+      </button>
+      <span>
+        {pageStart}-{pageEnd} of {total} · Page {currentPage} / {pageCount}
+      </span>
+      <button type="button" disabled={currentPage === pageCount} onClick={() => onPageChange(currentPage + 1)}>
+        Next
+      </button>
+    </nav>
   );
 }
 

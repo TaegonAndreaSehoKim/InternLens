@@ -144,7 +144,7 @@ class RecommendRequest(BaseModel):
         default=False,
         description="If true, suppress near-duplicate recommendation results that look like the same posting.",
     )
-    top_k: int = Field(default=10, ge=1, le=100)
+    top_k: int = Field(default=10, ge=1, le=1000)
 
     @model_validator(mode="after")
     def validate_profile_source(self) -> "RecommendRequest":
@@ -223,7 +223,7 @@ class ProfileRecommendRequest(BaseModel):
         default=True,
         description="If true, persist this recommendation run and its result snapshot.",
     )
-    top_k: int = Field(default=10, ge=1, le=100)
+    top_k: int = Field(default=10, ge=1, le=1000)
 
 
 class FeedbackExplanation(BaseModel):

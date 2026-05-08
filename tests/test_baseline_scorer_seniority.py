@@ -447,6 +447,77 @@ def test_business_analyst_intern_keeps_fallback_skill_matching_but_stays_skip() 
     assert result["action_label"] == "Skip"
 
 
+def test_digital_marketing_intern_stays_skip_despite_analytics_match() -> None:
+    profile = _build_profile()
+
+    job = {
+        "job_id": "digital_marketing_intern",
+        "company": "example",
+        "title": "Digital Marketing Intern",
+        "location": "Springdale, AR",
+        "description": (
+            "Join an internship program as a creative marketing intern supporting "
+            "campaigns, content, and social media reporting."
+        ),
+        "min_qualifications": (
+            "Pursuing a degree in Marketing, Communications, Graphic Design, or a "
+            "related field. Experience with social media platforms and analytics tools."
+        ),
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Graphic Design/ Marketing",
+        "team": "Work-Based Learning",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+
+    result = score_job(profile, job)
+
+    assert "data analysis" in result["matched_skills"]
+    assert result["action_label"] == "Skip"
+
+
+def test_core_data_intern_ranks_above_marketing_intern_with_analytics_match() -> None:
+    profile = _build_profile()
+    marketing_job = {
+        "job_id": "digital_marketing_intern",
+        "company": "example",
+        "title": "Digital Marketing Intern",
+        "location": "Springdale, AR",
+        "description": "Join an internship program supporting social media reporting.",
+        "min_qualifications": "Experience with social media platforms and analytics tools.",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Graphic Design/ Marketing",
+        "team": "Work-Based Learning",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+    data_job = {
+        "job_id": "data_science_intern",
+        "company": "example",
+        "title": "Data Science Intern",
+        "location": "Remote",
+        "description": "Use Python and machine learning to analyze product data.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Data Science",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    ranked = rank_jobs(profile, [marketing_job, data_job])
+
+    assert ranked[0]["job_id"] == "data_science_intern"
+    assert ranked[1]["job_id"] == "digital_marketing_intern"
+    assert ranked[1]["action_label"] == "Skip"
+
+
 def test_data_analytics_intern_still_gets_apply_later_without_business_context() -> None:
     profile = _build_profile()
 

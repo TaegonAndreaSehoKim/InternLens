@@ -329,6 +329,24 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.form-status {
+  margin: 14px 0 0;
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.form-status.success {
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.13);
+}
+
+.form-status.error {
+  color: var(--cedar);
+  background: rgba(158, 78, 50, 0.14);
+}
+
 .check-row {
   display: flex;
   align-items: center;
@@ -575,6 +593,40 @@ textarea {
 
 .filter-bar button.active strong {
   background: rgba(255, 250, 240, 0.18);
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 16px;
+  border: 1px solid rgba(23, 33, 28, 0.08);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.pagination span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.pagination button {
+  border: 0;
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: #fffaf0;
+  background: var(--ink);
+  font-weight: 900;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  background: rgba(23, 33, 28, 0.08);
 }
 
 .result-count,

@@ -122,12 +122,19 @@ NON_TECHNICAL_TITLE_FALLBACK_KEYWORDS = [
 
 NON_CORE_BUSINESS_INTERNSHIP_KEYWORDS = [
     "business analyst",
+    "content marketing",
+    "digital marketing",
+    "email marketing",
+    "graphic design",
+    "marketing",
     "revenue operations",
     "sales operations",
     "marketing operations",
     "people operations",
     "hr operations",
     "human resources",
+    "communications",
+    "social media",
     "product manager",
     "product management",
     "customer success",
@@ -201,8 +208,8 @@ def _looks_like_non_core_business_internship(job: Dict[str, Any]) -> bool:
     Identify internship titles that look adjacent to business/ops work rather
     than core engineering, research, or platform roles.
 
-    This is intentionally conservative and is only used to prevent weak
-    internship-language grace from promoting noisy public-board roles.
+    This is intentionally conservative and is used to prevent noisy adjacent
+    roles from outranking core engineering, research, or data internships.
     """
     normalized_context = _canonicalize_text(
         " ".join(
@@ -682,6 +689,8 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     has_relevance_signal = bool(matched_skills) or role_score >= 0.20
 
     if blockers:
+        action_label = "Skip"
+    elif looks_like_non_core_business_internship:
         action_label = "Skip"
     elif final_score >= 70:
         action_label = "Apply Now"
