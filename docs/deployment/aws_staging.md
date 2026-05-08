@@ -138,6 +138,7 @@ npm run build
 Deploy `frontend/dist` through Amplify Hosting or S3/CloudFront.
 
 For the current Amplify deployment, the root `amplify.yml` uses `appRoot: frontend`, runs `npm ci`, then `npm run build`, and publishes `dist`.
+Pushing to `main` triggers the Amplify frontend build automatically, so frontend-only changes generally do not require a separate AWS console deployment step.
 
 ## Backend Start Command
 
@@ -215,3 +216,4 @@ Returned jobs: 3
 - Corpus refresh is not isolated as a separate scheduled worker.
 - Generated raw/processed data can be large; avoid rewriting data directories during deploy.
 - CORS should be restricted to the deployed frontend URL, not left broad.
+- Frontend deploys are automatic from `main`, but backend code or corpus changes still require a new Elastic Beanstalk bundle/upload.

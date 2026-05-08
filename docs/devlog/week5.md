@@ -155,6 +155,43 @@ The deployed frontend can call the deployed backend over HTTPS, and the backend 
 
 ---
 
+## Day 38 - Dashboard Job-State UX Cleanup
+
+### Focus
+Make the dashboard and current shortlist behave more like a user-facing application board instead of exposing internal run and job-state mechanics.
+
+### What was done
+- Simplified the top-right frontend server status to online/offline style messaging.
+- Renamed profile setup labels to more user-facing language:
+  - `Candidate signal` -> `Candidate information`
+  - `Profile ID` -> `User ID`
+- Switched graduation input to a month picker and degree to a dropdown.
+- Removed internal-looking dashboard identifiers from recent activity and recent shortlist cards.
+- Changed activity labels from raw recommendation/run language to `Shortlist`, `Saved`, `Applied`, and `Hidden`.
+- Added an activity scroll area so long histories do not stretch the whole page.
+- Formatted activity job references as readable company/title/term text when snapshot data is available.
+- Renamed `Dismiss` to `Hide role` and clarified that hidden roles are suppressed from future shortlists.
+- Added immediate state feedback in recommendation cards:
+  - `Mark applied` becomes `Undo applied`
+  - `Hide role` becomes `Show again`
+- Made saved run numbering stable, with earlier shortlists getting lower numbers while the newest shortlist stays at the top.
+- Made dashboard summary counts clickable so `Shortlists`, `Saved`, `Applied`, and `Hidden` can drive the lower review panel.
+- Added backend support for returning hidden job previews in the dashboard.
+- Updated saved run retrieval so old shortlist snapshots are annotated with the latest saved/applied/hidden state.
+
+### Validation
+- `npm run lint` -> passed
+- `npm test` -> **8 passed**
+- `npm run build` -> passed
+- `pytest tests/test_profile_api.py -q` -> **24 passed**
+- `pytest -q` -> **177 passed**
+
+### Result
+The dashboard now gives clearer feedback after job actions and provides a direct way to review saved, applied, and hidden jobs.
+Hidden jobs are now framed as a reversible shortlist suppression action rather than an ambiguous dismissal.
+
+---
+
 ## Week 5 Snapshot
 
 ### Current project state
@@ -163,12 +200,14 @@ The deployed frontend can call the deployed backend over HTTPS, and the backend 
 - AWS staging deployment is live.
 - Frontend is hosted through Amplify.
 - Backend is hosted through Elastic Beanstalk and exposed over HTTPS through CloudFront.
+- Dashboard job actions now have clearer user-facing labels and reversible state transitions.
+- The dashboard can show shortlist, saved, applied, and hidden job views from the summary counts.
 
 ### Latest quality checkpoint
 - Backend tests: **177 passed**
 - Frontend checks:
   - `npm run lint` -> passed
-  - `npm test` -> **6 passed**
+  - `npm test` -> **8 passed**
   - `npm run build` -> passed
 - Deployment smoke against CloudFront backend: passed.
 
@@ -177,3 +216,4 @@ The deployed frontend can call the deployed backend over HTTPS, and the backend 
 - Move persistence off single-host SQLite before real multi-user use.
 - Decide whether to add a custom domain for frontend and API.
 - Add a short demo walkthrough or screenshots for presentation use.
+- Keep iterating on frontend empty states, error states, and dashboard copy.

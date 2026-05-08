@@ -13,7 +13,7 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 - **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk, and CloudFront providing the HTTPS API endpoint.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
-- **Product workflow:** stored profiles, recommendation runs, feedback, saved/applied/dismissed job actions, and dashboard activity are available through the API and frontend.
+- **Product workflow:** stored profiles, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, and state-specific job views are available through the API and frontend.
 - **Quality checkpoint:** Python suite currently passes at `177 passed`; frontend lint, tests, and production build are also passing.
 - **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
 
@@ -36,7 +36,7 @@ InternLens currently supports:
 - shortlist-oriented CLI filters
 - API endpoints for recommendation and job detail lookup
 - stored profile, feedback, recommendation history, job action, and dashboard APIs
-- Vite/React frontend for profile setup, dashboard review, recommendation runs, and job actions
+- Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, and saved/applied/hidden review
 - regression-tested iteration
 
 Current architecture planning also includes a long-term source acquisition strategy centered on:
@@ -111,7 +111,7 @@ The current implementation is intentionally simple and transparent. It is design
 - API endpoint for `/jobs/{id}`
 - profile persistence and stored-feedback recommendation flow
 - shared output filtering between CLI and API, including optional similar-result suppression
-- local frontend dashboard workflow
+- local frontend dashboard workflow with clickable saved/applied/hidden state summaries
 
 ### Validation
 - ingestion client tests
@@ -618,10 +618,10 @@ Useful notes:
 - stored-profile recommendation calls now save a run snapshot by default
 - set `save_run=false` when you want a one-off recommendation without history
 - saved runs let the app show prior recommendation sessions without recomputing immediately
-- stored-profile recommendation calls suppress previously dismissed jobs by default
-- result items from stored-profile recommendations can now include `user_job_state`
+- stored-profile recommendation calls suppress previously hidden jobs by default
+- result items from stored-profile recommendations and saved run snapshots can include the latest `user_job_state`
 
-Save or dismiss a job from a stored-profile workflow:
+Save, apply, or hide a job from a stored-profile workflow:
 
 ```json
 POST /profiles/user_001/jobs/job_a/action
@@ -631,7 +631,13 @@ POST /profiles/user_001/jobs/job_a/action
 }
 ```
 
-Clear a previously saved or dismissed state:
+Supported actions are:
+- `save`: keep the role in the saved list
+- `apply`: mark the role as applied
+- `dismiss`: hide the role from future recommendation shortlists
+- `clear`: undo the current saved, applied, or hidden state
+
+Clear a previously saved, applied, or hidden state:
 
 ```json
 POST /profiles/user_001/jobs/job_a/action
@@ -650,7 +656,9 @@ The dashboard response combines:
 - summary counts
 - recent activity
 - recent recommendation runs
-- saved job previews
+- saved, applied, and hidden job previews
+
+In the frontend, clicking the dashboard `Shortlists`, `Saved`, `Applied`, or `Hidden` count changes the lower review panel to the matching job set. Hidden jobs are not deleted; they are suppressed from future shortlists until the user chooses `Show again`.
 
 ---
 
@@ -823,8 +831,8 @@ That makes it a strong base for future work such as:
 
 Planned follow-up improvements:
 - improve frontend empty states and error messages
-- make saved, applied, and dismissed state transitions clearer in recommendation cards
-- add a lightweight frontend lint or test setup
+- continue polishing saved, applied, and hidden state transitions in recommendation cards
+- expand frontend tests beyond the current helper coverage
 - continue refining ranking noise for broad non-core internships
 - continue improving company, team, and location normalization
 - measure source-discovery recall on larger seed subsets and use promotion-candidate smoke reports to judge quality

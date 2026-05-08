@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `163 passed`, and the frontend production build passes with `npm run build`.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `177 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -110,15 +110,17 @@ InternLens now includes SQLite-backed local persistence for:
 - profiles
 - feedback events
 - recommendation run snapshots
-- saved, dismissed, and applied job states
+- saved, hidden, and applied job states
 
 The frontend uses these APIs to support:
 - profile setup and restoration
-- API health checks
+- simple online/offline API health status
 - dashboard summary review
+- dashboard saved/applied/hidden job review
 - recommendation runs and historical run loading
 - filtering by `Apply Now`, `Apply Later`, and `Skip`
-- job actions for save, applied, and dismiss
+- job actions for save, applied, and hidden states
+- undo controls for saved, applied, and hidden job states
 
 ---
 
@@ -133,8 +135,9 @@ The frontend uses these APIs to support:
 - the CLI now supports shortlist-style filtering
 - API behavior remains stable after ranking refinements
 - stored-profile, feedback, recommendation history, and job action APIs are working
-- the Vite/React frontend can exercise the main demo workflow
+- the Vite/React frontend can exercise the main demo workflow, including clickable dashboard state summaries
 - GitHub Actions runs backend tests and has a scheduled/manual corpus refresh artifact workflow
+- AWS staging is live with Amplify for the frontend, Elastic Beanstalk for the backend, and CloudFront for HTTPS API access
 
 ### What improved most recently
 Recent work focused on:
@@ -145,6 +148,8 @@ Recent work focused on:
 - tightening Cloudflare shortlist precision so non-core internship roles drop out more often
 - adding profile persistence, dashboard APIs, and recommendation run history
 - adding a Vite/React frontend with session persistence, API health status, recommendation filters, score dials, and job action buttons
+- cleaning up dashboard UX so users see saved/applied/hidden state transitions instead of internal run identifiers
+- making dashboard summary counts open the matching shortlist, saved, applied, or hidden job view
 - stress-testing company-seed-based source discovery with a larger seed draft
 - hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
 - tightening source promotion safeguards for direct ATS probe candidates and inactive registry entries
@@ -153,8 +158,8 @@ Recent work focused on:
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
 
 The latest validation state shows:
-- `163 passed`
-- `npm run build` passing in `frontend/`
+- `177 passed`
+- `npm run lint`, `npm test`, and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
 - Waymo shortlist remains very small and focused under applyable-only filtering
@@ -226,7 +231,7 @@ It also shows good engineering discipline:
 
 ### Product limitations
 - shortlist filtering is useful, but the frontend still needs stronger empty states and error states
-- saved/applied/dismissed state transitions in recommendation cards can be clearer
+- saved/applied/hidden state transitions are now clearer, but dashboard copy and interaction polish still need iteration
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
 - source discovery is scriptable and now preserves partial broad-scan results, rejects non-board ATS helper URLs, follows limited high-intent same-site links, and summarizes discovery methods
@@ -256,7 +261,7 @@ The strongest next steps are:
 
 4. improve presentation
    - clearer frontend empty and error states
-   - clearer saved/applied/dismissed state transitions
+   - more polished saved/applied/hidden dashboard views
    - demo screenshots or a short walkthrough
 
 5. harden source discovery
@@ -278,6 +283,7 @@ It is no longer just a script that scores static sample jobs. It now supports:
 - API access
 - stored profile and feedback workflows
 - a local frontend dashboard
+- AWS staging deployment
 - regression-tested iteration
 
 That makes the project demoable today and extensible tomorrow.
