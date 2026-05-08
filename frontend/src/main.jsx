@@ -81,6 +81,10 @@ const defaultProfile = {
   notes: "Interested in recommendation and ranking systems"
 };
 
+function cognitoAuthority() {
+  return `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}`;
+}
+
 function csvToList(value) {
   return value
     .split(",")
@@ -199,7 +203,7 @@ function oidcConfig() {
   }
 
   return {
-    authority: `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}`,
+    authority: cognitoAuthority(),
     client_id: COGNITO_APP_CLIENT_ID,
     redirect_uri: window.location.origin,
     post_logout_redirect_uri: window.location.origin,
@@ -481,11 +485,9 @@ function AuthenticatedApp() {
   const auth = useAuth();
 
   async function signOut() {
-    try {
-      await auth.signoutRedirect();
-    } catch {
-      await auth.removeUser();
-    }
+    const returnUrl = window.location.origin;
+    await auth.removeUser();
+    window.location.assign(returnUrl);
   }
 
   if (auth.isLoading) {
