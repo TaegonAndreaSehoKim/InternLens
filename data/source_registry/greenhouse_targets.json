@@ -1,8 +1,13 @@
 [
   {
-    "board_token": "waymo",
+    "board_token": "airbnb",
     "active": true,
-    "notes": "demo/eval source"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Airbnb, score=0.43, internship_likelihood=0.05)"
+  },
+  {
+    "board_token": "cloudflare",
+    "active": true,
+    "notes": "too noisy for current internship filter; promoted from discovered sources on 2026-05-08T17:25:57Z (company=Cloudflare, score=0.59, internship_likelihood=0.31)"
   },
   {
     "board_token": "honehealth",
@@ -10,8 +15,23 @@
     "notes": "data science intern source"
   },
   {
-    "board_token": "cloudflare",
-    "active": false,
-    "notes": "too noisy for current internship filter"
+    "board_token": "okta",
+    "active": true,
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Okta, score=0.42, internship_likelihood=0.03)"
+  },
+  {
+    "board_token": "scaleai",
+    "active": true,
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Scale AI, score=0.41, internship_likelihood=0.01)"
+  },
+  {
+    "board_token": "waymo",
+    "active": true,
+    "notes": "demo/eval source"
+  },
+  {
+    "board_token": "zscaler",
+    "active": true,
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Zscaler, score=0.42, internship_likelihood=0.04)"
   }
 ]

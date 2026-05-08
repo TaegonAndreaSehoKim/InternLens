@@ -19,6 +19,7 @@ from src.discovery.source_discovery import (
     merge_discovered_sources,
     resolve_seed_path,
     save_json_list,
+    select_seed_subset,
     summarize_discovery_methods,
     summarize_discovery_warnings,
     visible_discovery_warnings,
@@ -35,6 +36,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--discovered-file", default="data/source_registry/discovered_sources.json")
     parser.add_argument("--lever-registry", default="data/source_registry/lever_targets.json")
     parser.add_argument("--greenhouse-registry", default="data/source_registry/greenhouse_targets.json")
+    parser.add_argument("--min-priority", type=int, default=None)
+    parser.add_argument("--max-seeds", type=int, default=None)
     parser.add_argument("--discovery-timeout", type=float, default=20.0)
     parser.add_argument("--discovery-checkpoint-size", type=int, default=25)
     parser.add_argument("--probe-direct-ats", action="store_true")
@@ -77,7 +80,12 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
     resolved_seed_path = resolve_seed_path(requested_seed_path)
     discovered_path = PROJECT_ROOT / args.discovered_file
 
-    seeds = load_json_list(resolved_seed_path)
+    all_seeds = load_json_list(resolved_seed_path)
+    seeds = select_seed_subset(
+        all_seeds,
+        min_priority=args.min_priority,
+        max_seeds=args.max_seeds,
+    )
     existing_sources = load_json_list(discovered_path)
     checkpoint_size = int(getattr(args, "discovery_checkpoint_size", 25))
     probe_direct_ats = bool(getattr(args, "probe_direct_ats", False))
@@ -109,6 +117,7 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
 
     print("##### Discovery step complete #####")
     print(f"Seed file used: {resolved_seed_path}")
+    print(f"Seed companies available: {len(all_seeds)}")
     print(f"Seed companies scanned: {len(seeds)}")
     print(f"Checkpoint size: {checkpoint_size}")
     print(f"Discovered source candidates: {len(discovered_sources)}")
@@ -130,6 +139,7 @@ def _run_discovery(args: argparse.Namespace) -> Dict[str, Any]:
 
     return {
         "seed_path": resolved_seed_path,
+        "seeds_available": len(all_seeds),
         "seeds_scanned": len(seeds),
         "discovered_candidates": len(discovered_sources),
         "stored_candidates": len(merged_sources),

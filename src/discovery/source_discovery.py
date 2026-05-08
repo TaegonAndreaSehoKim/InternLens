@@ -241,6 +241,34 @@ def iter_seed_batches(
         yield seeds[start_index : start_index + batch_size]
 
 
+def select_seed_subset(
+    seeds: Sequence[Dict[str, Any]],
+    *,
+    min_priority: int | None = None,
+    max_seeds: int | None = None,
+) -> List[Dict[str, Any]]:
+    selected = list(seeds)
+
+    if min_priority is not None:
+        selected = [
+            seed
+            for seed in selected
+            if int(seed.get("priority", 0) or 0) >= min_priority
+        ]
+
+    if max_seeds is not None and max_seeds > 0:
+        indexed = list(enumerate(selected))
+        indexed.sort(
+            key=lambda item: (
+                -int(item[1].get("priority", 0) or 0),
+                item[0],
+            )
+        )
+        selected = [seed for _, seed in indexed[:max_seeds]]
+
+    return selected
+
+
 def resolve_seed_path(requested_path: Path) -> Path:
     if requested_path.exists():
         return requested_path

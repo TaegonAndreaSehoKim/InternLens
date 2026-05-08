@@ -19,6 +19,7 @@ const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? "dev";
 const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION ?? "";
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
 const COGNITO_APP_CLIENT_ID = import.meta.env.VITE_COGNITO_APP_CLIENT_ID ?? "";
+const RECOMMENDATION_BATCH_SIZE = 20;
 
 const JOB_STATE_LABELS = {
   saved: "Saved",
@@ -305,7 +306,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     const data = await api(`/profiles/${profileId}/recommend`, {
       method: "POST",
       body: JSON.stringify({
-        top_k: 8,
+        top_k: RECOMMENDATION_BATCH_SIZE,
         include_feedback: true,
         exclude_dismissed: true,
         exclude_applied: true,

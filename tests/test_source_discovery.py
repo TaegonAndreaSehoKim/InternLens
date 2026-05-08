@@ -19,6 +19,7 @@ from src.discovery.source_discovery import (
     iter_seed_batches,
     merge_discovered_sources,
     resolve_seed_path,
+    select_seed_subset,
     summarize_discovery_methods,
     summarize_discovery_warnings,
     visible_discovery_warnings,
@@ -566,6 +567,19 @@ def test_iter_seed_batches_splits_seed_lists() -> None:
     assert list(iter_seed_batches([], 2)) == []
 
 
+def test_select_seed_subset_filters_and_prefers_high_priority() -> None:
+    seeds = [
+        {"company": "Low", "priority": 3},
+        {"company": "Top A", "priority": 10},
+        {"company": "Mid", "priority": 8},
+        {"company": "Top B", "priority": 10},
+    ]
+
+    selected = select_seed_subset(seeds, min_priority=8, max_seeds=3)
+
+    assert [seed["company"] for seed in selected] == ["Top A", "Top B", "Mid"]
+
+
 def test_discover_sources_script_merges_and_writes_output(
     tmp_path: Path,
     monkeypatch,
@@ -616,6 +630,8 @@ def test_discover_sources_script_merges_and_writes_output(
             output_file="data/source_registry/discovered_sources.json",
             timeout=15.0,
             checkpoint_size=25,
+            min_priority=None,
+            max_seeds=None,
             record_blocked_sources=False,
         ),
     )
@@ -703,6 +719,8 @@ def test_discover_sources_script_checkpoints_after_each_seed_batch(
             output_file="data/source_registry/discovered_sources.json",
             timeout=15.0,
             checkpoint_size=1,
+            min_priority=None,
+            max_seeds=None,
             record_blocked_sources=False,
         ),
     )
