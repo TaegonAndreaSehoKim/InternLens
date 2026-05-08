@@ -313,9 +313,21 @@ textarea {
 }
 
 .metric {
+  appearance: none;
+  width: 100%;
+  border: 1px solid transparent;
   border-radius: 14px;
   padding: 14px;
   background: rgba(63, 95, 102, 0.1);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.metric:hover,
+.metric.active {
+  border-color: rgba(63, 95, 102, 0.34);
+  background: rgba(63, 95, 102, 0.16);
 }
 
 .metric strong {
@@ -606,6 +618,13 @@ textarea {
 .job-card p {
   margin: 0;
   color: var(--muted);
+}
+
+.job-side .state-note {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--cedar);
 }
 
 .job-detail-row {

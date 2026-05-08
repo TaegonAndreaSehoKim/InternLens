@@ -392,6 +392,7 @@ class ProfileDashboardResponse(BaseModel):
     activity: ProfileActivityResponse
     recent_runs: List[RecommendationRunSummary]
     saved_jobs: List[StoredJobState]
+    dismissed_jobs: List[StoredJobState]
     applied_jobs: List[StoredJobState]
 
 
@@ -534,6 +535,8 @@ def _annotate_results_with_job_state(
     annotated_jobs: List[Dict[str, Any]] = []
     for job in jobs:
         enriched_job = dict(job)
+        enriched_job.pop("user_job_state", None)
+        enriched_job.pop("user_job_state_source_run_id", None)
         job_state = job_state_by_id.get(str(job.get("job_id")))
         if job_state is not None:
             enriched_job["user_job_state"] = job_state["state"]
@@ -1090,6 +1093,7 @@ def get_profile_dashboard_endpoint(
     activity_limit: int = 10,
     run_limit: int = 5,
     saved_job_limit: int = 5,
+    dismissed_job_limit: int = 5,
     applied_job_limit: int = 5,
 ) -> ProfileDashboardResponse:
     if activity_limit < 1 or activity_limit > 100:
@@ -1098,6 +1102,8 @@ def get_profile_dashboard_endpoint(
         raise HTTPException(status_code=400, detail="run_limit must be between 1 and 50.")
     if saved_job_limit < 1 or saved_job_limit > 50:
         raise HTTPException(status_code=400, detail="saved_job_limit must be between 1 and 50.")
+    if dismissed_job_limit < 1 or dismissed_job_limit > 50:
+        raise HTTPException(status_code=400, detail="dismissed_job_limit must be between 1 and 50.")
     if applied_job_limit < 1 or applied_job_limit > 50:
         raise HTTPException(status_code=400, detail="applied_job_limit must be between 1 and 50.")
 
@@ -1142,6 +1148,7 @@ def get_profile_dashboard_endpoint(
         ),
         recent_runs=[RecommendationRunSummary(**run) for run in recommendation_runs[:run_limit]],
         saved_jobs=[_stored_job_state_response(job_state) for job_state in saved_jobs[:saved_job_limit]],
+        dismissed_jobs=[_stored_job_state_response(job_state) for job_state in dismissed_jobs[:dismissed_job_limit]],
         applied_jobs=[_stored_job_state_response(job_state) for job_state in applied_jobs[:applied_job_limit]],
     )
 
@@ -1321,10 +1328,18 @@ def get_profile_recommendation_run(profile_id: str, run_id: str) -> RecommendRes
         run = get_recommendation_run(_database_path(), profile_id, run_id)
         if run is None:
             raise HTTPException(status_code=404, detail=f"Recommendation run not found: {run_id}")
+        saved_jobs = list_profile_job_states(_database_path(), profile_id, "saved")
+        dismissed_jobs = list_profile_job_states(_database_path(), profile_id, "dismissed")
+        applied_jobs = list_profile_job_states(_database_path(), profile_id, "applied")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    job_state_by_id = {
+        job_state["job_id"]: job_state
+        for job_state in saved_jobs + dismissed_jobs + applied_jobs
+    }
 
     return RecommendResponse(
         run_id=run["run_id"],
@@ -1335,7 +1350,10 @@ def get_profile_recommendation_run(profile_id: str, run_id: str) -> RecommendRes
         total_jobs_scored=run["total_jobs_scored"],
         returned_jobs=run["returned_jobs"],
         overview=_build_recommend_overview(run["results"]),
-        results=[JobResult(**result) for result in run["results"]],
+        results=[
+            JobResult(**result)
+            for result in _annotate_results_with_job_state(run["results"], job_state_by_id)
+        ],
     )
 
 

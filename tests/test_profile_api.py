@@ -364,6 +364,7 @@ def test_profile_dashboard_returns_combined_snapshot(tmp_path: Path, monkeypatch
     assert body["recent_runs"][0]["run_id"] == run_id
     assert len(body["saved_jobs"]) == 1
     assert body["saved_jobs"][0]["job_id"] == "job_a"
+    assert body["dismissed_jobs"] == []
     assert len(body["applied_jobs"]) == 1
     assert body["applied_jobs"][0]["job_id"] == "job_b"
     assert [action["action"] for action in body["recommended_next_actions"]] == [
@@ -934,6 +935,13 @@ def test_profile_recommend_can_include_applied_jobs(tmp_path: Path, monkeypatch)
         json={"action": "apply", "run_id": run_id},
     )
     assert apply_response.status_code == 200
+
+    run_detail_response = client.get(f"/profiles/user_001/recommendations/{run_id}")
+    run_detail_body = run_detail_response.json()
+
+    assert run_detail_response.status_code == 200
+    assert run_detail_body["results"][0]["user_job_state"] == "applied"
+    assert run_detail_body["results"][0]["user_job_state_source_run_id"] == run_id
 
     response = client.post(
         "/profiles/user_001/recommend",

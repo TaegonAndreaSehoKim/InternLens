@@ -21,6 +21,32 @@ const JOB_STATE_LABELS = {
   dismissed: "Hidden"
 };
 
+const DASHBOARD_JOB_VIEWS = {
+  recommendations: {
+    label: "Shortlists",
+    heading: "Current shortlist",
+    empty: "Find matches or open a previous shortlist to review ranked internship leads."
+  },
+  saved: {
+    label: "Saved",
+    heading: "Saved jobs",
+    endpoint: "saved-jobs",
+    empty: "No saved jobs yet."
+  },
+  applied: {
+    label: "Applied",
+    heading: "Applied jobs",
+    endpoint: "applied-jobs",
+    empty: "No applied jobs yet."
+  },
+  dismissed: {
+    label: "Hidden",
+    heading: "Hidden jobs",
+    endpoint: "dismissed-jobs",
+    empty: "No hidden jobs yet."
+  }
+};
+
 const SERVER_STATUS_LABELS = {
   checking: "Checking",
   online: "Online",
@@ -93,9 +119,53 @@ function clearActionLabel(state) {
 function jobStateLookup(dashboard) {
   const entries = [
     ...(dashboard?.saved_jobs ?? []),
+    ...(dashboard?.dismissed_jobs ?? []),
     ...(dashboard?.applied_jobs ?? [])
   ];
   return Object.fromEntries(entries.map((item) => [item.job_id, item]));
+}
+
+function storedJobStateToRecommendation(item) {
+  const snapshot = item.job_snapshot ?? {};
+  return {
+    job_id: item.job_id,
+    company: snapshot.company ?? "Unknown company",
+    title: snapshot.title ?? "Tracked role",
+    location: snapshot.location ?? "Location not listed",
+    recommendation: snapshot.recommendation ?? "apply_later",
+    fit_level: snapshot.fit_level ?? "tracked",
+    eligibility_status: snapshot.eligibility_status ?? "",
+    summary: snapshot.summary ?? `${JOB_STATE_LABELS[item.state] ?? titleCase(item.state)} role from your dashboard.`,
+    why_apply: snapshot.why_apply ?? [],
+    watchouts: snapshot.watchouts ?? [],
+    application_link: snapshot.application_link ?? null,
+    user_job_state: item.state,
+    user_job_state_source_run_id: item.source_run_id
+  };
+}
+
+function updateRecommendationJobState(recommendations, jobId, state, sourceRunId) {
+  if (!recommendations) {
+    return recommendations;
+  }
+
+  return {
+    ...recommendations,
+    results: (recommendations.results ?? []).map((job) => {
+      if (job.job_id !== jobId) {
+        return job;
+      }
+      const updatedJob = { ...job };
+      if (state) {
+        updatedJob.user_job_state = state;
+        updatedJob.user_job_state_source_run_id = sourceRunId ?? null;
+      } else {
+        delete updatedJob.user_job_state;
+        delete updatedJob.user_job_state_source_run_id;
+      }
+      return updatedJob;
+    })
+  };
 }
 
 function readStoredState() {
@@ -139,6 +209,8 @@ function App() {
   const [recommendations, setRecommendations] = useState(null);
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
   const [recommendationFilter, setRecommendationFilter] = useState(() => storedState.recommendationFilter ?? "all");
+  const [dashboardJobView, setDashboardJobView] = useState("recommendations");
+  const [dashboardJobLists, setDashboardJobLists] = useState({});
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
 
@@ -160,6 +232,25 @@ function App() {
     const data = await api(`/profiles/${id}/dashboard`);
     setDashboard(data);
     setProfileId(id);
+    return data;
+  }
+
+  async function loadDashboardJobView(view, id = profileId) {
+    const endpoint = DASHBOARD_JOB_VIEWS[view]?.endpoint;
+    if (!endpoint) {
+      return [];
+    }
+
+    const data = await api(`/profiles/${id}/${endpoint}`);
+    setDashboardJobLists((current) => ({ ...current, [view]: data.jobs }));
+    return data.jobs;
+  }
+
+  async function showDashboardJobView(view) {
+    setDashboardJobView(view);
+    if (view !== "recommendations") {
+      await loadDashboardJobView(view);
+    }
   }
 
   async function createOrLoadProfile() {
@@ -179,6 +270,7 @@ function App() {
   }
 
   async function runRecommendations() {
+    setDashboardJobView("recommendations");
     const data = await api(`/profiles/${profileId}/recommend`, {
       method: "POST",
       body: JSON.stringify({
@@ -195,20 +287,32 @@ function App() {
     await loadDashboard(profileId);
   }
 
-  async function loadRun(runId) {
+  async function loadRun(runId, { activate = true } = {}) {
+    if (activate) {
+      setDashboardJobView("recommendations");
+    }
     const data = await api(`/profiles/${profileId}/recommendations/${runId}`);
     setRecommendations(data);
     setSelectedRun(runId);
   }
 
   async function actOnJob(jobId, action) {
-    await api(`/profiles/${profileId}/jobs/${jobId}/action`, {
+    const response = await api(`/profiles/${profileId}/jobs/${jobId}/action`, {
       method: "POST",
       body: JSON.stringify({ action, run_id: selectedRun })
     });
+    setRecommendations((current) => updateRecommendationJobState(
+      current,
+      jobId,
+      response.job_state?.state ?? null,
+      response.job_state?.source_run_id
+    ));
     await loadDashboard(profileId);
+    if (dashboardJobView !== "recommendations") {
+      await loadDashboardJobView(dashboardJobView);
+    }
     if (recommendations && selectedRun) {
-      await loadRun(selectedRun);
+      await loadRun(selectedRun, { activate: false });
     }
   }
 
@@ -290,11 +394,16 @@ function App() {
           onRefresh={() => runTask(() => loadDashboard(profileId))}
           onRun={() => runTask(runRecommendations)}
           onLoadRun={(runId) => runTask(() => loadRun(runId))}
+          activeJobView={dashboardJobView}
+          onShowJobView={(view) => runTask(() => showDashboardJobView(view))}
         />
       </section>
 
       <RecommendationPanel
         recommendations={recommendations}
+        dashboard={dashboard}
+        dashboardJobView={dashboardJobView}
+        dashboardJobLists={dashboardJobLists}
         selectedRun={selectedRun}
         filter={recommendationFilter}
         onFilterChange={setRecommendationFilter}
@@ -380,7 +489,7 @@ function ProfilePanel({ form, setForm, busy, onSubmit }) {
   );
 }
 
-function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
+function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun, activeJobView, onShowJobView }) {
   const summary = dashboard?.summary;
 
   return (
@@ -403,10 +512,30 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
       ) : (
         <>
           <div className="metric-row">
-            <Metric label="Shortlists" value={summary.recommendation_run_count} />
-            <Metric label="Saved" value={summary.saved_jobs_count} />
-            <Metric label="Applied" value={summary.applied_jobs_count} />
-            <Metric label="Hidden" value={summary.dismissed_jobs_count} />
+            <Metric
+              label="Shortlists"
+              value={summary.recommendation_run_count}
+              active={activeJobView === "recommendations"}
+              onClick={() => onShowJobView("recommendations")}
+            />
+            <Metric
+              label="Saved"
+              value={summary.saved_jobs_count}
+              active={activeJobView === "saved"}
+              onClick={() => onShowJobView("saved")}
+            />
+            <Metric
+              label="Applied"
+              value={summary.applied_jobs_count}
+              active={activeJobView === "applied"}
+              onClick={() => onShowJobView("applied")}
+            />
+            <Metric
+              label="Hidden"
+              value={summary.dismissed_jobs_count}
+              active={activeJobView === "dismissed"}
+              onClick={() => onShowJobView("dismissed")}
+            />
           </div>
 
           <div className="next-actions">
@@ -448,46 +577,70 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun }) {
   );
 }
 
-function RecommendationPanel({ recommendations, selectedRun, filter, onFilterChange, busy, onAction }) {
-  const jobs = recommendations?.results ?? [];
+function RecommendationPanel({
+  recommendations,
+  dashboard,
+  dashboardJobView,
+  dashboardJobLists,
+  selectedRun,
+  filter,
+  onFilterChange,
+  busy,
+  onAction
+}) {
+  const showingDashboardJobs = dashboardJobView !== "recommendations";
+  const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
+  const dashboardStateJobs = showingDashboardJobs
+    ? (dashboardJobLists[dashboardJobView] ?? dashboard?.[`${dashboardJobView}_jobs`] ?? []).map(storedJobStateToRecommendation)
+    : [];
+  const jobs = showingDashboardJobs ? dashboardStateJobs : recommendations?.results ?? [];
   const counts = recommendationCounts(jobs);
-  const visibleJobs = visibleRecommendations(jobs, filter);
+  const visibleJobs = showingDashboardJobs ? jobs : visibleRecommendations(jobs, filter);
+  const hasBoard = showingDashboardJobs ? Boolean(dashboard) : Boolean(recommendations);
+  const heading = showingDashboardJobs
+    ? dashboardView.heading
+    : selectedRun ? DASHBOARD_JOB_VIEWS.recommendations.heading : "No shortlist loaded";
+  const resultTotal = showingDashboardJobs ? jobs.length : recommendations?.returned_jobs;
 
   return (
     <section className="panel results-panel">
       <div className="panel-heading split">
         <div>
-          <p className="eyebrow">Recommendations</p>
-          <h2>{selectedRun ? "Current shortlist" : "No shortlist loaded"}</h2>
+          <p className="eyebrow">{showingDashboardJobs ? "Dashboard jobs" : "Recommendations"}</p>
+          <h2>{heading}</h2>
         </div>
-        {recommendations && <span className="result-count">{visibleJobs.length} of {recommendations.returned_jobs} shown</span>}
+        {hasBoard && <span className="result-count">{visibleJobs.length} of {resultTotal} shown</span>}
       </div>
 
-      {!recommendations ? (
+      {!hasBoard ? (
         <div className="empty-state">
-          <strong>No shortlist loaded</strong>
-          <span>Find matches or open a previous shortlist to review ranked internship leads.</span>
+          <strong>{showingDashboardJobs ? dashboardView.heading : "No shortlist loaded"}</strong>
+          <span>{dashboardView.empty}</span>
         </div>
       ) : (
         <>
-          <div className="filter-bar" aria-label="Recommendation filters">
-            {ACTION_FILTERS.map((item) => (
-              <button
-                key={item.value}
-                className={filter === item.value ? "active" : ""}
-                onClick={() => onFilterChange(item.value)}
-              >
-                <span>{item.label}</span>
-                <strong>{counts[item.value] ?? 0}</strong>
-              </button>
-            ))}
-          </div>
+          {!showingDashboardJobs && (
+            <div className="filter-bar" aria-label="Recommendation filters">
+              {ACTION_FILTERS.map((item) => (
+                <button
+                  key={item.value}
+                  className={filter === item.value ? "active" : ""}
+                  onClick={() => onFilterChange(item.value)}
+                >
+                  <span>{item.label}</span>
+                  <strong>{counts[item.value] ?? 0}</strong>
+                </button>
+              ))}
+            </div>
+          )}
 
           {visibleJobs.length === 0 ? (
             <div className="empty-state">
               <strong>No jobs shown</strong>
               <span>
-                {jobs.length === 0
+                {showingDashboardJobs
+                  ? dashboardView.empty
+                  : jobs.length === 0
                   ? "This shortlist has no visible roles. Applied and hidden roles are excluded from new shortlists."
                   : "No jobs match the selected recommendation filter."}
               </span>
@@ -562,6 +715,11 @@ function JobCard({ job, busy, onAction }) {
             </button>
           )}
         </div>
+        {isDismissed && (
+          <p className="state-note">
+            Hidden from future shortlists. Open Dashboard Hidden to review it or use Show again.
+          </p>
+        )}
       </div>
     </article>
   );
@@ -597,12 +755,12 @@ function EvidenceList({ title, items = [], empty }) {
   );
 }
 
-function Metric({ label, value }) {
+function Metric({ label, value, active, onClick }) {
   return (
-    <div className="metric">
+    <button type="button" className={`metric ${active ? "active" : ""}`} onClick={onClick}>
       <strong>{value}</strong>
       <span>{label}</span>
-    </div>
+    </button>
   );
 }
 
