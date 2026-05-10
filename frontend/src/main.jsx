@@ -76,7 +76,20 @@ const ROLE_OPTIONS = [
   "Data Analyst Intern",
   "Product Manager Intern",
   "Business Analyst Intern",
-  "UX Research Intern"
+  "UX Research Intern",
+  "Product Design Intern",
+  "Marketing Intern",
+  "Growth Marketing Intern",
+  "Sales Intern",
+  "Finance Intern",
+  "Operations Intern",
+  "Supply Chain Intern",
+  "Clinical Research Intern",
+  "Biotech Research Intern",
+  "Policy Intern",
+  "Education Program Intern",
+  "Nonprofit Program Intern",
+  "Communications Intern"
 ];
 
 const SKILL_GROUPS = [
@@ -99,8 +112,26 @@ const SKILL_GROUPS = [
   {
     label: "Analytics",
     options: ["Excel", "Tableau", "Power BI"]
+  },
+  {
+    label: "Business",
+    options: ["Market Research", "Financial Modeling", "Operations", "Project Management", "CRM"]
+  },
+  {
+    label: "Design / Research",
+    options: ["User Research", "Figma", "Wireframing", "Survey Design", "Accessibility"]
+  },
+  {
+    label: "Healthcare / Science",
+    options: ["Clinical Research", "Biology", "Lab Techniques", "Scientific Writing", "Data Collection"]
+  },
+  {
+    label: "Policy / Communications",
+    options: ["Policy Analysis", "Writing", "Public Speaking", "Community Outreach"]
   }
 ];
+
+const SKILL_OPTIONS = SKILL_GROUPS.flatMap((group) => group.options);
 
 const LOCATION_OPTIONS = [
   "Remote",
@@ -125,7 +156,15 @@ const INDUSTRY_OPTIONS = [
   "Cloud Infrastructure",
   "Cybersecurity",
   "Education",
-  "Climate Tech"
+  "Climate Tech",
+  "Biotech",
+  "Healthcare",
+  "Finance",
+  "Retail",
+  "Media",
+  "Government",
+  "Nonprofit",
+  "Manufacturing"
 ];
 
 const defaultProfile = {
@@ -152,11 +191,6 @@ function csvToList(value) {
     .filter(Boolean);
 }
 
-function csvIncludes(value, item) {
-  const normalizedItem = item.trim().toLowerCase();
-  return csvToList(value).some((entry) => entry.toLowerCase() === normalizedItem);
-}
-
 function addCsvItems(value, items) {
   const existing = csvToList(value);
   const normalized = new Set(existing.map((item) => item.toLowerCase()));
@@ -169,10 +203,6 @@ function addCsvItems(value, items) {
 function removeCsvItem(value, item) {
   const normalizedItem = item.trim().toLowerCase();
   return csvToList(value).filter((entry) => entry.toLowerCase() !== normalizedItem).join(", ");
-}
-
-function toggleCsvItem(value, item) {
-  return csvIncludes(value, item) ? removeCsvItem(value, item) : addCsvItems(value, [item]);
 }
 
 function listToCsv(value) {
@@ -832,8 +862,8 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
         <ChipSelector
           title="Skills"
           value={form.extracted_skills}
-          groups={SKILL_GROUPS}
-          customPlaceholder="Add another skill"
+          options={SKILL_OPTIONS}
+          customPlaceholder="Search or add skill"
           onChange={(value) => update("extracted_skills", value)}
         />
         <ChipSelector
@@ -908,21 +938,30 @@ function ProfileQuality({ quality }) {
   );
 }
 
-function ChipSelector({ title, value, options = [], groups = [], customPlaceholder, onChange }) {
-  const [customValue, setCustomValue] = useState("");
+function ChipSelector({ title, value, options = [], customPlaceholder, onChange }) {
+  const [query, setQuery] = useState("");
   const selectedItems = csvToList(value);
+  const normalizedSelected = new Set(selectedItems.map((item) => item.toLowerCase()));
+  const normalizedQuery = query.trim().toLowerCase();
+  const suggestions = options
+    .filter((item) => !normalizedSelected.has(item.toLowerCase()))
+    .filter((item) => !normalizedQuery || item.toLowerCase().includes(normalizedQuery))
+    .slice(0, 7);
 
-  function toggleItem(item) {
-    onChange(toggleCsvItem(value, item));
+  function removeItem(item) {
+    onChange(removeCsvItem(value, item));
   }
 
-  function addCustomItems() {
-    const items = csvToList(customValue);
+  function addItems(items) {
     if (items.length === 0) {
       return;
     }
     onChange(addCsvItems(value, items));
-    setCustomValue("");
+    setQuery("");
+  }
+
+  function addQuery() {
+    addItems(csvToList(query));
   }
 
   return (
@@ -934,59 +973,37 @@ function ChipSelector({ title, value, options = [], groups = [], customPlacehold
       {selectedItems.length > 0 && (
         <div className="selected-chip-row" aria-label={`Selected ${title.toLowerCase()}`}>
           {selectedItems.map((item) => (
-            <button key={item} type="button" onClick={() => toggleItem(item)}>
+            <button key={item} type="button" onClick={() => removeItem(item)} title={`Remove ${item}`}>
               {item}
             </button>
           ))}
         </div>
       )}
-      {options.length > 0 && (
-        <div className="chip-row" aria-label={`${title} options`}>
-          {options.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={csvIncludes(value, item) ? "selected" : ""}
-              onClick={() => toggleItem(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
-      {groups.map((group) => (
-        <div className="chip-group" key={group.label}>
-          <span>{group.label}</span>
-          <div className="chip-row">
-            {group.options.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={csvIncludes(value, item) ? "selected" : ""}
-                onClick={() => toggleItem(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="custom-chip-input">
+      <div className="search-select">
         <input
-          value={customValue}
+          value={query}
           placeholder={customPlaceholder}
-          onChange={(event) => setCustomValue(event.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              addCustomItems();
+              addQuery();
             }
           }}
         />
-        <button type="button" disabled={!customValue.trim()} onClick={addCustomItems}>
+        <button type="button" disabled={!query.trim()} onClick={addQuery}>
           Add
         </button>
       </div>
+      {(query.trim() || selectedItems.length === 0) && suggestions.length > 0 && (
+        <div className="suggestion-menu" aria-label={`${title} suggestions`}>
+          {suggestions.map((item) => (
+            <button key={item} type="button" onClick={() => addItems([item])}>
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

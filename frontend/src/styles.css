@@ -492,24 +492,22 @@ textarea {
   font-size: 0.82rem;
 }
 
-.selector-heading span,
-.chip-group > span {
+.selector-heading span {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.selected-chip-row,
-.chip-row {
+.selected-chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .selected-chip-row button,
-.chip-row button,
-.custom-chip-input button {
+.search-select button,
+.suggestion-menu button {
   border: 1px solid rgba(23, 33, 28, 0.14);
   border-radius: 999px;
   padding: 8px 10px;
@@ -519,33 +517,46 @@ textarea {
   font-weight: 800;
 }
 
-.selected-chip-row button,
-.chip-row button.selected {
+.selected-chip-row button {
   border-color: rgba(86, 107, 67, 0.28);
   color: var(--moss);
   background: rgba(86, 107, 67, 0.14);
 }
 
-.chip-group {
-  display: grid;
-  gap: 7px;
-}
-
-.custom-chip-input {
+.search-select {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
 
-.custom-chip-input button {
+.search-select button {
   min-width: 70px;
   color: #fffaf0;
   background: var(--steel);
 }
 
-.custom-chip-input button:disabled {
+.search-select button:disabled {
   color: var(--muted);
   background: rgba(23, 33, 28, 0.08);
+}
+
+.suggestion-menu {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(23, 33, 28, 0.1);
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.suggestion-menu button {
+  border-radius: 12px;
+  text-align: left;
+}
+
+.suggestion-menu button:hover {
+  border-color: rgba(63, 95, 102, 0.28);
+  background: rgba(183, 206, 215, 0.24);
 }
 
 .primary-action,
