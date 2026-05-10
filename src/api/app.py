@@ -81,10 +81,24 @@ PROFILE_FIELDS = (
     "years_of_experience",
     "notes",
 )
+ACCOUNT_PROFILE_ID = "default"
 
 
 class CandidateProfilePayload(BaseModel):
     profile_id: str
+    resume_text: str
+    degree_level: str
+    grad_date: str
+    preferred_roles: List[str] = Field(default_factory=list)
+    preferred_locations: List[str] = Field(default_factory=list)
+    target_industries: List[str] = Field(default_factory=list)
+    sponsorship_need: bool
+    extracted_skills: List[str] = Field(default_factory=list)
+    years_of_experience: int = 0
+    notes: str = ""
+
+
+class AccountProfilePayload(BaseModel):
     resume_text: str
     degree_level: str
     grad_date: str
@@ -434,6 +448,12 @@ def _database_path() -> Path:
 def _build_profile_from_payload(profile_data: CandidateProfilePayload) -> Dict[str, Any]:
     # Reuse the shared normalization logic so file-based and inline inputs behave the same way.
     return normalize_candidate_profile(profile_data.model_dump())
+
+
+def _build_account_profile_from_payload(profile_data: AccountProfilePayload) -> Dict[str, Any]:
+    return normalize_candidate_profile(
+        profile_data.model_dump() | {"profile_id": ACCOUNT_PROFILE_ID}
+    )
 
 
 def _build_feedback_from_payload(feedback_data: FeedbackProfilePayload) -> Dict[str, Any]:
@@ -973,6 +993,99 @@ def _build_recommend_response(
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.put("/me/profile", response_model=StoredProfileResponse)
+def upsert_account_profile_endpoint(
+    profile_data: AccountProfilePayload,
+    user_id: str = Depends(current_user_id),
+) -> StoredProfileResponse:
+    try:
+        normalized_profile = _build_account_profile_from_payload(profile_data)
+        existing_profile = get_profile(_database_path(), ACCOUNT_PROFILE_ID, user_id=user_id)
+        if existing_profile is None:
+            stored_profile = create_profile(_database_path(), normalized_profile, user_id=user_id)
+        else:
+            stored_profile = update_profile(_database_path(), normalized_profile, user_id=user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}") from e
+
+    return StoredProfileResponse(**_profile_response_payload(stored_profile))
+
+
+@app.get("/me/profile", response_model=StoredProfileResponse)
+def get_account_profile_endpoint(
+    user_id: str = Depends(current_user_id),
+) -> StoredProfileResponse:
+    return get_profile_endpoint(ACCOUNT_PROFILE_ID, user_id=user_id)
+
+
+@app.get("/me/dashboard", response_model=ProfileDashboardResponse)
+def get_account_dashboard_endpoint(
+    activity_limit: int = 10,
+    run_limit: int = 5,
+    saved_job_limit: int = 5,
+    dismissed_job_limit: int = 5,
+    applied_job_limit: int = 5,
+    user_id: str = Depends(current_user_id),
+) -> ProfileDashboardResponse:
+    return get_profile_dashboard_endpoint(
+        ACCOUNT_PROFILE_ID,
+        activity_limit=activity_limit,
+        run_limit=run_limit,
+        saved_job_limit=saved_job_limit,
+        dismissed_job_limit=dismissed_job_limit,
+        applied_job_limit=applied_job_limit,
+        user_id=user_id,
+    )
+
+
+@app.get("/me/saved-jobs", response_model=StoredJobStateListResponse)
+def list_account_saved_jobs_endpoint(
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
+    return list_saved_jobs_endpoint(ACCOUNT_PROFILE_ID, user_id=user_id)
+
+
+@app.get("/me/dismissed-jobs", response_model=StoredJobStateListResponse)
+def list_account_dismissed_jobs_endpoint(
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
+    return list_dismissed_jobs_endpoint(ACCOUNT_PROFILE_ID, user_id=user_id)
+
+
+@app.get("/me/applied-jobs", response_model=StoredJobStateListResponse)
+def list_account_applied_jobs_endpoint(
+    user_id: str = Depends(current_user_id),
+) -> StoredJobStateListResponse:
+    return list_applied_jobs_endpoint(ACCOUNT_PROFILE_ID, user_id=user_id)
+
+
+@app.post("/me/jobs/{job_id}/action", response_model=JobActionResponse)
+def account_job_action_endpoint(
+    job_id: str,
+    job_action: JobActionRequest,
+    user_id: str = Depends(current_user_id),
+) -> JobActionResponse:
+    return job_action_endpoint(ACCOUNT_PROFILE_ID, job_id, job_action, user_id=user_id)
+
+
+@app.get("/me/recommendations/{run_id}", response_model=RecommendResponse, response_model_exclude_none=True)
+def get_account_recommendation_run_endpoint(
+    run_id: str,
+    user_id: str = Depends(current_user_id),
+) -> RecommendResponse:
+    return get_profile_recommendation_run(ACCOUNT_PROFILE_ID, run_id, user_id=user_id)
+
+
+@app.post("/me/recommend", response_model=RecommendResponse, response_model_exclude_none=True)
+def recommend_for_account_endpoint(
+    request: ProfileRecommendRequest,
+    user_id: str = Depends(current_user_id),
+) -> RecommendResponse:
+    return recommend_for_profile(ACCOUNT_PROFILE_ID, request, user_id=user_id)
 
 
 @app.post("/profiles", response_model=StoredProfileResponse, status_code=201)

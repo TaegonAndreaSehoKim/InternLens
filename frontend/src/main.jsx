@@ -70,7 +70,6 @@ const DEGREE_OPTIONS = [
 ];
 
 const defaultProfile = {
-  profile_id: "user_001",
   resume_text: "Graduate student with Python, machine learning, ranking systems, and data analysis experience.",
   degree_level: "Master's",
   grad_date: "2027-12",
@@ -97,7 +96,6 @@ function csvToList(value) {
 function profilePayload(form) {
   return {
     ...form,
-    profile_id: form.profile_id?.trim() || defaultProfile.profile_id,
     preferred_roles: csvToList(form.preferred_roles),
     preferred_locations: csvToList(form.preferred_locations),
     target_industries: csvToList(form.target_industries),
@@ -248,9 +246,6 @@ function friendlyErrorMessage(error) {
 function App({ authToken = null, accountEmail = "Local demo user", onSignOut = null }) {
   const [storedState] = useState(() => readStoredState());
   const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
-  const [profileId, setProfileId] = useState(
-    () => storedState.profileId ?? storedState.form?.profile_id ?? defaultProfile.profile_id
-  );
   const [dashboard, setDashboard] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
@@ -280,20 +275,19 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     }
   }
 
-  async function loadDashboard(id = profileId) {
-    const data = await api(`/profiles/${id}/dashboard`, {}, authToken);
+  async function loadDashboard() {
+    const data = await api("/me/dashboard", {}, authToken);
     setDashboard(data);
-    setProfileId(id);
     return data;
   }
 
-  async function loadDashboardJobView(view, id = profileId) {
+  async function loadDashboardJobView(view) {
     const endpoint = DASHBOARD_JOB_VIEWS[view]?.endpoint;
     if (!endpoint) {
       return [];
     }
 
-    const data = await api(`/profiles/${id}/${endpoint}`, {}, authToken);
+    const data = await api(`/me/${endpoint}`, {}, authToken);
     setDashboardJobLists((current) => ({ ...current, [view]: data.jobs }));
     return data.jobs;
   }
@@ -307,23 +301,16 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
   async function createOrLoadProfile() {
     const payload = profilePayload(form);
-    try {
-      await api("/profiles", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      }, authToken);
-    } catch (error) {
-      if (!String(error.message).includes("already exists")) {
-        throw error;
-      }
-      await api(`/profiles/${payload.profile_id}`, {}, authToken);
-    }
-    await loadDashboard(payload.profile_id);
+    await api("/me/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    }, authToken);
+    await loadDashboard();
   }
 
   async function runRecommendations() {
     setDashboardJobView("recommendations");
-    const data = await api(`/profiles/${profileId}/recommend`, {
+    const data = await api("/me/recommend", {
       method: "POST",
       body: JSON.stringify({
         top_k: RECOMMENDATION_FETCH_LIMIT,
@@ -336,20 +323,20 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     }, authToken);
     setRecommendations(data);
     setSelectedRun(data.run_id);
-    await loadDashboard(profileId);
+    await loadDashboard();
   }
 
   async function loadRun(runId, { activate = true } = {}) {
     if (activate) {
       setDashboardJobView("recommendations");
     }
-    const data = await api(`/profiles/${profileId}/recommendations/${runId}`, {}, authToken);
+    const data = await api(`/me/recommendations/${runId}`, {}, authToken);
     setRecommendations(data);
     setSelectedRun(runId);
   }
 
   async function actOnJob(jobId, action) {
-    const response = await api(`/profiles/${profileId}/jobs/${jobId}/action`, {
+    const response = await api(`/me/jobs/${jobId}/action`, {
       method: "POST",
       body: JSON.stringify({ action, run_id: selectedRun })
     }, authToken);
@@ -359,7 +346,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       response.job_state?.state ?? null,
       response.job_state?.source_run_id
     ));
-    await loadDashboard(profileId);
+    await loadDashboard();
     if (dashboardJobView !== "recommendations") {
       await loadDashboardJobView(dashboardJobView);
     }
@@ -385,13 +372,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       if (cancelled) return;
       setApiHealth("online");
 
-      if (!storedState.profileId) {
-        return;
-      }
-
       let restoredDashboard;
       try {
-        restoredDashboard = await api(`/profiles/${storedState.profileId}/dashboard`, {}, authToken);
+        restoredDashboard = await api("/me/dashboard", {}, authToken);
       } catch (error) {
         if ([401, 403, 404].includes(error.status)) {
           if (!cancelled) {
@@ -409,7 +392,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       if (storedState.selectedRun) {
         try {
           const restoredRun = await api(
-            `/profiles/${storedState.profileId}/recommendations/${storedState.selectedRun}`,
+            `/me/recommendations/${storedState.selectedRun}`,
             {},
             authToken
           );
@@ -427,11 +410,11 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     return () => {
       cancelled = true;
     };
-  }, [authToken, storedState.profileId, storedState.selectedRun]);
+  }, [authToken, storedState.selectedRun]);
 
   useEffect(() => {
-    writeStoredState({ form, profileId, selectedRun, recommendationFilter });
-  }, [form, profileId, selectedRun, recommendationFilter]);
+    writeStoredState({ form, selectedRun, recommendationFilter });
+  }, [form, selectedRun, recommendationFilter]);
 
   return (
     <main className="shell">
@@ -468,9 +451,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         />
         <DashboardPanel
           dashboard={dashboard}
-          profileId={profileId}
           busy={busy}
-          onRefresh={() => runTask(() => loadDashboard(profileId))}
+          onRefresh={() => runTask(() => loadDashboard())}
           onRun={() => runTask(runRecommendations)}
           onLoadRun={(runId) => runTask(() => loadRun(runId))}
           activeJobView={dashboardJobView}

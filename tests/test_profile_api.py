@@ -26,6 +26,12 @@ def _profile_payload() -> dict:
     }
 
 
+def _account_profile_payload() -> dict:
+    payload = _profile_payload().copy()
+    payload.pop("profile_id")
+    return payload
+
+
 def _patch_ranked_jobs(monkeypatch, ranked_jobs: list[dict]) -> None:
     monkeypatch.setattr(
         api_app,
@@ -149,6 +155,67 @@ def test_profile_api_scopes_data_by_user_header(tmp_path: Path, monkeypatch) -> 
     assert second_response.json()["notes"] == "second account"
     assert len(first_feedback.json()["events"]) == 1
     assert second_feedback.json()["events"] == []
+
+
+def test_account_profile_api_uses_current_user_default_profile(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    first_headers = {"X-InternLens-User-Id": "cognito-sub-a"}
+    second_headers = {"X-InternLens-User-Id": "cognito-sub-b"}
+
+    first_payload = _account_profile_payload() | {"notes": "first account"}
+    second_payload = _account_profile_payload() | {"notes": "second account"}
+
+    first_create = client.put("/me/profile", json=first_payload, headers=first_headers)
+    second_create = client.put("/me/profile", json=second_payload, headers=second_headers)
+
+    assert first_create.status_code == 200
+    assert second_create.status_code == 200
+    assert first_create.json()["profile_id"] == "default"
+
+    first_response = client.get("/me/profile", headers=first_headers)
+    second_response = client.get("/me/profile", headers=second_headers)
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert first_response.json()["notes"] == "first account"
+    assert second_response.json()["notes"] == "second account"
+
+
+def test_account_profile_recommendation_and_job_action_flow(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+    _patch_single_ranked_job(monkeypatch)
+
+    headers = {"X-InternLens-User-Id": "cognito-sub-a"}
+
+    assert client.put("/me/profile", json=_account_profile_payload(), headers=headers).status_code == 200
+
+    recommend_response = client.post("/me/recommend", json={"top_k": 1}, headers=headers)
+    recommend_body = recommend_response.json()
+
+    assert recommend_response.status_code == 200
+    assert recommend_body["run_id"]
+    assert recommend_body["returned_jobs"] == 1
+
+    action_response = client.post(
+        "/me/jobs/job_a/action",
+        json={"action": "save", "run_id": recommend_body["run_id"]},
+        headers=headers,
+    )
+
+    assert action_response.status_code == 200
+    assert action_response.json()["job_state"]["state"] == "saved"
+
+    dashboard_response = client.get("/me/dashboard", headers=headers)
+    saved_jobs_response = client.get("/me/saved-jobs", headers=headers)
+    run_response = client.get(f"/me/recommendations/{recommend_body['run_id']}", headers=headers)
+
+    assert dashboard_response.status_code == 200
+    assert dashboard_response.json()["summary"]["saved_jobs_count"] == 1
+    assert saved_jobs_response.json()["jobs"][0]["job_id"] == "job_a"
+    assert run_response.json()["results"][0]["user_job_state"] == "saved"
 
 
 def test_profile_feedback_endpoints_store_and_return_events(tmp_path: Path, monkeypatch) -> None:
