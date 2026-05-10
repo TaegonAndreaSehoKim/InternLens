@@ -43,6 +43,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-id", default=DEFAULT_PROFILE["profile_id"])
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument("--bearer-token", default=None, help="Optional Cognito JWT for protected staging APIs.")
+    parser.add_argument(
+        "--expect-auth-required",
+        action="store_true",
+        help="Pass when validating a Cognito-protected deployment without a bearer token.",
+    )
     parser.add_argument("--output-file", default=None)
     return parser.parse_args()
 
@@ -58,10 +64,17 @@ def _request(
     path: str,
     *,
     json_payload: Dict[str, Any] | None = None,
+    headers: Dict[str, str] | None = None,
 ) -> httpx.Response:
-    response = client.request(method, _url(base_url, path), json=json_payload)
+    response = client.request(method, _url(base_url, path), json=json_payload, headers=headers)
     response.raise_for_status()
     return response
+
+
+def _auth_headers(bearer_token: str | None) -> Dict[str, str] | None:
+    if not bearer_token:
+        return None
+    return {"Authorization": f"Bearer {bearer_token}"}
 
 
 def _step(
@@ -81,6 +94,25 @@ def _step(
     }
 
 
+def _response_body(response: httpx.Response) -> Dict[str, Any]:
+    try:
+        payload = response.json()
+    except ValueError:
+        return {"text": response.text}
+    if isinstance(payload, dict):
+        return payload
+    return {"value": payload}
+
+
+def _schema_top_k_maximum(openapi_body: Dict[str, Any]) -> Any:
+    schemas = openapi_body.get("components", {}).get("schemas", {})
+    for schema_name in ("ProfileRecommendRequest", "RecommendRequest"):
+        top_k_schema = schemas.get(schema_name, {}).get("properties", {}).get("top_k", {})
+        if "maximum" in top_k_schema:
+            return top_k_schema["maximum"]
+    return None
+
+
 def _profile_payload(profile_id: str) -> Dict[str, Any]:
     return {**DEFAULT_PROFILE, "profile_id": profile_id}
 
@@ -91,9 +123,12 @@ def run_deployment_smoke(
     profile_id: str,
     top_k: int,
     timeout: float,
+    bearer_token: str | None = None,
+    expect_auth_required: bool = False,
     client_factory: Callable[..., httpx.Client] = httpx.Client,
 ) -> Dict[str, Any]:
     steps: List[Dict[str, Any]] = []
+    headers = _auth_headers(bearer_token)
 
     with client_factory(timeout=timeout) as client:
         steps.append(
@@ -103,6 +138,49 @@ def run_deployment_smoke(
             )
         )
 
+        if expect_auth_required and bearer_token is None:
+            started = time.perf_counter()
+            auth_response = client.request(
+                "POST",
+                _url(base_url, "/profiles"),
+                json=_profile_payload(profile_id),
+            )
+            steps.append(
+                {
+                    "name": "auth_required",
+                    "status_code": auth_response.status_code,
+                    "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+                    "ok": auth_response.status_code in {401, 403},
+                    "body": _response_body(auth_response),
+                }
+            )
+
+            schema_step = _step(
+                name="openapi_schema",
+                request_fn=lambda: _request(client, "GET", base_url, "/openapi.json"),
+            )
+            top_k_maximum = _schema_top_k_maximum(schema_step["body"])
+            schema_step["ok"] = schema_step["ok"] and top_k_maximum == 1000
+            schema_step["top_k_maximum"] = top_k_maximum
+            steps.append(schema_step)
+
+            return {
+                "generated_at": utc_now_iso(),
+                "base_url": base_url.rstrip("/"),
+                "profile_id": profile_id,
+                "ok": all(step["ok"] for step in steps),
+                "steps": steps,
+                "summary": {
+                    "run_id": None,
+                    "returned_jobs": None,
+                    "dashboard_runs": None,
+                    "saved_jobs": None,
+                    "applied_jobs": None,
+                    "auth_required": steps[1]["ok"],
+                    "top_k_maximum": top_k_maximum,
+                },
+            }
+
         try:
             profile_response = _request(
                 client,
@@ -110,11 +188,18 @@ def run_deployment_smoke(
                 base_url,
                 "/profiles",
                 json_payload=_profile_payload(profile_id),
+                headers=headers,
             )
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code != 400 or "already exists" not in exc.response.text:
                 raise
-            profile_response = _request(client, "GET", base_url, f"/profiles/{profile_id}")
+            profile_response = _request(
+                client,
+                "GET",
+                base_url,
+                f"/profiles/{profile_id}",
+                headers=headers,
+            )
 
         steps.append(
             {
@@ -142,6 +227,7 @@ def run_deployment_smoke(
                         "include_debug": False,
                         "save_run": True,
                     },
+                    headers=headers,
                 ),
             )
         )
@@ -149,7 +235,13 @@ def run_deployment_smoke(
         steps.append(
             _step(
                 name="dashboard",
-                request_fn=lambda: _request(client, "GET", base_url, f"/profiles/{profile_id}/dashboard"),
+                request_fn=lambda: _request(
+                    client,
+                    "GET",
+                    base_url,
+                    f"/profiles/{profile_id}/dashboard",
+                    headers=headers,
+                ),
             )
         )
 
@@ -197,6 +289,8 @@ def main() -> None:
         profile_id=args.profile_id,
         top_k=args.top_k,
         timeout=args.timeout,
+        bearer_token=args.bearer_token,
+        expect_auth_required=args.expect_auth_required,
     )
 
     if args.output_file:
