@@ -93,6 +93,30 @@ function csvToList(value) {
     .filter(Boolean);
 }
 
+function listToCsv(value) {
+  return Array.isArray(value) ? value.join(", ") : value ?? "";
+}
+
+function degreeOption(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return DEGREE_OPTIONS.find((option) => option.toLowerCase() === normalized) ?? value ?? defaultProfile.degree_level;
+}
+
+function profileToForm(profile) {
+  return {
+    resume_text: profile.resume_text ?? defaultProfile.resume_text,
+    degree_level: degreeOption(profile.degree_level),
+    grad_date: profile.grad_date ?? defaultProfile.grad_date,
+    preferred_roles: listToCsv(profile.preferred_roles),
+    preferred_locations: listToCsv(profile.preferred_locations),
+    target_industries: listToCsv(profile.target_industries),
+    sponsorship_need: Boolean(profile.sponsorship_need),
+    extracted_skills: listToCsv(profile.extracted_skills),
+    years_of_experience: profile.years_of_experience ?? 0,
+    notes: profile.notes ?? ""
+  };
+}
+
 function profilePayload(form) {
   return {
     ...form,
@@ -246,6 +270,7 @@ function friendlyErrorMessage(error) {
 function App({ authToken = null, accountEmail = "Local demo user", onSignOut = null }) {
   const [storedState] = useState(() => readStoredState());
   const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
+  const [savedProfileForm, setSavedProfileForm] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [selectedRun, setSelectedRun] = useState(() => storedState.selectedRun ?? null);
@@ -255,6 +280,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
+  const profileState = savedProfileForm
+    ? JSON.stringify(form) === JSON.stringify(savedProfileForm) ? "saved" : "changed"
+    : "draft";
 
   async function runTask(task, options = {}) {
     setBusy(true);
@@ -301,10 +329,13 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
   async function createOrLoadProfile() {
     const payload = profilePayload(form);
-    await api("/me/profile", {
+    const savedProfile = await api("/me/profile", {
       method: "PUT",
       body: JSON.stringify(payload)
     }, authToken);
+    const savedForm = profileToForm(savedProfile);
+    setForm(savedForm);
+    setSavedProfileForm(savedForm);
     await loadDashboard();
   }
 
@@ -374,10 +405,16 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
       let restoredDashboard;
       try {
+        const storedProfile = await api("/me/profile", {}, authToken);
+        if (cancelled) return;
+        const restoredForm = profileToForm(storedProfile);
+        setForm(restoredForm);
+        setSavedProfileForm(restoredForm);
         restoredDashboard = await api("/me/dashboard", {}, authToken);
       } catch (error) {
         if ([401, 403, 404].includes(error.status)) {
           if (!cancelled) {
+            setSavedProfileForm(null);
             setDashboard(null);
             setRecommendations(null);
             setSelectedRun(null);
@@ -445,12 +482,14 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         <ProfilePanel
           form={form}
           setForm={setForm}
+          profileState={profileState}
           busy={busy}
           status={profileStatus}
           onSubmit={() => runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." })}
         />
         <DashboardPanel
           dashboard={dashboard}
+          profileState={profileState}
           busy={busy}
           onRefresh={() => runTask(() => loadDashboard())}
           onRun={() => runTask(runRecommendations)}
@@ -543,16 +582,35 @@ function Root() {
   );
 }
 
-function ProfilePanel({ form, setForm, busy, status, onSubmit }) {
+function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
+
+  const stateCopy = {
+    draft: {
+      label: "Profile not saved yet",
+      detail: "Save once to unlock matching and dashboard history."
+    },
+    changed: {
+      label: "Unsaved changes",
+      detail: "Save changes before finding a fresh shortlist."
+    },
+    saved: {
+      label: "Saved to this account",
+      detail: "Your dashboard and future shortlists use this profile."
+    }
+  }[profileState];
 
   return (
     <section className="panel profile-panel">
       <div className="panel-heading">
         <p className="eyebrow">Profile Setup</p>
         <h2>Candidate information</h2>
+      </div>
+      <div className={`profile-state ${profileState}`}>
+        <strong>{stateCopy.label}</strong>
+        <span>{stateCopy.detail}</span>
       </div>
       <div className="form-grid">
         <label>
@@ -580,23 +638,43 @@ function ProfilePanel({ form, setForm, busy, status, onSubmit }) {
         </label>
         <label className="wide">
           Resume text
-          <textarea value={form.resume_text} onChange={(event) => update("resume_text", event.target.value)} />
+          <textarea
+            value={form.resume_text}
+            placeholder="Summarize your background, projects, coursework, and internship goals."
+            onChange={(event) => update("resume_text", event.target.value)}
+          />
         </label>
         <label className="wide">
           Preferred roles
-          <input value={form.preferred_roles} onChange={(event) => update("preferred_roles", event.target.value)} />
+          <input
+            value={form.preferred_roles}
+            placeholder="Machine Learning Engineer Intern, Data Science Intern"
+            onChange={(event) => update("preferred_roles", event.target.value)}
+          />
         </label>
         <label className="wide">
           Skills
-          <input value={form.extracted_skills} onChange={(event) => update("extracted_skills", event.target.value)} />
+          <input
+            value={form.extracted_skills}
+            placeholder="Python, SQL, PyTorch, data analysis"
+            onChange={(event) => update("extracted_skills", event.target.value)}
+          />
         </label>
         <label>
           Locations
-          <input value={form.preferred_locations} onChange={(event) => update("preferred_locations", event.target.value)} />
+          <input
+            value={form.preferred_locations}
+            placeholder="Remote, California, New York"
+            onChange={(event) => update("preferred_locations", event.target.value)}
+          />
         </label>
         <label>
           Industries
-          <input value={form.target_industries} onChange={(event) => update("target_industries", event.target.value)} />
+          <input
+            value={form.target_industries}
+            placeholder="AI, fintech, health tech"
+            onChange={(event) => update("target_industries", event.target.value)}
+          />
         </label>
         <label className="check-row">
           <input
@@ -608,15 +686,16 @@ function ProfilePanel({ form, setForm, busy, status, onSubmit }) {
         </label>
       </div>
       <button className="primary-action" disabled={busy} onClick={onSubmit}>
-        {busy ? "Saving..." : "Save profile"}
+        {busy ? "Saving..." : profileState === "changed" ? "Save changes" : "Save profile"}
       </button>
       {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
     </section>
   );
 }
 
-function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun, activeJobView, onShowJobView }) {
+function DashboardPanel({ dashboard, profileState, busy, onRefresh, onRun, onLoadRun, activeJobView, onShowJobView }) {
   const summary = dashboard?.summary;
+  const canFindMatches = Boolean(dashboard) && profileState === "saved";
 
   return (
     <section className="panel dashboard-panel">
@@ -680,9 +759,12 @@ function DashboardPanel({ dashboard, busy, onRefresh, onRun, onLoadRun, activeJo
             )}
           </div>
 
-          <button className="primary-action" disabled={busy} onClick={onRun}>
-            Find matches
+          <button className="primary-action" disabled={busy || !canFindMatches} onClick={onRun}>
+            {profileState === "changed" ? "Save changes first" : "Find matches"}
           </button>
+          {profileState !== "saved" && (
+            <p className="dashboard-action-note">Save the profile before running a new shortlist.</p>
+          )}
 
           <div className="mini-columns">
             <PreviewList title="Saved jobs" items={dashboard.saved_jobs} empty="No saved jobs yet." />

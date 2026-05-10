@@ -278,6 +278,36 @@ button:disabled {
   gap: 14px;
 }
 
+.profile-state {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(63, 95, 102, 0.2);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(183, 206, 215, 0.22);
+}
+
+.profile-state strong {
+  font-size: 0.9rem;
+}
+
+.profile-state span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.profile-state.saved {
+  border-color: rgba(86, 107, 67, 0.24);
+  background: rgba(86, 107, 67, 0.13);
+}
+
+.profile-state.changed {
+  border-color: rgba(214, 154, 53, 0.36);
+  background: rgba(214, 154, 53, 0.16);
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -442,6 +472,14 @@ textarea {
 .next-actions p {
   margin: 4px 0 0;
   color: var(--muted);
+}
+
+.dashboard-action-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .mini-columns {
