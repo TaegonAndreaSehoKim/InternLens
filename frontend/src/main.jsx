@@ -71,63 +71,95 @@ const DEGREE_OPTIONS = [
 
 const ROLE_OPTIONS = [
   "Software Engineering Intern",
+  "Frontend Engineering Intern",
+  "Backend Engineering Intern",
+  "Full Stack Engineering Intern",
+  "Mobile Engineering Intern",
+  "DevOps Intern",
+  "Cloud Engineering Intern",
+  "Cybersecurity Intern",
+  "QA Engineering Intern",
+  "Hardware Engineering Intern",
+  "Mechanical Engineering Intern",
+  "Electrical Engineering Intern",
+  "Civil Engineering Intern",
+  "Industrial Engineering Intern",
   "Machine Learning Engineer Intern",
+  "AI Research Intern",
   "Data Science Intern",
   "Data Analyst Intern",
+  "Business Intelligence Intern",
   "Product Manager Intern",
   "Business Analyst Intern",
   "UX Research Intern",
   "Product Design Intern",
+  "Graphic Design Intern",
+  "Content Design Intern",
   "Marketing Intern",
   "Growth Marketing Intern",
+  "Digital Marketing Intern",
+  "Content Marketing Intern",
+  "Social Media Intern",
   "Sales Intern",
+  "Customer Success Intern",
   "Finance Intern",
+  "Accounting Intern",
+  "Investment Analyst Intern",
   "Operations Intern",
   "Supply Chain Intern",
+  "Human Resources Intern",
+  "Talent Acquisition Intern",
+  "Legal Intern",
   "Clinical Research Intern",
   "Biotech Research Intern",
+  "Lab Research Intern",
+  "Public Health Intern",
   "Policy Intern",
+  "Government Affairs Intern",
   "Education Program Intern",
   "Nonprofit Program Intern",
-  "Communications Intern"
+  "Communications Intern",
+  "Journalism Intern",
+  "Sustainability Intern",
+  "Environmental Research Intern"
 ];
 
 const SKILL_GROUPS = [
   {
     label: "Programming",
-    options: ["Python", "JavaScript", "Java", "C++", "SQL"]
+    options: ["Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Go", "Rust", "R", "SQL"]
   },
   {
     label: "ML / Data",
-    options: ["Machine Learning", "PyTorch", "TensorFlow", "Pandas", "Statistics"]
+    options: ["Machine Learning", "Deep Learning", "PyTorch", "TensorFlow", "Pandas", "NumPy", "Statistics", "A/B Testing", "Data Visualization"]
   },
   {
     label: "Web",
-    options: ["React", "Node.js", "FastAPI"]
+    options: ["React", "Vue", "Angular", "Node.js", "FastAPI", "Django", "Flask", "REST APIs", "GraphQL"]
   },
   {
     label: "Cloud / Tools",
-    options: ["AWS", "Docker", "Git"]
+    options: ["AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Linux", "Git", "CI/CD", "Terraform"]
   },
   {
     label: "Analytics",
-    options: ["Excel", "Tableau", "Power BI"]
+    options: ["Excel", "Tableau", "Power BI", "Looker", "Google Analytics", "Salesforce Analytics"]
   },
   {
     label: "Business",
-    options: ["Market Research", "Financial Modeling", "Operations", "Project Management", "CRM"]
+    options: ["Market Research", "Financial Modeling", "Operations", "Project Management", "CRM", "Salesforce", "Business Strategy", "Competitive Analysis"]
   },
   {
     label: "Design / Research",
-    options: ["User Research", "Figma", "Wireframing", "Survey Design", "Accessibility"]
+    options: ["User Research", "Figma", "Wireframing", "Prototyping", "Survey Design", "Accessibility", "Design Systems", "Usability Testing"]
   },
   {
     label: "Healthcare / Science",
-    options: ["Clinical Research", "Biology", "Lab Techniques", "Scientific Writing", "Data Collection"]
+    options: ["Clinical Research", "Biology", "Chemistry", "Lab Techniques", "Scientific Writing", "Data Collection", "Literature Review", "Regulatory Affairs"]
   },
   {
     label: "Policy / Communications",
-    options: ["Policy Analysis", "Writing", "Public Speaking", "Community Outreach"]
+    options: ["Policy Analysis", "Writing", "Editing", "Public Speaking", "Community Outreach", "Grant Writing", "Media Relations", "Social Media"]
   }
 ];
 
@@ -140,15 +172,34 @@ const LOCATION_OPTIONS = [
   "California",
   "New York",
   "Seattle",
+  "San Francisco",
+  "San Jose",
+  "Los Angeles",
+  "San Diego",
   "Austin",
+  "Dallas",
+  "Houston",
   "Boston",
   "Chicago",
-  "Atlanta"
+  "Atlanta",
+  "Washington DC",
+  "Denver",
+  "Portland",
+  "Raleigh",
+  "Pittsburgh",
+  "Toronto",
+  "Vancouver",
+  "London",
+  "Berlin",
+  "Singapore",
+  "Seoul",
+  "Tokyo"
 ];
 
 const INDUSTRY_OPTIONS = [
   "AI",
   "Enterprise Software",
+  "SaaS",
   "Fintech",
   "Health Tech",
   "Robotics",
@@ -164,7 +215,19 @@ const INDUSTRY_OPTIONS = [
   "Media",
   "Government",
   "Nonprofit",
-  "Manufacturing"
+  "Manufacturing",
+  "Automotive",
+  "Aerospace",
+  "Energy",
+  "Real Estate",
+  "Logistics",
+  "Hospitality",
+  "Sports",
+  "Entertainment",
+  "Telecommunications",
+  "Semiconductors",
+  "Pharmaceuticals",
+  "Consumer Goods"
 ];
 
 const defaultProfile = {
@@ -995,7 +1058,7 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
           Add
         </button>
       </div>
-      {(query.trim() || selectedItems.length === 0) && suggestions.length > 0 && (
+      {query.trim() && suggestions.length > 0 && (
         <div className="suggestion-menu" aria-label={`${title} suggestions`}>
           {suggestions.map((item) => (
             <button key={item} type="button" onClick={() => addItems([item])}>
@@ -1003,6 +1066,9 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
             </button>
           ))}
         </div>
+      )}
+      {query.trim() && suggestions.length === 0 && (
+        <p className="suggestion-empty">Press Add to use this custom value.</p>
       )}
     </div>
   );

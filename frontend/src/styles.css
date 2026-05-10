@@ -559,6 +559,13 @@ textarea {
   background: rgba(183, 206, 215, 0.24);
 }
 
+.suggestion-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .primary-action,
 .ghost-action,
 .job-actions button,
