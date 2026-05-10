@@ -141,6 +141,49 @@ function eligibilityLabel(value) {
   return titleCase(value);
 }
 
+function sentenceCase(value = "") {
+  const text = String(value).trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+}
+
+function cleanSignal(value = "") {
+  return sentenceCase(String(value).replace(/[_-]/g, " ").replace(/\s+/g, " "));
+}
+
+function uniqueItems(items = []) {
+  return [...new Set(items.map((item) => String(item).trim()).filter(Boolean))];
+}
+
+function fitSummary(job) {
+  const company = job.company ?? "This company";
+  const role = job.title ?? "this role";
+  const score = displayScore(job);
+  const fit = titleCase(job.fit_level ?? "match");
+  if (score === null) {
+    return `${company} ${role} is a ${fit.toLowerCase()} based on the visible posting text.`;
+  }
+  return `${company} ${role} is a ${fit.toLowerCase()} match with a ${score}/100 fit score.`;
+}
+
+function positiveEvidence(job) {
+  return uniqueItems([
+    ...(job.why_apply ?? []),
+    ...(job.reasons ?? [])
+  ]).map(cleanSignal);
+}
+
+function watchoutEvidence(job) {
+  return uniqueItems([
+    ...(job.watchouts ?? []),
+    ...(job.blocking_issues ?? []),
+    ...(job.skill_gaps ?? []).map((skill) => `Missing or unclear signal: ${skill}`)
+  ]).map(cleanSignal);
+}
+
+function skillSignals(job) {
+  return uniqueItems(job.matched_skills ?? []).slice(0, 6).map(cleanSignal);
+}
+
 function clearActionLabel(state) {
   const labels = {
     applied: "Undo applied",
@@ -923,7 +966,9 @@ function JobCard({ job, busy, onAction }) {
   const label = actionLabel(job);
   const action = actionValue(job);
   const currentState = job.user_job_state;
-  const watchouts = job.watchouts ?? job.blocking_issues ?? [];
+  const positives = positiveEvidence(job);
+  const watchouts = watchoutEvidence(job);
+  const skills = skillSignals(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
   const isApplied = currentState === "applied";
@@ -940,7 +985,15 @@ function JobCard({ job, busy, onAction }) {
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
         </div>
         <h3>{job.title}</h3>
-        <p>{job.summary}</p>
+        <p className="fit-summary">{fitSummary(job)}</p>
+        {job.summary && <p className="job-summary">{job.summary}</p>}
+        {skills.length > 0 && (
+          <div className="skill-chip-row" aria-label="Matched skills">
+            {skills.map((skill) => (
+              <span key={skill}>{skill}</span>
+            ))}
+          </div>
+        )}
         {eligibility && (
           <div className="job-detail-row">
             <span>{eligibility}</span>
@@ -948,8 +1001,8 @@ function JobCard({ job, busy, onAction }) {
         )}
 
         <div className="evidence-grid">
-          <EvidenceList title="Why it fits" items={job.why_apply} empty="No strong positive signals surfaced." />
-          <EvidenceList title="Watchouts" items={watchouts} empty="No major watchouts surfaced." />
+          <EvidenceList title="Why it fits" items={positives} empty="No strong positive signals surfaced." />
+          <EvidenceList title="What to check" items={watchouts} empty="No major watchouts surfaced." />
         </div>
       </div>
       <div className="job-side">

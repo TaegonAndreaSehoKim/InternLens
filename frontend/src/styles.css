@@ -769,6 +769,32 @@ textarea {
   color: var(--muted);
 }
 
+.job-card .fit-summary {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.job-card .job-summary {
+  margin-top: 7px;
+  line-height: 1.42;
+}
+
+.skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.skill-chip-row span {
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: #2c4b53;
+  background: rgba(183, 206, 215, 0.36);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
 .job-side .state-note {
   margin-top: 10px;
   font-size: 0.78rem;
