@@ -69,17 +69,76 @@ const DEGREE_OPTIONS = [
   "Other"
 ];
 
+const ROLE_OPTIONS = [
+  "Software Engineering Intern",
+  "Machine Learning Engineer Intern",
+  "Data Science Intern",
+  "Data Analyst Intern",
+  "Product Manager Intern",
+  "Business Analyst Intern",
+  "UX Research Intern"
+];
+
+const SKILL_GROUPS = [
+  {
+    label: "Programming",
+    options: ["Python", "JavaScript", "Java", "C++", "SQL"]
+  },
+  {
+    label: "ML / Data",
+    options: ["Machine Learning", "PyTorch", "TensorFlow", "Pandas", "Statistics"]
+  },
+  {
+    label: "Web",
+    options: ["React", "Node.js", "FastAPI"]
+  },
+  {
+    label: "Cloud / Tools",
+    options: ["AWS", "Docker", "Git"]
+  },
+  {
+    label: "Analytics",
+    options: ["Excel", "Tableau", "Power BI"]
+  }
+];
+
+const LOCATION_OPTIONS = [
+  "Remote",
+  "Hybrid",
+  "United States",
+  "California",
+  "New York",
+  "Seattle",
+  "Austin",
+  "Boston",
+  "Chicago",
+  "Atlanta"
+];
+
+const INDUSTRY_OPTIONS = [
+  "AI",
+  "Enterprise Software",
+  "Fintech",
+  "Health Tech",
+  "Robotics",
+  "Consumer Tech",
+  "Cloud Infrastructure",
+  "Cybersecurity",
+  "Education",
+  "Climate Tech"
+];
+
 const defaultProfile = {
-  resume_text: "Graduate student with Python, machine learning, ranking systems, and data analysis experience.",
-  degree_level: "Master's",
-  grad_date: "2027-12",
-  preferred_roles: "Machine Learning Engineer Intern, Applied Scientist Intern, Data Science Intern",
-  preferred_locations: "Remote, California",
-  target_industries: "AI, Tech",
-  sponsorship_need: true,
-  extracted_skills: "Python, Machine Learning, PyTorch, Data Analysis",
-  years_of_experience: 1,
-  notes: "Interested in recommendation and ranking systems"
+  resume_text: "",
+  degree_level: "",
+  grad_date: "",
+  preferred_roles: "",
+  preferred_locations: "",
+  target_industries: "",
+  sponsorship_need: false,
+  extracted_skills: "",
+  years_of_experience: 0,
+  notes: ""
 };
 
 function cognitoAuthority() {
@@ -91,6 +150,29 @@ function csvToList(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function csvIncludes(value, item) {
+  const normalizedItem = item.trim().toLowerCase();
+  return csvToList(value).some((entry) => entry.toLowerCase() === normalizedItem);
+}
+
+function addCsvItems(value, items) {
+  const existing = csvToList(value);
+  const normalized = new Set(existing.map((item) => item.toLowerCase()));
+  const additions = items
+    .map((item) => item.trim())
+    .filter((item) => item && !normalized.has(item.toLowerCase()));
+  return [...existing, ...additions].join(", ");
+}
+
+function removeCsvItem(value, item) {
+  const normalizedItem = item.trim().toLowerCase();
+  return csvToList(value).filter((entry) => entry.toLowerCase() !== normalizedItem).join(", ");
+}
+
+function toggleCsvItem(value, item) {
+  return csvIncludes(value, item) ? removeCsvItem(value, item) : addCsvItems(value, [item]);
 }
 
 function listToCsv(value) {
@@ -125,6 +207,62 @@ function profilePayload(form) {
     target_industries: csvToList(form.target_industries),
     extracted_skills: csvToList(form.extracted_skills),
     years_of_experience: Number(form.years_of_experience || 0)
+  };
+}
+
+function profileQuality(form) {
+  const roleCount = csvToList(form.preferred_roles).length;
+  const skillCount = csvToList(form.extracted_skills).length;
+  const locationCount = csvToList(form.preferred_locations).length;
+  const backgroundLength = String(form.resume_text ?? "").trim().length;
+  const items = [
+    {
+      label: "Target role selected",
+      detail: "Choose at least one internship role.",
+      complete: roleCount >= 1,
+      required: true
+    },
+    {
+      label: "Core skills selected",
+      detail: "Choose at least three skills.",
+      complete: skillCount >= 3,
+      required: true
+    },
+    {
+      label: "Location preference selected",
+      detail: "Choose at least one location or work mode.",
+      complete: locationCount >= 1,
+      required: true
+    },
+    {
+      label: "Education timeline set",
+      detail: "Set degree and graduation month.",
+      complete: Boolean(form.degree_level && form.grad_date),
+      required: true
+    },
+    {
+      label: "Background context added",
+      detail: "Optional, but useful for projects and coursework.",
+      complete: backgroundLength >= 30,
+      required: false
+    },
+    {
+      label: "Industry preference added",
+      detail: "Optional, but helps break ties between similar roles.",
+      complete: csvToList(form.target_industries).length >= 1,
+      required: false
+    }
+  ];
+  const requiredItems = items.filter((item) => item.required);
+  const requiredComplete = requiredItems.filter((item) => item.complete).length;
+  const completeCount = items.filter((item) => item.complete).length;
+  return {
+    items,
+    completeCount,
+    totalCount: items.length,
+    requiredComplete,
+    requiredTotal: requiredItems.length,
+    isReady: requiredComplete === requiredItems.length
   };
 }
 
@@ -323,6 +461,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
+  const quality = profileQuality(form);
   const profileState = savedProfileForm
     ? JSON.stringify(form) === JSON.stringify(savedProfileForm) ? "saved" : "changed"
     : "draft";
@@ -526,6 +665,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           form={form}
           setForm={setForm}
           profileState={profileState}
+          quality={quality}
           busy={busy}
           status={profileStatus}
           onSubmit={() => runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." })}
@@ -533,6 +673,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         <DashboardPanel
           dashboard={dashboard}
           profileState={profileState}
+          profileReady={quality.isReady}
           busy={busy}
           onRefresh={() => runTask(() => loadDashboard())}
           onRun={() => runTask(runRecommendations)}
@@ -625,7 +766,7 @@ function Root() {
   );
 }
 
-function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
+function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSubmit }) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -655,6 +796,7 @@ function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
         <strong>{stateCopy.label}</strong>
         <span>{stateCopy.detail}</span>
       </div>
+      <ProfileQuality quality={quality} />
       <div className="form-grid">
         <label>
           Graduation
@@ -663,6 +805,7 @@ function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
         <label>
           Degree
           <select value={form.degree_level} onChange={(event) => update("degree_level", event.target.value)}>
+            <option value="">Select degree</option>
             {DEGREE_OPTIONS.map((degree) => (
               <option key={degree} value={degree}>
                 {degree}
@@ -679,46 +822,34 @@ function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
             onChange={(event) => update("years_of_experience", event.target.value)}
           />
         </label>
-        <label className="wide">
-          Resume text
-          <textarea
-            value={form.resume_text}
-            placeholder="Summarize your background, projects, coursework, and internship goals."
-            onChange={(event) => update("resume_text", event.target.value)}
-          />
-        </label>
-        <label className="wide">
-          Preferred roles
-          <input
-            value={form.preferred_roles}
-            placeholder="Machine Learning Engineer Intern, Data Science Intern"
-            onChange={(event) => update("preferred_roles", event.target.value)}
-          />
-        </label>
-        <label className="wide">
-          Skills
-          <input
-            value={form.extracted_skills}
-            placeholder="Python, SQL, PyTorch, data analysis"
-            onChange={(event) => update("extracted_skills", event.target.value)}
-          />
-        </label>
-        <label>
-          Locations
-          <input
-            value={form.preferred_locations}
-            placeholder="Remote, California, New York"
-            onChange={(event) => update("preferred_locations", event.target.value)}
-          />
-        </label>
-        <label>
-          Industries
-          <input
-            value={form.target_industries}
-            placeholder="AI, fintech, health tech"
-            onChange={(event) => update("target_industries", event.target.value)}
-          />
-        </label>
+        <ChipSelector
+          title="Preferred roles"
+          value={form.preferred_roles}
+          options={ROLE_OPTIONS}
+          customPlaceholder="Add another role"
+          onChange={(value) => update("preferred_roles", value)}
+        />
+        <ChipSelector
+          title="Skills"
+          value={form.extracted_skills}
+          groups={SKILL_GROUPS}
+          customPlaceholder="Add another skill"
+          onChange={(value) => update("extracted_skills", value)}
+        />
+        <ChipSelector
+          title="Locations"
+          value={form.preferred_locations}
+          options={LOCATION_OPTIONS}
+          customPlaceholder="Add another location"
+          onChange={(value) => update("preferred_locations", value)}
+        />
+        <ChipSelector
+          title="Industries"
+          value={form.target_industries}
+          options={INDUSTRY_OPTIONS}
+          customPlaceholder="Add another industry"
+          onChange={(value) => update("target_industries", value)}
+        />
         <label className="check-row">
           <input
             type="checkbox"
@@ -727,18 +858,152 @@ function ProfilePanel({ form, setForm, profileState, busy, status, onSubmit }) {
           />
           Needs sponsorship
         </label>
+        <label className="wide">
+          Additional background
+          <textarea
+            value={form.resume_text}
+            placeholder="Optional context: projects, coursework, research, domain interests, or constraints."
+            onChange={(event) => update("resume_text", event.target.value)}
+          />
+        </label>
       </div>
-      <button className="primary-action" disabled={busy} onClick={onSubmit}>
-        {busy ? "Saving..." : profileState === "changed" ? "Save changes" : "Save profile"}
+      <button className="primary-action" disabled={busy || !quality.isReady} onClick={onSubmit}>
+        {busy
+          ? "Saving..."
+          : !quality.isReady
+          ? "Complete essentials"
+          : profileState === "changed"
+          ? "Save changes"
+          : "Save profile"}
       </button>
+      {!quality.isReady && (
+        <p className="profile-save-note">Complete the required items above before saving this profile.</p>
+      )}
       {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
     </section>
   );
 }
 
-function DashboardPanel({ dashboard, profileState, busy, onRefresh, onRun, onLoadRun, activeJobView, onShowJobView }) {
+function ProfileQuality({ quality }) {
+  return (
+    <div className={`quality-card ${quality.isReady ? "ready" : "needs-work"}`}>
+      <div className="quality-heading">
+        <strong>{quality.isReady ? "Ready for matching" : "Profile quality"}</strong>
+        <span>
+          {quality.requiredComplete}/{quality.requiredTotal} required
+        </span>
+      </div>
+      <div className="quality-list">
+        {quality.items.map((item) => (
+          <div key={item.label} className={item.complete ? "complete" : "incomplete"}>
+            <span>{item.complete ? "Done" : item.required ? "Needed" : "Optional"}</span>
+            <div>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChipSelector({ title, value, options = [], groups = [], customPlaceholder, onChange }) {
+  const [customValue, setCustomValue] = useState("");
+  const selectedItems = csvToList(value);
+
+  function toggleItem(item) {
+    onChange(toggleCsvItem(value, item));
+  }
+
+  function addCustomItems() {
+    const items = csvToList(customValue);
+    if (items.length === 0) {
+      return;
+    }
+    onChange(addCsvItems(value, items));
+    setCustomValue("");
+  }
+
+  return (
+    <div className="selector-field wide">
+      <div className="selector-heading">
+        <strong>{title}</strong>
+        <span>{selectedItems.length} selected</span>
+      </div>
+      {selectedItems.length > 0 && (
+        <div className="selected-chip-row" aria-label={`Selected ${title.toLowerCase()}`}>
+          {selectedItems.map((item) => (
+            <button key={item} type="button" onClick={() => toggleItem(item)}>
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
+      {options.length > 0 && (
+        <div className="chip-row" aria-label={`${title} options`}>
+          {options.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={csvIncludes(value, item) ? "selected" : ""}
+              onClick={() => toggleItem(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
+      {groups.map((group) => (
+        <div className="chip-group" key={group.label}>
+          <span>{group.label}</span>
+          <div className="chip-row">
+            {group.options.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={csvIncludes(value, item) ? "selected" : ""}
+                onClick={() => toggleItem(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="custom-chip-input">
+        <input
+          value={customValue}
+          placeholder={customPlaceholder}
+          onChange={(event) => setCustomValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addCustomItems();
+            }
+          }}
+        />
+        <button type="button" disabled={!customValue.trim()} onClick={addCustomItems}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DashboardPanel({
+  dashboard,
+  profileState,
+  profileReady,
+  busy,
+  onRefresh,
+  onRun,
+  onLoadRun,
+  activeJobView,
+  onShowJobView
+}) {
   const summary = dashboard?.summary;
-  const canFindMatches = Boolean(dashboard) && profileState === "saved";
+  const canFindMatches = Boolean(dashboard) && profileState === "saved" && profileReady;
 
   return (
     <section className="panel dashboard-panel">
@@ -803,10 +1068,14 @@ function DashboardPanel({ dashboard, profileState, busy, onRefresh, onRun, onLoa
           </div>
 
           <button className="primary-action" disabled={busy || !canFindMatches} onClick={onRun}>
-            {profileState === "changed" ? "Save changes first" : "Find matches"}
+            {!profileReady ? "Complete profile first" : profileState === "changed" ? "Save changes first" : "Find matches"}
           </button>
-          {profileState !== "saved" && (
-            <p className="dashboard-action-note">Save the profile before running a new shortlist.</p>
+          {(!profileReady || profileState !== "saved") && (
+            <p className="dashboard-action-note">
+              {!profileReady
+                ? "Complete the required profile items before running a shortlist."
+                : "Save the profile before running a new shortlist."}
+            </p>
           )}
 
           <div className="mini-columns">

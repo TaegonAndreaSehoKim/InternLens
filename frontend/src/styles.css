@@ -308,6 +308,93 @@ button:disabled {
   background: rgba(214, 154, 53, 0.16);
 }
 
+.quality-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(23, 33, 28, 0.1);
+  border-radius: 16px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.quality-card.ready {
+  border-color: rgba(86, 107, 67, 0.24);
+}
+
+.quality-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.quality-heading strong {
+  font-size: 0.92rem;
+}
+
+.quality-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.quality-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quality-list > div {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border-radius: 12px;
+  padding: 9px;
+  background: rgba(247, 241, 229, 0.54);
+}
+
+.quality-list span {
+  border-radius: 999px;
+  padding: 5px 7px;
+  color: var(--muted);
+  background: rgba(23, 33, 28, 0.08);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.quality-list .complete span {
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.15);
+}
+
+.quality-list strong,
+.quality-list small {
+  display: block;
+}
+
+.quality-list strong {
+  font-size: 0.82rem;
+}
+
+.quality-list small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.profile-save-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -386,6 +473,79 @@ textarea {
 .check-row input {
   width: 18px;
   height: 18px;
+}
+
+.selector-field {
+  display: grid;
+  gap: 10px;
+}
+
+.selector-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.selector-heading strong {
+  color: #3f4944;
+  font-size: 0.82rem;
+}
+
+.selector-heading span,
+.chip-group > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.selected-chip-row,
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected-chip-row button,
+.chip-row button,
+.custom-chip-input button {
+  border: 1px solid rgba(23, 33, 28, 0.14);
+  border-radius: 999px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.54);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.selected-chip-row button,
+.chip-row button.selected {
+  border-color: rgba(86, 107, 67, 0.28);
+  color: var(--moss);
+  background: rgba(86, 107, 67, 0.14);
+}
+
+.chip-group {
+  display: grid;
+  gap: 7px;
+}
+
+.custom-chip-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.custom-chip-input button {
+  min-width: 70px;
+  color: #fffaf0;
+  background: var(--steel);
+}
+
+.custom-chip-input button:disabled {
+  color: var(--muted);
+  background: rgba(23, 33, 28, 0.08);
 }
 
 .primary-action,
@@ -983,7 +1143,8 @@ textarea {
   .metric-row,
   .mini-columns,
   .filter-bar,
-  .evidence-grid {
+  .evidence-grid,
+  .quality-list {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -1017,7 +1178,8 @@ textarea {
   .metric-row,
   .mini-columns,
   .filter-bar,
-  .evidence-grid {
+  .evidence-grid,
+  .quality-list {
     grid-template-columns: 1fr;
   }
 }
