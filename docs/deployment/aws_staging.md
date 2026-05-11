@@ -304,19 +304,24 @@ Or run the deployment smoke script:
 ```
 
 The smoke script creates or loads a test profile, runs stored-profile recommendations, and fetches the dashboard snapshot.
+For Cognito-protected staging without a test bearer token, validate health, auth enforcement, and deployed `top_k` schema with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://your-backend-host.example --top-k 1000 --expect-auth-required --output-file outputs\deployment_smoke_staging_auth.json
+```
+
 Generated deployment smoke reports under `outputs/deployment_smoke*.json` are ignored by git.
 
-Latest CloudFront backend smoke:
+Latest CloudFront backend auth smoke:
 
 ```text
 Base URL: https://d187u93cen5bw8.cloudfront.net
 Profile ID: smoke_deploy_user
 Overall: passed
 - health: 200
-- profile: 201
-- recommend: 200
-- dashboard: 200
-Returned jobs: 3
+- auth_required: 401
+- openapi_schema: 200
+Returned jobs: None
 ```
 
 ## Current Staging Limitations
@@ -327,4 +332,5 @@ Returned jobs: 3
 - Corpus refresh is not isolated as a separate scheduled worker.
 - Generated raw/processed data can be large; avoid rewriting data directories during deploy.
 - CORS should be restricted to the deployed frontend URL, not left broad.
-- Frontend deploys are automatic from `main`, but backend code or corpus changes still require a new Elastic Beanstalk bundle/upload.
+- Frontend deploys are automatic from `main` through Amplify.
+- Backend code or corpus changes should deploy through the `internlens-backend-staging` CodePipeline; if the frontend is current but API behavior is stale, check Source, Build, and Deploy status there first.

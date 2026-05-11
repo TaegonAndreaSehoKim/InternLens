@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `185 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `188 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -117,6 +117,8 @@ The frontend has the matching switch: `VITE_AUTH_MODE=dev` keeps the existing de
 
 The frontend uses these APIs to support:
 - profile setup and restoration
+- account-scoped `/me/...` profile, dashboard, recommendation, and job-action calls for the browser workflow
+- searchable structured selectors for roles, skills, locations, and industries
 - simple online/offline API health status
 - optional Cognito Hosted UI sign-in when `VITE_AUTH_MODE=cognito`
 - dashboard summary review
@@ -159,6 +161,8 @@ Recent work focused on:
 - expanding the active internship source corpus from priority company seeds
 - paginating full shortlist results in the frontend while increasing API result limits
 - demoting non-core marketing/communications internships that were overpromoted by broad analytics wording
+- adding account-scoped `/me/...` API aliases so browser users no longer handle profile IDs directly
+- redesigning Profile Setup around searchable structured selectors and quality checks instead of broad free-text entry
 - stress-testing company-seed-based source discovery with a larger seed draft
 - hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
 - tightening source promotion safeguards for direct ATS probe candidates and inactive registry entries
@@ -167,7 +171,7 @@ Recent work focused on:
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
 
 The latest validation state shows:
-- `185 passed`
+- `188 passed`
 - `npm run lint`, `npm test`, and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset

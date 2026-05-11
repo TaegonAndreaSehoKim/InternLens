@@ -14,7 +14,7 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
 - **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, and paginated shortlist review are available through the API and frontend.
-- **Quality checkpoint:** Python suite currently passes at `185 passed`; frontend lint, tests, and production build are also passing.
+- **Quality checkpoint:** Python suite currently passes at `188 passed`; frontend lint, tests, and production build are also passing.
 - **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
 
 ## Current status
@@ -37,7 +37,7 @@ InternLens currently supports:
 - API endpoints for recommendation and job detail lookup
 - user-scoped stored profile, feedback, recommendation history, job action, and dashboard APIs
 - Cognito JWT auth mode for account-scoped API access, with development auth still available for local demos
-- Vite/React frontend for profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, and paginated shortlist inspection
+- Vite/React frontend for account-scoped profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, and paginated shortlist inspection
 - AWS staging deployment with Amplify frontend auto-deploys and a CodePipeline path for backend test/package/deploy to Elastic Beanstalk
 - regression-tested iteration
 
@@ -50,7 +50,7 @@ Current architecture planning also includes a long-term source acquisition strat
 
 Latest validation state:
 - full test suite passing
-- current total: `185 passed`
+- current total: `188 passed`
 - frontend lint, Vitest, and production build passing with `npm run lint`, `npm test -- --run`, and `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
@@ -128,7 +128,7 @@ The current implementation is intentionally simple and transparent. It is design
 - source pipeline tests
 - source recall and promotion smoke tests
 - profile API tests
-- full suite currently passing: `185 passed`
+- full suite currently passing: `188 passed`
 - frontend lint, test, and build checks with `npm run lint`, `npm test -- --run`, and `npm run build`
 - GitHub Actions workflow for automated `pytest -q`
 
@@ -627,6 +627,7 @@ GET /profiles/user_001/recommendations/run_abc123
 Useful notes:
 - stored-profile APIs are currently scoped by `X-InternLens-User-Id`; when the header is absent, the backend uses `local_user` for local/demo compatibility
 - set `INTERNLENS_AUTH_MODE=cognito` to require `Authorization: Bearer <Cognito JWT>` and derive the user scope from the token subject
+- the browser app uses account-scoped `/me/...` endpoints so the user does not have to choose or type a profile ID
 - stored-profile recommendation calls now save a run snapshot by default
 - set `save_run=false` when you want a one-off recommendation without history
 - saved runs let the app show prior recommendation sessions without recomputing immediately
@@ -634,6 +635,7 @@ Useful notes:
 - result items from stored-profile recommendations and saved run snapshots can include the latest `user_job_state`
 - when `VITE_AUTH_MODE=cognito`, the frontend uses Cognito Hosted UI and sends the Cognito access token as a bearer token on API requests
 - the frontend asks the API for a larger shortlist snapshot and paginates visible results in groups of 20, so users can review the full available result set without a long scrolling wall
+- profile setup now uses searchable structured selectors for roles, skills, locations, and industries, with free-text background kept as optional context
 
 Save, apply, or hide a job from a stored-profile workflow:
 
@@ -673,6 +675,22 @@ The dashboard response combines:
 - saved, applied, and hidden job previews
 
 In the frontend, clicking the dashboard `Shortlists`, `Saved`, `Applied`, or `Hidden` count changes the lower review panel to the matching job set. Hidden jobs are not deleted; they are suppressed from future shortlists until the user chooses `Show again`.
+
+The frontend's account-scoped workflow calls these profile aliases:
+
+```json
+PUT /me/profile
+GET /me/profile
+GET /me/dashboard
+POST /me/recommend
+GET /me/recommendations/{run_id}
+POST /me/jobs/{job_id}/action
+GET /me/saved-jobs
+GET /me/applied-jobs
+GET /me/dismissed-jobs
+```
+
+These aliases map the signed-in account to an internal default profile and keep profile IDs out of the user-facing workflow. The older `/profiles/{profile_id}/...` endpoints remain available for CLI, tests, and developer compatibility.
 
 ---
 
@@ -722,7 +740,7 @@ pytest tests/test_api_and_ranking.py -q
 
 Current status:
 - full test suite passing
-- current total: `185 passed`
+- current total: `188 passed`
 - frontend lint, tests, and build passing with `npm run lint`, `npm test -- --run`, and `npm run build`
 - GitHub Actions workflow runs `pytest -q` on `push` and `pull_request` to `main`
 - GitHub Actions also includes a scheduled/manual corpus refresh workflow for Lever and Greenhouse registry sources
@@ -826,10 +844,10 @@ For details, see `docs/deployment/aws_staging.md`.
 After deploying the backend, run:
 
 ```bash
-python scripts/smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net
+python scripts/smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net --top-k 1000 --expect-auth-required
 ```
 
-Latest staging smoke passed against the CloudFront backend with health, profile creation, recommendation, and dashboard checks all returning 2xx responses.
+Latest Cognito-protected staging smoke passed against the CloudFront backend with health returning `200`, protected stored-profile access returning `401` without a bearer token, and the deployed OpenAPI schema showing `top_k` support up to `1000`.
 
 ---
 
