@@ -230,6 +230,49 @@ const INDUSTRY_OPTIONS = [
   "Consumer Goods"
 ];
 
+const PUBLIC_FEATURES = [
+  {
+    title: "Structured profile setup",
+    body: "Start from guided role, skill, location, and industry choices instead of relying on a long free-text prompt.",
+  },
+  {
+    title: "Explainable recommendations",
+    body: "Review ranked internship leads with readable match reasons, blockers, and fit signals before taking action.",
+  },
+  {
+    title: "Shortlist workflow",
+    body: "Keep saved, applied, and hidden roles organized so each search pass gets easier to review.",
+  },
+];
+
+const PUBLIC_STEPS = [
+  "Create an account",
+  "Build a profile",
+  "Find matches",
+  "Track decisions",
+];
+
+const PUBLIC_SAMPLE_JOBS = [
+  {
+    title: "Software Engineering Intern",
+    company: "Example Robotics",
+    meta: "Atlanta, GA | Summer 2026",
+    reason: "Strong match for backend systems, Python, and product engineering interests.",
+  },
+  {
+    title: "Data Analyst Intern",
+    company: "Sample Health",
+    meta: "Remote | Summer 2026",
+    reason: "Matches analytics, SQL, dashboarding, and healthcare domain preferences.",
+  },
+  {
+    title: "Product Operations Intern",
+    company: "Demo Cloud",
+    meta: "New York, NY | Fall 2026",
+    reason: "Relevant to operations, customer workflows, and cross-functional product work.",
+  },
+];
+
 const defaultProfile = {
   resume_text: "",
   degree_level: "",
@@ -804,6 +847,89 @@ function AuthShell({ title, detail, action }) {
   );
 }
 
+function PublicHome({ onSignIn, errorMessage }) {
+  return (
+    <main className="public-shell">
+      <header className="public-nav">
+        <div className="public-brand">
+          <p className="eyebrow">InternLens</p>
+          <strong>Internship application board</strong>
+        </div>
+        <div className="public-auth-actions" aria-label="Account actions">
+          <button className="ghost-action" onClick={onSignIn}>
+            Log in
+          </button>
+          <button className="primary-action" onClick={onSignIn}>
+            Sign up
+          </button>
+        </div>
+      </header>
+
+      {errorMessage && (
+        <section className="public-alert" role="alert">
+          <strong>Sign-in problem</strong>
+          <span>{errorMessage}</span>
+        </section>
+      )}
+
+      <section className="public-hero">
+        <p className="eyebrow">Internship discovery workspace</p>
+        <h1>InternLens</h1>
+        <p>
+          Build a structured candidate profile, find ranked internship matches from public ATS data, and keep each
+          application decision organized in one account.
+        </p>
+        <div className="public-hero-actions">
+          <button className="primary-action" onClick={onSignIn}>
+            Start matching
+          </button>
+          <span>Personalized profiles, shortlists, and job actions appear only after sign-in.</span>
+        </div>
+      </section>
+
+      <section className="public-workflow" aria-label="How InternLens works">
+        {PUBLIC_STEPS.map((step, index) => (
+          <article key={step}>
+            <span>{index + 1}</span>
+            <strong>{step}</strong>
+          </article>
+        ))}
+      </section>
+
+      <section className="public-content-grid">
+        <div className="public-feature-list">
+          {PUBLIC_FEATURES.map((feature) => (
+            <article key={feature.title}>
+              <h2>{feature.title}</h2>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+
+        <section className="public-preview" aria-label="Sample shortlist preview">
+          <div className="preview-heading">
+            <p className="eyebrow">Sample preview</p>
+            <h2>Ranked leads without exposing private data</h2>
+          </div>
+          <div className="sample-job-list">
+            {PUBLIC_SAMPLE_JOBS.map((job, index) => (
+              <article key={`${job.company}-${job.title}`} className="sample-job-card">
+                <div>
+                  <span className="sample-rank">#{index + 1}</span>
+                  <h3>{job.title}</h3>
+                  <p>{job.company}</p>
+                </div>
+                <small>{job.meta}</small>
+                <p>{job.reason}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
 function AuthenticatedApp() {
   const auth = useAuth();
 
@@ -818,23 +944,11 @@ function AuthenticatedApp() {
   }
 
   if (auth.error) {
-    return (
-      <AuthShell
-        title="Sign-in problem"
-        detail={auth.error.message}
-        action={<button className="primary-action" onClick={() => auth.signinRedirect()}>Try again</button>}
-      />
-    );
+    return <PublicHome onSignIn={() => auth.signinRedirect()} errorMessage={auth.error.message} />;
   }
 
   if (!auth.isAuthenticated) {
-    return (
-      <AuthShell
-        title="Sign in to InternLens"
-        detail="Use your InternLens account to keep profiles, shortlists, saved jobs, and applied roles separate."
-        action={<button className="primary-action" onClick={() => auth.signinRedirect()}>Sign in</button>}
-      />
-    );
+    return <PublicHome onSignIn={() => auth.signinRedirect()} />;
   }
 
   return (
