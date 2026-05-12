@@ -307,7 +307,6 @@ const SKILL_GROUPS = [
 const SKILL_OPTIONS = SKILL_GROUPS.flatMap((group) => group.options);
 
 const LOCATION_OPTIONS = [
-  "Remote",
   "Hybrid",
   "On-site",
   "United States",
@@ -518,6 +517,11 @@ function addCsvItems(value, items) {
 function removeCsvItem(value, item) {
   const normalizedItem = item.trim().toLowerCase();
   return csvToList(value).filter((entry) => entry.toLowerCase() !== normalizedItem).join(", ");
+}
+
+function hasCsvItem(value, item) {
+  const normalizedItem = item.trim().toLowerCase();
+  return csvToList(value).some((entry) => entry.toLowerCase() === normalizedItem);
 }
 
 function listToCsv(value) {
@@ -1195,6 +1199,20 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  const remotePreferred = hasCsvItem(form.preferred_locations, "Remote");
+  const locationValue = removeCsvItem(form.preferred_locations, "Remote");
+
+  function updateLocations(value) {
+    update("preferred_locations", remotePreferred ? addCsvItems(value, ["Remote"]) : value);
+  }
+
+  function updateRemotePreference(checked) {
+    update(
+      "preferred_locations",
+      checked ? addCsvItems(form.preferred_locations, ["Remote"]) : removeCsvItem(form.preferred_locations, "Remote")
+    );
+  }
+
   const stateCopy = {
     draft: {
       label: "Profile not saved yet",
@@ -1269,11 +1287,19 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
         />
         <ChipSelector
           title="Locations"
-          value={form.preferred_locations}
+          value={locationValue}
           options={LOCATION_OPTIONS}
           customPlaceholder="Add another location"
-          onChange={(value) => update("preferred_locations", value)}
+          onChange={updateLocations}
         />
+        <label className="check-row location-remote-toggle">
+          <input
+            type="checkbox"
+            checked={remotePreferred}
+            onChange={(event) => updateRemotePreference(event.target.checked)}
+          />
+          Include remote roles
+        </label>
         <ChipSelector
           title="Industries"
           value={form.target_industries}
@@ -1415,9 +1441,11 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
 function SingleSearchSelector({ title, value, options = [], placeholder, onChange }) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
-  const suggestions = options
+  const matchedSuggestions = options
     .filter((item) => !normalizedQuery || item.toLowerCase().includes(normalizedQuery))
     .slice(0, 10);
+  const shouldShowFallback = normalizedQuery && matchedSuggestions.length === 0 && options.includes("Other");
+  const suggestions = shouldShowFallback ? ["Other"] : matchedSuggestions;
 
   function selectValue(item) {
     onChange(item);
@@ -1449,9 +1477,6 @@ function SingleSearchSelector({ title, value, options = [], placeholder, onChang
             }
           }}
         />
-        <button type="button" onClick={() => selectValue("Other")}>
-          Other
-        </button>
       </div>
       {query.trim() && suggestions.length > 0 && (
         <div className="suggestion-menu" aria-label={`${title} suggestions`}>
