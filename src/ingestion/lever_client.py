@@ -374,6 +374,11 @@ def save_processed_lever_postings(
     output_dir = project_root / "data" / "processed" / "jobs" / "lever" / site_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Match Greenhouse behavior: each refresh should leave only the latest
+    # source snapshot for this board, otherwise closed Lever postings linger.
+    for existing_file in output_dir.glob("*.json"):
+        existing_file.unlink()
+
     saved_paths: List[Path] = []
     fetched_at = _utc_now()
 

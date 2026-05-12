@@ -192,7 +192,8 @@ def run_deployment_smoke(
                 headers=headers,
             )
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code != 400 or "already exists" not in exc.response.text:
+            duplicate_profile_statuses = {400, 409}
+            if exc.response.status_code not in duplicate_profile_statuses or "already exists" not in exc.response.text:
                 raise
             profile_response = _request(
                 client,

@@ -99,7 +99,7 @@ def test_run_deployment_smoke_loads_existing_profile_on_duplicate() -> None:
         ) -> httpx.Response:
             if method == "POST" and url.endswith("/profiles"):
                 request = httpx.Request(method, url)
-                return httpx.Response(400, json={"detail": "Profile already exists: smoke_user"}, request=request)
+                return httpx.Response(409, json={"detail": "Profile already exists: smoke_user"}, request=request)
             if method == "GET" and url.endswith("/profiles/smoke_user"):
                 request = httpx.Request(method, url)
                 return httpx.Response(200, json={"profile_id": "smoke_user"}, request=request)

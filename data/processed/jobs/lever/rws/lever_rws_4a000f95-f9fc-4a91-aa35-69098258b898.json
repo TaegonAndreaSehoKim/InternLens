@@ -15,5 +15,8 @@
   "source_url": "https://jobs.lever.co/rws/4a000f95-f9fc-4a91-aa35-69098258b898",
   "application_url": "https://jobs.lever.co/rws/4a000f95-f9fc-4a91-aa35-69098258b898/apply",
   "remote_status": "remote",
-  "team": "TrainAI"
+  "team": "TrainAI",
+  "fetched_at": "2026-05-12T23:10:06.276103+00:00",
+  "expires_at": "2026-05-19T23:10:06.276103+00:00",
+  "freshness_days": 7
 }

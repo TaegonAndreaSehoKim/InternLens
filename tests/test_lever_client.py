@@ -185,3 +185,35 @@ def test_save_processed_lever_postings_writes_normalized_files(tmp_path: Path) -
     assert "fetched_at" in payload
     assert "expires_at" in payload
     assert payload["freshness_days"] == 7
+
+
+def test_save_processed_lever_postings_removes_stale_files(tmp_path: Path) -> None:
+    stale_dir = tmp_path / "data" / "processed" / "jobs" / "lever" / "rws"
+    stale_dir.mkdir(parents=True)
+    stale_file = stale_dir / "lever_rws_closed.json"
+    stale_file.write_text('{"job_id": "lever_rws_closed"}', encoding="utf-8")
+
+    save_processed_lever_postings(
+        "rws",
+        [
+            {
+                "id": "abc123",
+                "text": "AI Data Specialist",
+                "descriptionPlain": "Remote AI data work.",
+                "createdAt": 1741982801320,
+                "hostedUrl": "https://jobs.lever.co/example/abc123",
+                "applyUrl": "https://jobs.lever.co/example/abc123/apply",
+                "workplaceType": "remote",
+                "categories": {
+                    "commitment": "Temporary/Contract",
+                    "department": "RWS",
+                    "location": "Florida",
+                    "team": "TrainAI",
+                },
+            }
+        ],
+        project_root=tmp_path,
+    )
+
+    assert not stale_file.exists()
+    assert (stale_dir / "lever_rws_abc123.json").exists()

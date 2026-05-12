@@ -15,5 +15,8 @@
   "source_url": "https://job-boards.greenhouse.io/honehealth/jobs/5163566008",
   "application_url": "https://job-boards.greenhouse.io/honehealth/jobs/5163566008",
   "remote_status": "remote",
-  "team": "Data Analytics"
+  "team": "Data Analytics",
+  "fetched_at": "2026-05-12T23:10:18.048819+00:00",
+  "expires_at": "2026-05-19T23:10:18.048819+00:00",
+  "freshness_days": 7
 }

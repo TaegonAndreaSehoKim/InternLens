@@ -15,5 +15,8 @@
   "source_url": "https://boards.greenhouse.io/cloudflare/jobs/7736919?gh_jid=7736919",
   "application_url": "https://boards.greenhouse.io/cloudflare/jobs/7736919?gh_jid=7736919",
   "remote_status": "onsite",
-  "team": "University"
+  "team": "University",
+  "fetched_at": "2026-05-12T23:10:14.308559+00:00",
+  "expires_at": "2026-05-19T23:10:14.308559+00:00",
+  "freshness_days": 7
 }
