@@ -73,6 +73,7 @@ PROFILE_FIELDS = (
     "resume_text",
     "degree_level",
     "major",
+    "majors",
     "grad_date",
     "preferred_roles",
     "preferred_locations",
@@ -90,6 +91,7 @@ class CandidateProfilePayload(BaseModel):
     resume_text: str
     degree_level: str
     major: str = "Other"
+    majors: List[str] = Field(default_factory=list)
     grad_date: str
     preferred_roles: List[str] = Field(default_factory=list)
     preferred_locations: List[str] = Field(default_factory=list)
@@ -104,6 +106,7 @@ class AccountProfilePayload(BaseModel):
     resume_text: str
     degree_level: str
     major: str = "Other"
+    majors: List[str] = Field(default_factory=list)
     grad_date: str
     preferred_roles: List[str] = Field(default_factory=list)
     preferred_locations: List[str] = Field(default_factory=list)
@@ -175,6 +178,7 @@ class ProfileUpdatePayload(BaseModel):
     resume_text: Optional[str] = None
     degree_level: Optional[str] = None
     major: Optional[str] = None
+    majors: Optional[List[str]] = None
     grad_date: Optional[str] = None
     preferred_roles: Optional[List[str]] = None
     preferred_locations: Optional[List[str]] = None

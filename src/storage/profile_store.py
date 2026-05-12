@@ -280,11 +280,16 @@ def initialize_database(db_path: Path) -> None:
 
 
 def _profile_payload_for_storage(profile: Dict[str, Any]) -> Dict[str, Any]:
+    majors = list(profile.get("majors", []))
+    if not majors:
+        majors = [profile.get("major", "other") or "other"]
+
     return {
         "profile_id": profile["profile_id"],
         "resume_text": profile["resume_text"],
         "degree_level": profile["degree_level"],
-        "major": profile.get("major", "other") or "other",
+        "major": majors[0] if majors else "other",
+        "majors": majors,
         "grad_date": profile["grad_date"],
         "preferred_roles": list(profile.get("preferred_roles", [])),
         "preferred_locations": list(profile.get("preferred_locations", [])),

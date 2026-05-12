@@ -601,6 +601,14 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
     """
     job_location = job["location"].lower().strip()
     remote_status = job.get("remote_status", "").lower().strip()
+    preferred_locations = [
+        str(location).lower().strip()
+        for location in profile.get("preferred_locations", [])
+        if str(location).strip()
+    ]
+
+    if not preferred_locations:
+        return 1.0
 
     generic_non_geographic_locations = {
         "in-office",
@@ -610,9 +618,7 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
         "office",
     }
 
-    for preferred_location in profile["preferred_locations"]:
-        preferred = preferred_location.lower().strip()
-
+    for preferred in preferred_locations:
         if preferred == "remote":
             continue
 
@@ -623,20 +629,39 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
             return 1.0
 
     if remote_status == "remote" and any(
-        preferred_location.lower().strip() == "remote"
-        for preferred_location in profile["preferred_locations"]
+        preferred_location == "remote"
+        for preferred_location in preferred_locations
     ):
         return 1.0
 
     return 0.0
 
 
-def _compute_major_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str]]:
+def _profile_majors(profile: Dict[str, Any]) -> List[str]:
+    majors = profile.get("majors", [])
+    if isinstance(majors, list):
+        normalized_majors = [
+            _canonicalize_text(str(major).strip().lower())
+            for major in majors
+            if str(major).strip()
+        ]
+        if normalized_majors:
+            return normalized_majors
+
     major = _canonicalize_text(str(profile.get("major", "")).strip().lower())
-    if not major or major == "other":
+    return [major] if major else []
+
+
+def _compute_major_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str]]:
+    majors = [major for major in _profile_majors(profile) if major and major != "other"]
+    if not majors:
         return 0.0, []
 
-    keywords = MAJOR_MATCH_KEYWORDS.get(major)
+    keywords = sorted({
+        keyword
+        for major in majors
+        for keyword in MAJOR_MATCH_KEYWORDS.get(major, [])
+    })
     if not keywords:
         return 0.0, []
 
@@ -731,6 +756,7 @@ def _generate_reasons(
     role_score: float,
     best_preferred_role: Optional[str],
     location_score: float,
+    has_location_preferences: bool,
     major_score: float,
     major_matches: List[str],
     internship_bonus: float,
@@ -754,7 +780,7 @@ def _generate_reasons(
     if internship_bonus > 0:
         reasons.append("Posting explicitly identifies this as an internship")
 
-    if location_score >= 1.0:
+    if has_location_preferences and location_score >= 1.0:
         reasons.append("Location matches a preferred target")
 
     if blockers:
@@ -798,6 +824,9 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
+    has_location_preferences = any(
+        str(location).strip() for location in profile.get("preferred_locations", [])
+    )
     major_score, major_matches = _compute_major_match(profile, job)
     internship_bonus = _compute_internship_signal_bonus(job)
     blockers = _check_blocking_constraints(profile, job)
@@ -842,6 +871,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         role_score=role_score,
         best_preferred_role=best_preferred_role,
         location_score=location_score,
+        has_location_preferences=has_location_preferences,
         major_score=major_score,
         major_matches=major_matches,
         internship_bonus=internship_bonus,

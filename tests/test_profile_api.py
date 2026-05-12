@@ -101,6 +101,7 @@ def test_profile_create_get_and_update_flow(tmp_path: Path, monkeypatch) -> None
     assert create_body["profile_id"] == "user_001"
     assert create_body["degree_level"] == "master's"
     assert create_body["major"] == "computer science"
+    assert create_body["majors"] == ["computer science"]
     assert "created_at" in create_body
     assert "updated_at" in create_body
 
@@ -123,6 +124,19 @@ def test_profile_create_get_and_update_flow(tmp_path: Path, monkeypatch) -> None
     assert update_response.status_code == 200
     assert update_body["preferred_locations"] == ["remote"]
     assert update_body["notes"] == "Updated profile note"
+
+
+def test_profile_create_accepts_multiple_majors(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    payload = _profile_payload() | {"majors": ["Computer Science", "Statistics"]}
+    response = client.post("/profiles", json=payload)
+    body = response.json()
+
+    assert response.status_code == 201
+    assert body["major"] == "computer science"
+    assert body["majors"] == ["computer science", "statistics"]
 
 
 def test_profile_api_scopes_data_by_user_header(tmp_path: Path, monkeypatch) -> None:

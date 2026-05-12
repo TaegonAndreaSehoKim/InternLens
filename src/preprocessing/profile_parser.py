@@ -23,6 +23,15 @@ def _normalize_list(values: List[str]) -> List[str]:
     return normalized
 
 
+def _normalize_majors(profile: Dict[str, Any]) -> List[str]:
+    majors = _normalize_list(profile.get("majors", []))
+    if majors:
+        return majors
+
+    major = _normalize_text(profile.get("major", "other") or "other")
+    return [major] if major else ["other"]
+
+
 def normalize_candidate_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize a candidate profile dictionary so both file-based input
@@ -44,11 +53,13 @@ def normalize_candidate_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"Missing required profile fields: {missing_fields}")
 
     # Normalize the profile once so every downstream module sees consistent values.
+    majors = _normalize_majors(profile)
     parsed_profile = {
         "profile_id": profile["profile_id"],
         "resume_text": profile["resume_text"],
         "degree_level": _normalize_text(profile["degree_level"]),
-        "major": _normalize_text(profile.get("major", "other") or "other"),
+        "major": majors[0] if majors else "other",
+        "majors": majors,
         "grad_date": str(profile["grad_date"]).strip(),
         "preferred_roles": _normalize_list(profile.get("preferred_roles", [])),
         "preferred_locations": _normalize_list(profile.get("preferred_locations", [])),

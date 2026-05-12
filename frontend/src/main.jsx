@@ -534,10 +534,14 @@ function degreeOption(value) {
 }
 
 function profileToForm(profile) {
+  const majors = Array.isArray(profile.majors) && profile.majors.length > 0
+    ? profile.majors
+    : [profile.major].filter(Boolean);
+
   return {
     resume_text: profile.resume_text ?? defaultProfile.resume_text,
     degree_level: degreeOption(profile.degree_level),
-    major: profile.major ?? defaultProfile.major,
+    major: listToCsv(majors) || defaultProfile.major,
     grad_date: profile.grad_date ?? defaultProfile.grad_date,
     preferred_roles: listToCsv(profile.preferred_roles),
     preferred_locations: listToCsv(profile.preferred_locations),
@@ -550,9 +554,12 @@ function profileToForm(profile) {
 }
 
 function profilePayload(form) {
+  const majors = csvToList(form.major);
+
   return {
     ...form,
-    major: form.major || "Other",
+    major: majors[0] || "Other",
+    majors,
     preferred_roles: csvToList(form.preferred_roles),
     preferred_locations: csvToList(form.preferred_locations),
     target_industries: csvToList(form.target_industries),
@@ -580,10 +587,10 @@ function profileQuality(form) {
       required: true
     },
     {
-      label: "Location preference selected",
-      detail: "Choose at least one location or work mode.",
+      label: "Location preference added",
+      detail: "Optional. Leave blank to consider all locations.",
       complete: locationCount >= 1,
-      required: true
+      required: false
     },
     {
       label: "Education timeline set",
@@ -593,7 +600,7 @@ function profileQuality(form) {
     },
     {
       label: "Major selected",
-      detail: "Choose the closest major, or Other if none fit.",
+      detail: "Choose one or more majors, or Other if none fit.",
       complete: Boolean(form.major),
       required: true
     },
@@ -1255,11 +1262,11 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
             ))}
           </select>
         </label>
-        <SingleSearchSelector
-          title="Major"
+        <ChipSelector
+          title="Majors"
           value={form.major}
           options={MAJOR_OPTIONS}
-          placeholder="Search major"
+          customPlaceholder="Search major"
           onChange={(value) => update("major", value)}
         />
         <label>

@@ -596,3 +596,62 @@ def test_marketing_major_can_recommend_marketing_internship() -> None:
 
     assert result["component_scores"]["major_score"] > 0
     assert result["action_label"] in {"Apply Now", "Apply Later"}
+
+
+def test_multiple_majors_can_match_secondary_major() -> None:
+    profile = {
+        **_build_profile(),
+        "major": "computer science",
+        "majors": ["computer science", "marketing"],
+        "preferred_roles": ["Digital Marketing Intern"],
+        "target_industries": ["Advertising"],
+        "skill_set": {"market research", "content strategy"},
+        "extracted_skills": ["market research", "content strategy"],
+    }
+    job = {
+        "job_id": "marketing_secondary_major",
+        "company": "example",
+        "title": "Digital Marketing Intern",
+        "location": "Remote",
+        "description": "Support campaign analysis, content strategy, brand work, and social media reporting.",
+        "min_qualifications": "Pursuing a degree in Marketing, Communications, or a related field.",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Marketing",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["major_score"] > 0
+    assert any("Major aligns" in reason for reason in result["reasons"])
+
+
+def test_empty_location_preferences_accept_any_location_without_location_reason() -> None:
+    profile = {
+        **_build_profile(),
+        "preferred_locations": [],
+    }
+    job = {
+        "job_id": "any_location_intern",
+        "company": "example",
+        "title": "Machine Learning Intern",
+        "location": "Austin, TX",
+        "description": "Build machine learning tools with Python.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "onsite",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["location_score"] == 1.0
+    assert "Location matches a preferred target" not in result["reasons"]
