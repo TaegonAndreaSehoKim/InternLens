@@ -28,10 +28,7 @@ body {
   margin: 0;
   color: var(--ink);
   font-family: "IBM Plex Sans", "Aptos", sans-serif;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(246, 237, 189, 0.56), transparent 30%),
-    radial-gradient(circle at 88% 18%, rgba(207, 228, 242, 0.62), transparent 32%),
-    linear-gradient(135deg, #f7f6f1 0%, #f1f0ec 48%, #eee7e8 100%);
+  background: var(--paper);
   min-height: 100vh;
 }
 
@@ -400,9 +397,7 @@ button:disabled {
 
 .status-card.error {
   border-color: rgba(201, 154, 134, 0.5);
-  background:
-    linear-gradient(135deg, rgba(236, 213, 199, 0.32), transparent 42%),
-    var(--card);
+  background: rgba(236, 213, 199, 0.34);
 }
 
 .status-topline,
@@ -643,18 +638,9 @@ textarea:focus {
 }
 
 select {
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 18px) 52%,
-    calc(100% - 13px) 52%;
-  background-size:
-    5px 5px,
-    5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 38px;
+  appearance: auto;
+  background-image: none;
+  padding-right: 14px;
 }
 
 textarea {
@@ -802,7 +788,7 @@ textarea {
   margin-top: 18px;
   padding: 14px 18px;
   color: #fffdf8;
-  background: linear-gradient(135deg, var(--accent), #8fa083);
+  background: var(--accent);
 }
 
 .ghost-action {
@@ -1015,7 +1001,7 @@ textarea {
 
 .filter-bar button.active {
   color: #fffdf8;
-  background: linear-gradient(135deg, var(--accent), #8fa083);
+  background: var(--accent);
 }
 
 .filter-bar strong {
@@ -1123,9 +1109,7 @@ textarea {
 
 .job-card.apply-now {
   border-color: rgba(201, 154, 134, 0.46);
-  background:
-    linear-gradient(90deg, rgba(236, 213, 199, 0.34), transparent 44%),
-    rgba(255, 253, 248, 0.66);
+  background: rgba(236, 213, 199, 0.28);
 }
 
 .job-card.skip {
@@ -1268,22 +1252,17 @@ textarea {
   place-items: center;
   justify-self: end;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at center, #fffdf8 0 54%, transparent 55%),
-    conic-gradient(var(--moss) var(--score), rgba(79, 79, 80, 0.09) 0);
+  border: 12px solid var(--moss);
+  background: #fffdf8;
   box-shadow: inset 0 0 0 1px rgba(79, 79, 80, 0.08);
 }
 
 .score-dial.weak {
-  background:
-    radial-gradient(circle at center, #fffdf8 0 54%, transparent 55%),
-    conic-gradient(var(--cedar) var(--score), rgba(79, 79, 80, 0.09) 0);
+  border-color: var(--cedar);
 }
 
 .score-dial.moderate {
-  background:
-    radial-gradient(circle at center, #fffdf8 0 54%, transparent 55%),
-    conic-gradient(var(--gold) var(--score), rgba(79, 79, 80, 0.09) 0);
+  border-color: var(--gold);
 }
 
 .score-dial strong,
