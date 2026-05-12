@@ -575,10 +575,10 @@ function profileQuality(form) {
   const backgroundLength = String(form.resume_text ?? "").trim().length;
   const items = [
     {
-      label: "Target role selected",
-      detail: "Choose at least one internship role.",
+      label: "Target role added",
+      detail: "Optional. Leave blank to consider all internship roles.",
       complete: roleCount >= 1,
-      required: true
+      required: false
     },
     {
       label: "Core skills selected",

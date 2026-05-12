@@ -568,17 +568,25 @@ def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[f
 
     We return the best preferred role string so explanation text can use the
     full role instead of a single token like "applied" or "machine".
+    If no preferred roles are provided, treat title fit as neutral so the
+    candidate can search across all internship roles without a title penalty.
     """
     title_tokens = _meaningful_role_tokens(job["title"])
 
-    if not profile["preferred_roles"]:
-        return 0.0, [], None
+    preferred_roles = [
+        str(role)
+        for role in profile.get("preferred_roles", [])
+        if str(role).strip()
+    ]
+
+    if not preferred_roles:
+        return 1.0, [], None
 
     best_score = 0.0
     best_overlap_tokens: List[str] = []
     best_preferred_role: Optional[str] = None
 
-    for preferred_role in profile["preferred_roles"]:
+    for preferred_role in preferred_roles:
         role_tokens = _meaningful_role_tokens(preferred_role)
         overlap_tokens = sorted(title_tokens & role_tokens)
         score = _safe_ratio(len(overlap_tokens), max(len(role_tokens), 1))
@@ -823,6 +831,9 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     """
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
+    has_role_preferences = any(
+        str(role).strip() for role in profile.get("preferred_roles", [])
+    )
     location_score = _compute_location_match(profile, job)
     has_location_preferences = any(
         str(location).strip() for location in profile.get("preferred_locations", [])
@@ -845,7 +856,11 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
 
     has_explicit_internship = _has_explicit_internship_signal(job)
     looks_like_non_core_business_internship = _looks_like_non_core_business_internship(job, profile)
-    has_relevance_signal = bool(matched_skills) or role_score >= 0.20 or major_score >= 0.35
+    has_relevance_signal = (
+        bool(matched_skills)
+        or (has_role_preferences and role_score >= 0.20)
+        or major_score >= 0.35
+    )
 
     if blockers:
         action_label = "Skip"

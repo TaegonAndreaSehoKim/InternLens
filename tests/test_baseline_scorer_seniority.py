@@ -655,3 +655,61 @@ def test_empty_location_preferences_accept_any_location_without_location_reason(
 
     assert result["component_scores"]["location_score"] == 1.0
     assert "Location matches a preferred target" not in result["reasons"]
+
+
+def test_empty_role_preferences_accept_any_title_without_role_reason() -> None:
+    profile = {
+        **_build_profile(),
+        "preferred_roles": [],
+    }
+    job = {
+        "job_id": "open_role_preference",
+        "company": "example",
+        "title": "Data Science Intern",
+        "location": "Remote",
+        "description": "Use Python and machine learning to analyze product data.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Data",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["role_score"] == 1.0
+    assert not any("Title aligns with preferred role" in reason for reason in result["reasons"])
+
+
+def test_empty_role_preferences_do_not_create_relevance_by_themselves() -> None:
+    profile = {
+        **_build_profile(),
+        "major": "other",
+        "majors": ["other"],
+        "preferred_roles": [],
+        "skill_set": set(),
+        "extracted_skills": [],
+    }
+    job = {
+        "job_id": "irrelevant_open_role_preference",
+        "company": "example",
+        "title": "Events Intern",
+        "location": "Remote",
+        "description": "Support event logistics and guest check-in.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Events",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["role_score"] == 1.0
+    assert result["action_label"] == "Skip"
