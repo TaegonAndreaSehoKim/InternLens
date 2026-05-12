@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.preprocessing.job_parser import load_all_job_postings
@@ -152,3 +153,40 @@ def test_load_all_job_postings_suppresses_near_identical_title_duplicates(tmp_pa
 
     assert len(jobs) == 1
     assert jobs[0]["job_id"] == "greenhouse_waymo_002"
+
+
+def test_load_all_job_postings_excludes_expired_jobs_by_default(tmp_path: Path) -> None:
+    fresh_path = tmp_path / "fresh.json"
+    expired_path = tmp_path / "expired.json"
+
+    _write_job(fresh_path, "fresh_job", "fresh internship")
+    _write_job(expired_path, "expired_job", "expired internship")
+
+    fresh_payload = json.loads(fresh_path.read_text(encoding="utf-8"))
+    expired_payload = json.loads(expired_path.read_text(encoding="utf-8"))
+    fresh_payload["expires_at"] = "2026-05-20T00:00:00+00:00"
+    expired_payload["expires_at"] = "2026-05-01T00:00:00+00:00"
+    fresh_path.write_text(json.dumps(fresh_payload, indent=2), encoding="utf-8")
+    expired_path.write_text(json.dumps(expired_payload, indent=2), encoding="utf-8")
+
+    jobs = load_all_job_postings(
+        tmp_path,
+        now=datetime(2026, 5, 12, tzinfo=timezone.utc),
+    )
+
+    assert [job["job_id"] for job in jobs] == ["fresh_job"]
+
+
+def test_load_all_job_postings_can_include_expired_jobs(tmp_path: Path) -> None:
+    _write_job(tmp_path / "expired.json", "expired_job", "expired internship")
+    payload = json.loads((tmp_path / "expired.json").read_text(encoding="utf-8"))
+    payload["expires_at"] = "2026-05-01T00:00:00+00:00"
+    (tmp_path / "expired.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    jobs = load_all_job_postings(
+        tmp_path,
+        include_expired=True,
+        now=datetime(2026, 5, 12, tzinfo=timezone.utc),
+    )
+
+    assert [job["job_id"] for job in jobs] == ["expired_job"]

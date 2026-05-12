@@ -20,6 +20,7 @@ DEFAULT_PROFILE = {
     "profile_id": "smoke_deploy_user",
     "resume_text": "Graduate student with Python, machine learning, ranking systems, and data analysis experience.",
     "degree_level": "Master's",
+    "major": "Computer Science",
     "grad_date": "2027-12",
     "preferred_roles": [
         "Machine Learning Engineer Intern",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.ingestion.greenhouse_client import (
@@ -48,7 +49,8 @@ def test_normalize_greenhouse_job_maps_core_fields() -> None:
         ],
     }
 
-    normalized = normalize_greenhouse_job(job, "vaulttec")
+    fetched_at = datetime(2026, 5, 12, 12, 0, tzinfo=timezone.utc)
+    normalized = normalize_greenhouse_job(job, "vaulttec", fetched_at=fetched_at, freshness_days=10)
 
     assert normalized["job_id"] == "greenhouse_vaulttec_127817"
     assert normalized["source"] == "greenhouse"
@@ -62,6 +64,9 @@ def test_normalize_greenhouse_job_maps_core_fields() -> None:
     assert normalized["source_url"] == "https://boards.greenhouse.io/vaulttec/jobs/127817"
     assert normalized["application_url"] == "https://boards.greenhouse.io/vaulttec/jobs/127817"
     assert normalized["team"] == "Department of Departments"
+    assert normalized["fetched_at"] == "2026-05-12T12:00:00+00:00"
+    assert normalized["expires_at"] == "2026-05-22T12:00:00+00:00"
+    assert normalized["freshness_days"] == 10
 
 
 def test_save_raw_greenhouse_snapshot_writes_json_file(tmp_path: Path) -> None:
@@ -130,6 +135,9 @@ def test_save_processed_greenhouse_jobs_writes_normalized_files(tmp_path: Path) 
     assert payload["source"] == "greenhouse"
     assert payload["source_site"] == "vaulttec"
     assert payload["job_id"].startswith("greenhouse_vaulttec_")
+    assert "fetched_at" in payload
+    assert "expires_at" in payload
+    assert payload["freshness_days"] == 7
 
 
 def test_fetch_greenhouse_jobs_reads_jobs_array(monkeypatch) -> None:

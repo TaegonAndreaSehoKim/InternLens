@@ -2,6 +2,7 @@
   "profile_id": "seho_001",
   "resume_text": "Full resume text goes here...",
   "degree_level": "Master's",
+  "major": "Computer Science",
   "grad_date": "2027-12",
   "preferred_roles": ["Machine Learning Engineer Intern", "Applied Scientist Intern"],
   "preferred_locations": ["California", "Remote"],

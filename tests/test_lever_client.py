@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.ingestion.lever_client import (
@@ -53,7 +54,8 @@ def test_normalize_lever_posting_maps_core_fields() -> None:
         },
     }
 
-    normalized = normalize_lever_posting(posting, "rws")
+    fetched_at = datetime(2026, 5, 12, 12, 0, tzinfo=timezone.utc)
+    normalized = normalize_lever_posting(posting, "rws", fetched_at=fetched_at, freshness_days=10)
 
     assert normalized["job_id"] == "lever_rws_abc123"
     assert normalized["source"] == "lever"
@@ -68,6 +70,9 @@ def test_normalize_lever_posting_maps_core_fields() -> None:
     assert normalized["source_url"] == "https://jobs.lever.co/example/abc123"
     assert normalized["application_url"] == "https://jobs.lever.co/example/abc123/apply"
     assert normalized["team"] == "TrainAI"
+    assert normalized["fetched_at"] == "2026-05-12T12:00:00+00:00"
+    assert normalized["expires_at"] == "2026-05-22T12:00:00+00:00"
+    assert normalized["freshness_days"] == 10
 
 
 def test_normalize_lever_posting_extracts_required_and_preferred_qualifications_from_description() -> None:
@@ -177,3 +182,6 @@ def test_save_processed_lever_postings_writes_normalized_files(tmp_path: Path) -
     assert payload["source"] == "lever"
     assert payload["source_site"] == "rws"
     assert payload["job_id"].startswith("lever_rws_")
+    assert "fetched_at" in payload
+    assert "expires_at" in payload
+    assert payload["freshness_days"] == 7

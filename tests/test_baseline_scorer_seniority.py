@@ -7,6 +7,7 @@ from src.ranking.baseline_scorer import rank_jobs
 def _build_profile() -> dict:
     return {
         "degree_level": "Master's",
+        "major": "computer science",
         "grad_date": "2027-12",
         "preferred_roles": ["Machine Learning Engineer Intern", "Applied Scientist Intern"],
         "preferred_locations": ["California", "Remote"],
@@ -540,3 +541,58 @@ def test_data_analytics_intern_still_gets_apply_later_without_business_context()
 
     assert "data analysis" in result["matched_skills"]
     assert result["action_label"] == "Apply Later"
+
+
+def test_major_alignment_boosts_relevant_role() -> None:
+    profile = _build_profile()
+    job = {
+        "job_id": "systems_intern",
+        "company": "example",
+        "title": "Software Systems Intern",
+        "location": "Remote",
+        "description": "Build backend systems and developer tooling.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["major_score"] > 0
+    assert any("Major aligns" in reason for reason in result["reasons"])
+
+
+def test_marketing_major_can_recommend_marketing_internship() -> None:
+    profile = {
+        **_build_profile(),
+        "major": "marketing",
+        "preferred_roles": ["Digital Marketing Intern"],
+        "target_industries": ["Advertising"],
+        "skill_set": {"market research", "content strategy", "social media strategy"},
+        "extracted_skills": ["market research", "content strategy", "social media strategy"],
+    }
+    job = {
+        "job_id": "digital_marketing_intern",
+        "company": "example",
+        "title": "Digital Marketing Intern",
+        "location": "Remote",
+        "description": "Support campaign analysis, content strategy, brand work, and social media reporting.",
+        "min_qualifications": "Pursuing a degree in Marketing, Communications, or a related field.",
+        "preferred_qualifications": "",
+        "posting_date": "2026-03-30",
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Marketing",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["component_scores"]["major_score"] > 0
+    assert result["action_label"] in {"Apply Now", "Apply Later"}

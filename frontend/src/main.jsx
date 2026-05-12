@@ -69,97 +69,238 @@ const DEGREE_OPTIONS = [
   "Other"
 ];
 
+const MAJOR_OPTIONS = [
+  "Computer Science",
+  "Software Engineering",
+  "Computer Engineering",
+  "Data Science",
+  "Artificial Intelligence",
+  "Machine Learning",
+  "Information Systems",
+  "Information Technology",
+  "Cybersecurity",
+  "Electrical Engineering",
+  "Mechanical Engineering",
+  "Civil Engineering",
+  "Industrial Engineering",
+  "Aerospace Engineering",
+  "Biomedical Engineering",
+  "Chemical Engineering",
+  "Environmental Engineering",
+  "Mathematics",
+  "Statistics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Biochemistry",
+  "Bioinformatics",
+  "Neuroscience",
+  "Public Health",
+  "Nursing",
+  "Pharmacy",
+  "Business Administration",
+  "Marketing",
+  "Finance",
+  "Accounting",
+  "Economics",
+  "Operations Management",
+  "Supply Chain Management",
+  "Human Resources",
+  "Psychology",
+  "Sociology",
+  "Political Science",
+  "Public Policy",
+  "International Relations",
+  "Law",
+  "Education",
+  "Communications",
+  "Journalism",
+  "English",
+  "Graphic Design",
+  "Product Design",
+  "UX Design",
+  "Architecture",
+  "Urban Planning",
+  "Environmental Science",
+  "Sustainability",
+  "Other"
+];
+
 const ROLE_OPTIONS = [
   "Software Engineering Intern",
   "Frontend Engineering Intern",
   "Backend Engineering Intern",
   "Full Stack Engineering Intern",
   "Mobile Engineering Intern",
+  "iOS Engineering Intern",
+  "Android Engineering Intern",
+  "Game Development Intern",
+  "Site Reliability Engineering Intern",
+  "Platform Engineering Intern",
   "DevOps Intern",
   "Cloud Engineering Intern",
+  "Infrastructure Engineering Intern",
   "Cybersecurity Intern",
+  "Security Analyst Intern",
   "QA Engineering Intern",
+  "Test Automation Intern",
+  "Data Engineering Intern",
   "Hardware Engineering Intern",
+  "Firmware Engineering Intern",
+  "Embedded Systems Intern",
   "Mechanical Engineering Intern",
   "Electrical Engineering Intern",
+  "Aerospace Engineering Intern",
+  "Manufacturing Engineering Intern",
   "Civil Engineering Intern",
+  "Environmental Engineering Intern",
   "Industrial Engineering Intern",
+  "Systems Engineering Intern",
   "Machine Learning Engineer Intern",
+  "Applied Scientist Intern",
   "AI Research Intern",
+  "Research Scientist Intern",
+  "Robotics Engineering Intern",
   "Data Science Intern",
   "Data Analyst Intern",
+  "Product Analyst Intern",
+  "Marketing Analyst Intern",
   "Business Intelligence Intern",
   "Product Manager Intern",
+  "Associate Product Manager Intern",
+  "Technical Program Manager Intern",
+  "Program Management Intern",
   "Business Analyst Intern",
+  "Strategy Intern",
+  "Management Consulting Intern",
+  "Operations Analyst Intern",
+  "Revenue Operations Intern",
+  "Sales Operations Intern",
   "UX Research Intern",
   "Product Design Intern",
+  "UX Design Intern",
+  "UI Design Intern",
+  "UX Writing Intern",
   "Graphic Design Intern",
+  "Brand Design Intern",
+  "Motion Design Intern",
   "Content Design Intern",
+  "Product Marketing Intern",
   "Marketing Intern",
   "Growth Marketing Intern",
   "Digital Marketing Intern",
   "Content Marketing Intern",
   "Social Media Intern",
+  "Brand Marketing Intern",
+  "Communications Intern",
+  "Public Relations Intern",
   "Sales Intern",
+  "Business Development Intern",
+  "Partnerships Intern",
   "Customer Success Intern",
+  "Customer Support Intern",
   "Finance Intern",
+  "Corporate Finance Intern",
+  "FP&A Intern",
   "Accounting Intern",
+  "Audit Intern",
+  "Tax Intern",
   "Investment Analyst Intern",
+  "Risk Analyst Intern",
+  "Actuarial Intern",
+  "Economics Research Intern",
   "Operations Intern",
   "Supply Chain Intern",
+  "Procurement Intern",
+  "Logistics Intern",
   "Human Resources Intern",
   "Talent Acquisition Intern",
+  "People Operations Intern",
   "Legal Intern",
+  "Compliance Intern",
   "Clinical Research Intern",
+  "Bioinformatics Intern",
   "Biotech Research Intern",
+  "Pharmaceutical Research Intern",
   "Lab Research Intern",
   "Public Health Intern",
+  "Epidemiology Intern",
   "Policy Intern",
   "Government Affairs Intern",
+  "Urban Planning Intern",
   "Education Program Intern",
+  "Instructional Design Intern",
   "Nonprofit Program Intern",
-  "Communications Intern",
+  "Social Impact Intern",
   "Journalism Intern",
+  "Editorial Intern",
+  "Video Production Intern",
   "Sustainability Intern",
-  "Environmental Research Intern"
+  "ESG Intern",
+  "Environmental Research Intern",
+  "Energy Analyst Intern"
 ];
 
 const SKILL_GROUPS = [
   {
     label: "Programming",
-    options: ["Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Go", "Rust", "R", "SQL"]
+    options: ["Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Go", "Rust", "R", "SQL", "Swift", "Kotlin", "Scala", "Ruby", "PHP", "MATLAB", "Bash"]
   },
   {
     label: "ML / Data",
-    options: ["Machine Learning", "Deep Learning", "PyTorch", "TensorFlow", "Pandas", "NumPy", "Statistics", "A/B Testing", "Data Visualization"]
+    options: ["Machine Learning", "Deep Learning", "Generative AI", "Natural Language Processing", "Computer Vision", "Recommender Systems", "PyTorch", "TensorFlow", "Scikit-learn", "Pandas", "NumPy", "Statistics", "Experiment Design", "A/B Testing", "Data Visualization", "Data Cleaning", "ETL", "Feature Engineering"]
   },
   {
     label: "Web",
-    options: ["React", "Vue", "Angular", "Node.js", "FastAPI", "Django", "Flask", "REST APIs", "GraphQL"]
+    options: ["React", "Vue", "Angular", "Svelte", "Next.js", "Node.js", "Express", "FastAPI", "Django", "Flask", "REST APIs", "GraphQL", "HTML", "CSS", "Web Accessibility", "Browser Performance"]
+  },
+  {
+    label: "Mobile / Game",
+    options: ["iOS", "Android", "React Native", "Flutter", "Unity", "Unreal Engine", "AR/VR", "Game Design", "Gameplay Programming", "Mobile Analytics"]
   },
   {
     label: "Cloud / Tools",
-    options: ["AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Linux", "Git", "CI/CD", "Terraform"]
+    options: ["AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Linux", "Git", "CI/CD", "Terraform", "Databricks", "Snowflake", "Airflow", "Kafka", "Spark", "PostgreSQL", "MongoDB", "Redis"]
+  },
+  {
+    label: "Security / Systems",
+    options: ["Network Security", "Application Security", "Cloud Security", "Threat Modeling", "Incident Response", "Penetration Testing", "Identity and Access Management", "Distributed Systems", "Operating Systems", "Embedded Systems"]
   },
   {
     label: "Analytics",
-    options: ["Excel", "Tableau", "Power BI", "Looker", "Google Analytics", "Salesforce Analytics"]
+    options: ["Excel", "Google Sheets", "Tableau", "Power BI", "Looker", "Google Analytics", "Amplitude", "Mixpanel", "Salesforce Analytics", "Dashboarding", "KPI Reporting", "Forecasting"]
   },
   {
     label: "Business",
-    options: ["Market Research", "Financial Modeling", "Operations", "Project Management", "CRM", "Salesforce", "Business Strategy", "Competitive Analysis"]
+    options: ["Market Research", "Financial Modeling", "Operations", "Project Management", "Program Management", "CRM", "Salesforce", "HubSpot", "Business Strategy", "Competitive Analysis", "Pricing Analysis", "Go-to-Market", "Vendor Management", "Process Improvement"]
+  },
+  {
+    label: "Finance / Accounting",
+    options: ["Accounting", "Corporate Finance", "FP&A", "Valuation", "Investment Research", "Portfolio Analysis", "Risk Management", "Audit", "Tax", "Actuarial Analysis", "Econometrics"]
   },
   {
     label: "Design / Research",
-    options: ["User Research", "Figma", "Wireframing", "Prototyping", "Survey Design", "Accessibility", "Design Systems", "Usability Testing"]
+    options: ["User Research", "Figma", "Wireframing", "Prototyping", "Survey Design", "Interviewing", "Accessibility", "Design Systems", "Usability Testing", "Information Architecture", "Visual Design", "Interaction Design", "Service Design"]
+  },
+  {
+    label: "Marketing / Sales",
+    options: ["SEO", "SEM", "Lifecycle Marketing", "Email Marketing", "Content Strategy", "Copywriting", "Brand Strategy", "Social Media Strategy", "Demand Generation", "Sales Prospecting", "Account Management", "Customer Success"]
   },
   {
     label: "Healthcare / Science",
-    options: ["Clinical Research", "Biology", "Chemistry", "Lab Techniques", "Scientific Writing", "Data Collection", "Literature Review", "Regulatory Affairs"]
+    options: ["Clinical Research", "Biology", "Chemistry", "Bioinformatics", "Biostatistics", "Epidemiology", "Lab Techniques", "PCR", "Cell Culture", "Scientific Writing", "Data Collection", "Literature Review", "Regulatory Affairs", "HIPAA", "Public Health"]
   },
   {
     label: "Policy / Communications",
-    options: ["Policy Analysis", "Writing", "Editing", "Public Speaking", "Community Outreach", "Grant Writing", "Media Relations", "Social Media"]
+    options: ["Policy Analysis", "Legal Research", "Writing", "Editing", "Public Speaking", "Community Outreach", "Grant Writing", "Media Relations", "Social Media", "Stakeholder Management", "Advocacy", "Government Affairs"]
+  },
+  {
+    label: "Operations / Supply Chain",
+    options: ["Supply Chain", "Logistics", "Procurement", "Inventory Management", "Manufacturing", "Quality Control", "Lean Six Sigma", "Warehouse Operations", "Scheduling", "Business Operations"]
+  },
+  {
+    label: "Education / Social Impact",
+    options: ["Curriculum Design", "Instructional Design", "Tutoring", "Program Evaluation", "Volunteer Coordination", "Fundraising", "Nonprofit Operations", "Community Programs", "Event Planning"]
   }
 ];
 
@@ -168,66 +309,133 @@ const SKILL_OPTIONS = SKILL_GROUPS.flatMap((group) => group.options);
 const LOCATION_OPTIONS = [
   "Remote",
   "Hybrid",
+  "On-site",
   "United States",
+  "Canada",
+  "Mexico",
+  "Europe",
+  "United Kingdom",
+  "Asia Pacific",
   "California",
   "New York",
+  "Texas",
+  "Florida",
+  "Washington",
+  "Massachusetts",
+  "Illinois",
+  "Georgia",
+  "North Carolina",
   "Seattle",
   "San Francisco",
   "San Jose",
+  "Mountain View",
+  "Palo Alto",
   "Los Angeles",
   "San Diego",
+  "Irvine",
   "Austin",
   "Dallas",
   "Houston",
   "Boston",
+  "Cambridge",
+  "New York City",
   "Chicago",
   "Atlanta",
   "Washington DC",
+  "Arlington",
+  "Nashville",
+  "Miami",
+  "Orlando",
   "Denver",
+  "Boulder",
   "Portland",
   "Raleigh",
+  "Durham",
+  "Charlotte",
   "Pittsburgh",
+  "Philadelphia",
+  "Minneapolis",
+  "Detroit",
+  "Phoenix",
+  "Salt Lake City",
+  "Las Vegas",
   "Toronto",
   "Vancouver",
+  "Montreal",
+  "Ottawa",
   "London",
+  "Dublin",
+  "Paris",
+  "Amsterdam",
   "Berlin",
+  "Munich",
+  "Zurich",
   "Singapore",
+  "Hong Kong",
   "Seoul",
-  "Tokyo"
+  "Tokyo",
+  "Sydney",
+  "Melbourne"
 ];
 
 const INDUSTRY_OPTIONS = [
   "AI",
   "Enterprise Software",
   "SaaS",
+  "Developer Tools",
+  "Data Infrastructure",
   "Fintech",
+  "Banking",
+  "Insurance",
+  "Payments",
   "Health Tech",
+  "Digital Health",
   "Robotics",
   "Consumer Tech",
   "Cloud Infrastructure",
   "Cybersecurity",
   "Education",
+  "EdTech",
   "Climate Tech",
+  "Clean Energy",
   "Biotech",
+  "Life Sciences",
+  "Medical Devices",
   "Healthcare",
   "Finance",
+  "Consulting",
   "Retail",
+  "E-commerce",
   "Media",
+  "Gaming",
+  "Advertising",
   "Government",
+  "Public Policy",
   "Nonprofit",
+  "Social Impact",
   "Manufacturing",
   "Automotive",
   "Aerospace",
+  "Defense",
   "Energy",
+  "Utilities",
   "Real Estate",
+  "Construction",
   "Logistics",
+  "Transportation",
   "Hospitality",
+  "Travel",
   "Sports",
   "Entertainment",
   "Telecommunications",
   "Semiconductors",
   "Pharmaceuticals",
-  "Consumer Goods"
+  "Consumer Goods",
+  "Food and Beverage",
+  "Agriculture",
+  "Legal Services",
+  "Research",
+  "Higher Education"
 ];
 
 const PUBLIC_FEATURES = [
@@ -276,6 +484,7 @@ const PUBLIC_SAMPLE_JOBS = [
 const defaultProfile = {
   resume_text: "",
   degree_level: "",
+  major: "",
   grad_date: "",
   preferred_roles: "",
   preferred_locations: "",
@@ -324,6 +533,7 @@ function profileToForm(profile) {
   return {
     resume_text: profile.resume_text ?? defaultProfile.resume_text,
     degree_level: degreeOption(profile.degree_level),
+    major: profile.major ?? defaultProfile.major,
     grad_date: profile.grad_date ?? defaultProfile.grad_date,
     preferred_roles: listToCsv(profile.preferred_roles),
     preferred_locations: listToCsv(profile.preferred_locations),
@@ -338,6 +548,7 @@ function profileToForm(profile) {
 function profilePayload(form) {
   return {
     ...form,
+    major: form.major || "Other",
     preferred_roles: csvToList(form.preferred_roles),
     preferred_locations: csvToList(form.preferred_locations),
     target_industries: csvToList(form.target_industries),
@@ -374,6 +585,12 @@ function profileQuality(form) {
       label: "Education timeline set",
       detail: "Set degree and graduation month.",
       complete: Boolean(form.degree_level && form.grad_date),
+      required: true
+    },
+    {
+      label: "Major selected",
+      detail: "Choose the closest major, or Other if none fit.",
+      complete: Boolean(form.major),
       required: true
     },
     {
@@ -1020,6 +1237,13 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
             ))}
           </select>
         </label>
+        <SingleSearchSelector
+          title="Major"
+          value={form.major}
+          options={MAJOR_OPTIONS}
+          placeholder="Search major"
+          onChange={(value) => update("major", value)}
+        />
         <label>
           Experience years
           <input
@@ -1123,7 +1347,7 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
   const suggestions = options
     .filter((item) => !normalizedSelected.has(item.toLowerCase()))
     .filter((item) => !normalizedQuery || item.toLowerCase().includes(normalizedQuery))
-    .slice(0, 7);
+    .slice(0, 10);
 
   function removeItem(item) {
     onChange(removeCsvItem(value, item));
@@ -1183,6 +1407,63 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
       )}
       {query.trim() && suggestions.length === 0 && (
         <p className="suggestion-empty">Press Add to use this custom value.</p>
+      )}
+    </div>
+  );
+}
+
+function SingleSearchSelector({ title, value, options = [], placeholder, onChange }) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const suggestions = options
+    .filter((item) => !normalizedQuery || item.toLowerCase().includes(normalizedQuery))
+    .slice(0, 10);
+
+  function selectValue(item) {
+    onChange(item);
+    setQuery("");
+  }
+
+  return (
+    <div className="selector-field">
+      <div className="selector-heading">
+        <strong>{title}</strong>
+        <span>{value || "not selected"}</span>
+      </div>
+      {value && (
+        <div className="selected-chip-row" aria-label={`Selected ${title.toLowerCase()}`}>
+          <button type="button" onClick={() => onChange("")} title={`Clear ${value}`}>
+            {value}
+          </button>
+        </div>
+      )}
+      <div className="search-select single-search">
+        <input
+          value={query}
+          placeholder={placeholder}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && suggestions.length > 0) {
+              event.preventDefault();
+              selectValue(suggestions[0]);
+            }
+          }}
+        />
+        <button type="button" onClick={() => selectValue("Other")}>
+          Other
+        </button>
+      </div>
+      {query.trim() && suggestions.length > 0 && (
+        <div className="suggestion-menu" aria-label={`${title} suggestions`}>
+          {suggestions.map((item) => (
+            <button key={item} type="button" onClick={() => selectValue(item)}>
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
+      {query.trim() && suggestions.length === 0 && (
+        <p className="suggestion-empty">Select Other if this major is not listed.</p>
       )}
     </div>
   );

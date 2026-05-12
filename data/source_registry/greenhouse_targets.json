@@ -5,9 +5,29 @@
     "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Airbnb, score=0.43, internship_likelihood=0.05)"
   },
   {
+    "board_token": "andurilindustries",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched firmware and supply chain internship roles"
+  },
+  {
+    "board_token": "asana",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched product design and software engineering internships"
+  },
+  {
     "board_token": "cloudflare",
     "active": true,
     "notes": "too noisy for current internship filter; promoted from discovered sources on 2026-05-08T17:25:57Z (company=Cloudflare, score=0.59, internship_likelihood=0.31)"
+  },
+  {
+    "board_token": "databricks",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched GenAI research internship role"
+  },
+  {
+    "board_token": "datadog",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched IT support internship roles"
   },
   {
     "board_token": "honehealth",
@@ -15,14 +35,49 @@
     "notes": "data science intern source"
   },
   {
+    "board_token": "instacart",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning PhD internship roles"
+  },
+  {
     "board_token": "okta",
     "active": true,
     "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Okta, score=0.42, internship_likelihood=0.03)"
   },
   {
+    "board_token": "pinterest",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning internship roles"
+  },
+  {
+    "board_token": "roblox",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched applied scientist PhD internship role"
+  },
+  {
+    "board_token": "samsara",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched supply chain, electrical engineering, and co-op roles"
+  },
+  {
     "board_token": "scaleai",
     "active": true,
     "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Scale AI, score=0.41, internship_likelihood=0.01)"
+  },
+  {
+    "board_token": "stripe",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched data science, ML, and software engineering internships"
+  },
+  {
+    "board_token": "twilio",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched developer advocacy, analyst, design, and content internships"
+  },
+  {
+    "board_token": "verkada",
+    "active": true,
+    "notes": "verified via Greenhouse API on 2026-05-12; matched software, embedded, industrial design, and support internships"
   },
   {
     "board_token": "waymo",

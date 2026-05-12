@@ -72,6 +72,7 @@ PROFILE_FIELDS = (
     "profile_id",
     "resume_text",
     "degree_level",
+    "major",
     "grad_date",
     "preferred_roles",
     "preferred_locations",
@@ -88,6 +89,7 @@ class CandidateProfilePayload(BaseModel):
     profile_id: str
     resume_text: str
     degree_level: str
+    major: str = "Other"
     grad_date: str
     preferred_roles: List[str] = Field(default_factory=list)
     preferred_locations: List[str] = Field(default_factory=list)
@@ -101,6 +103,7 @@ class CandidateProfilePayload(BaseModel):
 class AccountProfilePayload(BaseModel):
     resume_text: str
     degree_level: str
+    major: str = "Other"
     grad_date: str
     preferred_roles: List[str] = Field(default_factory=list)
     preferred_locations: List[str] = Field(default_factory=list)
@@ -171,6 +174,7 @@ class RecommendRequest(BaseModel):
 class ProfileUpdatePayload(BaseModel):
     resume_text: Optional[str] = None
     degree_level: Optional[str] = None
+    major: Optional[str] = None
     grad_date: Optional[str] = None
     preferred_roles: Optional[List[str]] = None
     preferred_locations: Optional[List[str]] = None
@@ -269,6 +273,9 @@ class JobResult(BaseModel):
     why_apply: List[str]
     watchouts: List[str]
     application_link: Optional[str] = None
+    fetched_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    freshness_days: Optional[int] = None
     user_job_state: Optional[str] = None
     user_job_state_source_run_id: Optional[str] = None
 
@@ -431,6 +438,9 @@ class JobDetailResponse(BaseModel):
     application_url: Optional[str] = None
     remote_status: Optional[str] = None
     team: Optional[str] = None
+    fetched_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    freshness_days: Optional[int] = None
     short_description: str
     internship_signals: List[str]
     possible_requirements: List[str]
@@ -1686,6 +1696,7 @@ def get_job(job_id: str, jobs_dir: str = DEFAULT_API_JOBS_DIR) -> JobDetailRespo
         jobs = load_all_job_postings(
             jobs_dir_path,
             suppress_duplicate_content=False,
+            include_expired=True,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -1716,6 +1727,9 @@ def get_job(job_id: str, jobs_dir: str = DEFAULT_API_JOBS_DIR) -> JobDetailRespo
         application_url=job.get("application_url"),
         remote_status=job.get("remote_status"),
         team=job.get("team"),
+        fetched_at=job.get("fetched_at"),
+        expires_at=job.get("expires_at"),
+        freshness_days=job.get("freshness_days"),
         short_description=_short_description(job.get("description", "")),
         internship_signals=_internship_signals(job),
         possible_requirements=_extract_requirement_items(job),

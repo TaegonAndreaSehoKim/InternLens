@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+
 
 GREENHOUSE_JOBS_BASE_URL = "https://boards-api.greenhouse.io/v1/boards"
 
@@ -219,6 +221,9 @@ def save_raw_greenhouse_snapshot(
 def normalize_greenhouse_job(
     job: Dict[str, Any],
     board_token: str,
+    *,
+    fetched_at: datetime | None = None,
+    freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
 ) -> Dict[str, Any]:
     # Normalize one Greenhouse job into the current InternLens processed schema.
     source_job_id = _coerce_text(job.get("id", ""))
@@ -249,7 +254,7 @@ def normalize_greenhouse_job(
         "application_url": source_url,
         "remote_status": remote_status,
         "team": team,
-    }
+    } | build_freshness_fields(fetched_at=fetched_at, freshness_days=freshness_days)
 
 
 def save_processed_greenhouse_jobs(
@@ -257,6 +262,7 @@ def save_processed_greenhouse_jobs(
     jobs: List[Dict[str, Any]],
     *,
     project_root: Path,
+    freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
 ) -> List[Path]:
     # Normalize each Greenhouse job and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "greenhouse" / board_token
@@ -268,9 +274,15 @@ def save_processed_greenhouse_jobs(
         existing_file.unlink()
 
     saved_paths: List[Path] = []
+    fetched_at = _utc_now()
 
     for job in jobs:
-        normalized = normalize_greenhouse_job(job, board_token)
+        normalized = normalize_greenhouse_job(
+            job,
+            board_token,
+            fetched_at=fetched_at,
+            freshness_days=freshness_days,
+        )
         output_path = output_dir / f"{normalized['job_id']}.json"
 
         with output_path.open("w", encoding="utf-8") as f:

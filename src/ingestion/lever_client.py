@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 
+from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+
 
 LEVER_POSTINGS_BASE_URL = "https://api.lever.co/v0/postings"
 
@@ -319,6 +321,9 @@ def save_raw_lever_snapshot(
 def normalize_lever_posting(
     posting: Dict[str, Any],
     site_name: str,
+    *,
+    fetched_at: datetime | None = None,
+    freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
 ) -> Dict[str, Any]:
     # Normalize one Lever posting into the current InternLens processed schema.
     categories = _extract_categories(posting)
@@ -355,7 +360,7 @@ def normalize_lever_posting(
         "application_url": application_url,
         "remote_status": remote_status,
         "team": _coerce_text(categories.get("team", "")),
-    }
+    } | build_freshness_fields(fetched_at=fetched_at, freshness_days=freshness_days)
 
 
 def save_processed_lever_postings(
@@ -363,15 +368,22 @@ def save_processed_lever_postings(
     postings: List[Dict[str, Any]],
     *,
     project_root: Path,
+    freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
 ) -> List[Path]:
     # Normalize each Lever posting and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "lever" / site_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     saved_paths: List[Path] = []
+    fetched_at = _utc_now()
 
     for posting in postings:
-        normalized = normalize_lever_posting(posting, site_name)
+        normalized = normalize_lever_posting(
+            posting,
+            site_name,
+            fetched_at=fetched_at,
+            freshness_days=freshness_days,
+        )
         output_path = output_dir / f"{normalized['job_id']}.json"
 
         with output_path.open("w", encoding="utf-8") as f:

@@ -163,6 +163,81 @@ CORE_TECHNICAL_TITLE_OVERRIDE_KEYWORDS = [
     "platform",
 ]
 
+BUSINESS_PROFILE_KEYWORDS = [
+    "business",
+    "marketing",
+    "communications",
+    "finance",
+    "accounting",
+    "economics",
+    "operations",
+    "supply chain",
+    "human resources",
+    "policy",
+    "political science",
+    "public policy",
+    "law",
+    "education",
+    "journalism",
+    "design",
+]
+
+MAJOR_MATCH_KEYWORDS = {
+    "computer science": ["software", "engineer", "developer", "backend", "frontend", "full stack", "systems", "python", "java", "javascript"],
+    "software engineering": ["software", "engineer", "developer", "backend", "frontend", "full stack", "testing", "devops"],
+    "computer engineering": ["embedded", "firmware", "hardware", "systems", "electrical", "software", "robotics"],
+    "data science": ["data", "analytics", "machine learning", "statistics", "experiment", "sql", "python", "model"],
+    "artificial intelligence": ["ai", "machine learning", "deep learning", "llm", "computer vision", "model", "research"],
+    "machine learning": ["machine learning", "deep learning", "model", "pytorch", "tensorflow", "ai", "research"],
+    "information systems": ["systems", "business analyst", "data", "analytics", "process", "crm", "database"],
+    "information technology": ["it", "support", "systems", "network", "cloud", "security", "infrastructure"],
+    "cybersecurity": ["security", "threat", "risk", "incident", "compliance", "network", "governance"],
+    "electrical engineering": ["electrical", "electronics", "hardware", "circuit", "firmware", "embedded", "power"],
+    "mechanical engineering": ["mechanical", "manufacturing", "cad", "thermal", "robotics", "hardware"],
+    "civil engineering": ["civil", "construction", "structural", "transportation", "infrastructure"],
+    "industrial engineering": ["operations", "process", "manufacturing", "supply chain", "quality", "optimization"],
+    "aerospace engineering": ["aerospace", "flight", "avionics", "propulsion", "systems", "manufacturing"],
+    "biomedical engineering": ["biomedical", "medical device", "clinical", "biology", "healthcare", "lab"],
+    "chemical engineering": ["chemical", "process", "materials", "manufacturing", "energy", "lab"],
+    "environmental engineering": ["environmental", "sustainability", "climate", "water", "energy"],
+    "mathematics": ["math", "statistics", "quantitative", "modeling", "optimization", "analysis"],
+    "statistics": ["statistics", "data", "analytics", "experiment", "forecast", "model", "risk"],
+    "physics": ["physics", "research", "simulation", "modeling", "hardware", "quantum"],
+    "chemistry": ["chemistry", "lab", "materials", "pharmaceutical", "research"],
+    "biology": ["biology", "lab", "clinical", "research", "biotech", "life sciences"],
+    "biochemistry": ["biochemistry", "biology", "chemistry", "lab", "biotech", "pharmaceutical"],
+    "bioinformatics": ["bioinformatics", "biology", "genomics", "data", "python", "statistics", "research"],
+    "neuroscience": ["neuroscience", "research", "clinical", "lab", "psychology", "biology"],
+    "public health": ["public health", "clinical", "epidemiology", "healthcare", "policy", "research"],
+    "nursing": ["nursing", "clinical", "patient", "healthcare", "medical"],
+    "pharmacy": ["pharmacy", "pharmaceutical", "clinical", "drug", "regulatory"],
+    "business administration": ["business", "strategy", "operations", "management", "sales", "customer"],
+    "marketing": ["marketing", "content", "brand", "growth", "social media", "campaign", "seo"],
+    "finance": ["finance", "financial", "investment", "valuation", "risk", "fp&a", "banking"],
+    "accounting": ["accounting", "audit", "tax", "financial reporting", "compliance"],
+    "economics": ["economics", "economic", "policy", "research", "market", "forecast", "quantitative"],
+    "operations management": ["operations", "process", "program", "project", "supply chain", "logistics"],
+    "supply chain management": ["supply chain", "logistics", "procurement", "inventory", "manufacturing"],
+    "human resources": ["human resources", "people", "talent", "recruiting", "hr", "employee"],
+    "psychology": ["psychology", "research", "user research", "people", "behavior", "clinical"],
+    "sociology": ["sociology", "research", "policy", "community", "social impact"],
+    "political science": ["policy", "government", "public affairs", "political", "regulatory"],
+    "public policy": ["policy", "government", "regulatory", "public affairs", "advocacy"],
+    "international relations": ["international", "policy", "government", "communications", "partnerships"],
+    "law": ["legal", "law", "compliance", "policy", "contract", "regulatory"],
+    "education": ["education", "curriculum", "instructional", "teaching", "program"],
+    "communications": ["communications", "public relations", "media", "writing", "content"],
+    "journalism": ["journalism", "editorial", "media", "writing", "content"],
+    "english": ["writing", "editing", "content", "communications", "editorial"],
+    "graphic design": ["graphic design", "visual design", "brand", "creative", "illustration"],
+    "product design": ["product design", "ux", "ui", "prototype", "figma", "design"],
+    "ux design": ["ux", "user research", "design", "prototype", "usability", "figma"],
+    "architecture": ["architecture", "design", "construction", "urban", "planning"],
+    "urban planning": ["urban", "planning", "policy", "transportation", "community"],
+    "environmental science": ["environmental", "sustainability", "climate", "research", "energy"],
+    "sustainability": ["sustainability", "climate", "esg", "environmental", "energy"],
+}
+
 
 def _title_supports_fallback_skill_matching(title: str) -> bool:
     """
@@ -203,7 +278,21 @@ def _title_supports_fallback_skill_matching(title: str) -> bool:
     return False
 
 
-def _looks_like_non_core_business_internship(job: Dict[str, Any]) -> bool:
+def _profile_supports_non_core_business(profile: Dict[str, Any]) -> bool:
+    profile_context = _canonicalize_text(
+        " ".join(
+            [
+                str(profile.get("major", "")),
+                " ".join(profile.get("preferred_roles", [])),
+                " ".join(profile.get("target_industries", [])),
+            ]
+        )
+    )
+
+    return any(keyword in profile_context for keyword in BUSINESS_PROFILE_KEYWORDS)
+
+
+def _looks_like_non_core_business_internship(job: Dict[str, Any], profile: Dict[str, Any] | None = None) -> bool:
     """
     Identify internship titles that look adjacent to business/ops work rather
     than core engineering, research, or platform roles.
@@ -231,6 +320,9 @@ def _looks_like_non_core_business_internship(job: Dict[str, Any]) -> bool:
         keyword in normalized_context
         for keyword in CORE_TECHNICAL_TITLE_OVERRIDE_KEYWORDS
     )
+
+    if profile is not None and _profile_supports_non_core_business(profile):
+        return False
 
     return has_non_core_signal and not has_core_technical_override
 
@@ -539,6 +631,37 @@ def _compute_location_match(profile: Dict[str, Any], job: Dict[str, Any]) -> flo
     return 0.0
 
 
+def _compute_major_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str]]:
+    major = _canonicalize_text(str(profile.get("major", "")).strip().lower())
+    if not major or major == "other":
+        return 0.0, []
+
+    keywords = MAJOR_MATCH_KEYWORDS.get(major)
+    if not keywords:
+        return 0.0, []
+
+    job_context = _canonicalize_text(
+        " ".join(
+            [
+                str(job.get("title", "")),
+                str(job.get("team", "")),
+                str(job.get("description", "")),
+                str(job.get("min_qualifications", "")),
+                str(job.get("preferred_qualifications", "")),
+                str(job.get("employment_type", "")),
+            ]
+        )
+    )
+
+    matches = sorted({keyword for keyword in keywords if keyword in job_context})
+    if not matches:
+        return 0.0, []
+
+    # Major is an important directional signal, but it should not overpower
+    # explicit skills and preferred-role alignment.
+    return min(1.0, 0.35 + (0.13 * len(matches))), matches
+
+
 def _extract_grad_year(grad_date: str) -> Optional[int]:
     """Extract a four-digit graduation year from strings like '2027-12'."""
     match = re.search(r"(20\d{2})", grad_date)
@@ -608,6 +731,8 @@ def _generate_reasons(
     role_score: float,
     best_preferred_role: Optional[str],
     location_score: float,
+    major_score: float,
+    major_matches: List[str],
     internship_bonus: float,
     matched_skills: List[str],
     blockers: List[str],
@@ -622,6 +747,9 @@ def _generate_reasons(
 
     if role_score >= 0.34 and best_preferred_role:
         reasons.append(f"Title aligns with preferred role: {best_preferred_role}")
+
+    if major_score >= 0.35 and major_matches:
+        reasons.append(f"Major aligns with posting signals: {', '.join(major_matches[:3])}")
 
     if internship_bonus > 0:
         reasons.append("Posting explicitly identifies this as an internship")
@@ -670,14 +798,16 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
     location_score = _compute_location_match(profile, job)
+    major_score, major_matches = _compute_major_match(profile, job)
     internship_bonus = _compute_internship_signal_bonus(job)
     blockers = _check_blocking_constraints(profile, job)
 
     # Fit score is intentionally separated from blockers.
     raw_score = (
-        (skill_score * 0.60)
-        + (role_score * 0.25)
-        + (location_score * 0.15)
+        (skill_score * 0.50)
+        + (role_score * 0.22)
+        + (major_score * 0.18)
+        + (location_score * 0.10)
         + internship_bonus
     )
 
@@ -685,8 +815,8 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     final_score = round(bounded_score * 100, 2)
 
     has_explicit_internship = _has_explicit_internship_signal(job)
-    looks_like_non_core_business_internship = _looks_like_non_core_business_internship(job)
-    has_relevance_signal = bool(matched_skills) or role_score >= 0.20
+    looks_like_non_core_business_internship = _looks_like_non_core_business_internship(job, profile)
+    has_relevance_signal = bool(matched_skills) or role_score >= 0.20 or major_score >= 0.35
 
     if blockers:
         action_label = "Skip"
@@ -712,6 +842,8 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         role_score=role_score,
         best_preferred_role=best_preferred_role,
         location_score=location_score,
+        major_score=major_score,
+        major_matches=major_matches,
         internship_bonus=internship_bonus,
         matched_skills=matched_skills,
         blockers=blockers,
@@ -732,6 +864,9 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         "team": job.get("team"),
         "employment_type": job.get("employment_type"),
         "posting_date": job.get("posting_date"),
+        "fetched_at": job.get("fetched_at"),
+        "expires_at": job.get("expires_at"),
+        "freshness_days": job.get("freshness_days"),
         "score": final_score,
         "action_label": action_label,
         "matched_skills": matched_skills,
@@ -741,6 +876,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         "component_scores": {
             "skill_score": round(skill_score, 4),
             "role_score": round(role_score, 4),
+            "major_score": round(major_score, 4),
             "location_score": round(location_score, 4),
             "internship_bonus": round(internship_bonus, 4),
         },

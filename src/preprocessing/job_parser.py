@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -37,6 +38,33 @@ def _normalize_compare_url(value: Any) -> str:
     # Normalize URLs while preserving query strings that identify postings.
     url = _normalize_compare_text(value)
     return url.rstrip("/")
+
+
+def _parse_utc_datetime(value: Any) -> datetime | None:
+    text = _coerce_text(value)
+    if not text:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def is_job_expired(job: Dict[str, Any], *, now: datetime | None = None) -> bool:
+    expires_at = _parse_utc_datetime(job.get("expires_at", ""))
+    if expires_at is None:
+        return False
+
+    current_time = now or datetime.now(timezone.utc)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+
+    return expires_at <= current_time.astimezone(timezone.utc)
 
 
 TITLE_TOKEN_ALIASES = {
@@ -231,6 +259,8 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
         "application_url",
         "remote_status",
         "team",
+        "fetched_at",
+        "expires_at",
     ]
     for field in optional_text_fields:
         if field in payload:
@@ -243,6 +273,8 @@ def load_all_job_postings(
     directory_path: str | Path,
     *,
     suppress_duplicate_content: bool = True,
+    include_expired: bool = False,
+    now: datetime | None = None,
 ) -> List[Dict[str, Any]]:
     """Load all JSON job posting files from a directory tree."""
     directory = Path(directory_path)
@@ -255,6 +287,9 @@ def load_all_job_postings(
     # Use recursive glob so crawled jobs under nested source/site folders are also loaded.
     for file_path in sorted(directory.rglob("*.json")):
         job = load_job_posting(file_path)
+        if not include_expired and is_job_expired(job, now=now):
+            continue
+
         job_id = job["job_id"]
 
         existing = selected_jobs.get(job_id)

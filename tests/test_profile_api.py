@@ -15,6 +15,7 @@ def _profile_payload() -> dict:
         "profile_id": "user_001",
         "resume_text": "Python, machine learning, ranking systems",
         "degree_level": "Master's",
+        "major": "Computer Science",
         "grad_date": "2027-12",
         "preferred_roles": ["Machine Learning Engineer Intern"],
         "preferred_locations": ["Remote", "California"],
@@ -99,6 +100,7 @@ def test_profile_create_get_and_update_flow(tmp_path: Path, monkeypatch) -> None
     assert create_response.status_code == 201
     assert create_body["profile_id"] == "user_001"
     assert create_body["degree_level"] == "master's"
+    assert create_body["major"] == "computer science"
     assert "created_at" in create_body
     assert "updated_at" in create_body
 
