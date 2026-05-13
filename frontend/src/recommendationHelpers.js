@@ -200,6 +200,25 @@ export function visibleRecommendations(jobs = [], filter = "all") {
   return filter === "all" ? jobs : jobs.filter((job) => actionValue(job) === filter);
 }
 
+export function filterJobsByQuery(jobs = [], query = "") {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return jobs;
+  }
+
+  return jobs.filter((job) => {
+    const fields = [
+      job.company,
+      job.title,
+      job.location,
+      job.fit_level,
+      ...(job.matched_skills ?? []),
+      ...(job.skill_gaps ?? [])
+    ];
+    return fields.some((field) => String(field ?? "").toLowerCase().includes(normalizedQuery));
+  });
+}
+
 export function sortJobs(jobs = [], sortValue = "recommended") {
   const indexedJobs = jobs.map((job, index) => ({ job, index }));
 

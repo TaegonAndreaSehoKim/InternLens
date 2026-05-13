@@ -4,6 +4,7 @@ import {
   actionValue,
   checkedAgeLabel,
   displayScore,
+  filterJobsByQuery,
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
@@ -34,6 +35,31 @@ describe("recommendationHelpers", () => {
       skip: 1
     });
     expect(visibleRecommendations(jobs, "apply_later")).toEqual([jobs[1]]);
+  });
+
+  it("filters jobs by title company location and skill gaps", () => {
+    const searchableJobs = [
+      {
+        job_id: "a",
+        company: "Acme",
+        title: "Backend Intern",
+        location: "Atlanta",
+        matched_skills: ["Python"],
+        skill_gaps: ["Kubernetes"]
+      },
+      {
+        job_id: "b",
+        company: "Northwind",
+        title: "Marketing Intern",
+        location: "Remote",
+        matched_skills: ["SEO"],
+        skill_gaps: ["SQL"]
+      }
+    ];
+
+    expect(filterJobsByQuery(searchableJobs, "kuber").map((job) => job.job_id)).toEqual(["a"]);
+    expect(filterJobsByQuery(searchableJobs, "remote").map((job) => job.job_id)).toEqual(["b"]);
+    expect(filterJobsByQuery(searchableJobs, "").map((job) => job.job_id)).toEqual(["a", "b"]);
   });
 
   it("sorts jobs without mutating the original order", () => {

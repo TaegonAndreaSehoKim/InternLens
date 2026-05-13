@@ -10,6 +10,7 @@ import {
   actionValue,
   checkedAgeLabel,
   displayScore,
+  filterJobsByQuery,
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
@@ -914,6 +915,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [recommendationFilter, setRecommendationFilter] = useState(() => storedState.recommendationFilter ?? "all");
   const [dashboardJobView, setDashboardJobView] = useState("recommendations");
   const [dashboardJobLists, setDashboardJobLists] = useState({});
+  const [jobDetail, setJobDetail] = useState(null);
+  const [jobDetailStatus, setJobDetailStatus] = useState({ loading: false, error: "" });
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
@@ -1022,6 +1025,33 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     }
     if (recommendations && selectedRun) {
       await loadRun(selectedRun, { activate: false });
+    }
+  }
+
+  function addSkillToProfile(skill) {
+    setForm((current) => ({
+      ...current,
+      extracted_skills: addCsvItems(current.extracted_skills, [skill])
+    }));
+    setProfileStatus({
+      type: "success",
+      message: `Added ${skill} to profile skills. Save changes before running a new shortlist.`
+    });
+  }
+
+  async function openJobDetail(jobId) {
+    setJobDetailStatus({ loading: true, error: "" });
+    setJobDetail(null);
+    try {
+      const detail = await api(`/jobs/${encodeURIComponent(jobId)}`, {}, authToken);
+      setJobDetail(detail);
+      setJobDetailStatus({ loading: false, error: "" });
+      setApiHealth("online");
+    } catch (error) {
+      if (String(error.message).includes("fetch")) {
+        setApiHealth("offline");
+      }
+      setJobDetailStatus({ loading: false, error: friendlyErrorMessage(error) });
     }
   }
 
@@ -1149,7 +1179,17 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         filter={recommendationFilter}
         onFilterChange={setRecommendationFilter}
         busy={busy}
+        onAddSkill={addSkillToProfile}
+        onOpenDetails={openJobDetail}
         onAction={(jobId, action) => runTask(() => actOnJob(jobId, action))}
+      />
+      <JobDetailModal
+        detail={jobDetail}
+        status={jobDetailStatus}
+        onClose={() => {
+          setJobDetail(null);
+          setJobDetailStatus({ loading: false, error: "" });
+        }}
       />
     </main>
   );
@@ -1442,25 +1482,61 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
 }
 
 function ProfileQuality({ quality }) {
+  const requiredItems = quality.items.filter((item) => item.required);
+  const optionalItems = quality.items.filter((item) => !item.required);
+  const missingRequired = requiredItems.filter((item) => !item.complete);
+
   return (
     <div className={`quality-card ${quality.isReady ? "ready" : "needs-work"}`}>
       <div className="quality-heading">
-        <strong>{quality.isReady ? "Ready for matching" : "Profile quality"}</strong>
+        <strong>Matching readiness</strong>
         <span>
           {quality.requiredComplete}/{quality.requiredTotal} required
         </span>
       </div>
-      <div className="quality-list">
-        {quality.items.map((item) => (
-          <div key={item.label} className={item.complete ? "complete" : "incomplete"}>
-            <span>{item.complete ? "Done" : item.required ? "Needed" : "Optional"}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <small>{item.detail}</small>
+      {quality.isReady ? (
+        <p className="quality-empty">Required profile inputs are complete.</p>
+      ) : (
+        <div className="quality-list compact">
+          {missingRequired.map((item) => (
+            <div key={item.label} className="incomplete">
+              <span>Needed</span>
+              <div>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+      <details className="quality-optional">
+        <summary>Optional signals</summary>
+        <div className="quality-list">
+          {optionalItems.map((item) => (
+            <div key={item.label} className={item.complete ? "complete" : "incomplete"}>
+              <span>{item.complete ? "Done" : "Optional"}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
+      <details className="quality-optional">
+        <summary>Completed essentials</summary>
+        <div className="quality-list">
+          {requiredItems.map((item) => (
+            <div key={item.label} className={item.complete ? "complete" : "incomplete"}>
+              <span>{item.complete ? "Done" : "Needed"}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
@@ -1533,62 +1609,6 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
       )}
       {query.trim() && suggestions.length === 0 && (
         <p className="suggestion-empty">Press Add to use this custom value.</p>
-      )}
-    </div>
-  );
-}
-
-function SingleSearchSelector({ title, value, options = [], placeholder, onChange }) {
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
-  const matchedSuggestions = options
-    .filter((item) => !normalizedQuery || item.toLowerCase().includes(normalizedQuery))
-    .slice(0, 10);
-  const shouldShowFallback = normalizedQuery && matchedSuggestions.length === 0 && options.includes("Other");
-  const suggestions = shouldShowFallback ? ["Other"] : matchedSuggestions;
-
-  function selectValue(item) {
-    onChange(item);
-    setQuery("");
-  }
-
-  return (
-    <div className="selector-field">
-      <div className="selector-heading">
-        <strong>{title}</strong>
-        <span>{value || "not selected"}</span>
-      </div>
-      {value && (
-        <div className="selected-chip-row" aria-label={`Selected ${title.toLowerCase()}`}>
-          <button type="button" onClick={() => onChange("")} title={`Clear ${value}`}>
-            {value}
-          </button>
-        </div>
-      )}
-      <div className="search-select single-search">
-        <input
-          value={query}
-          placeholder={placeholder}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && suggestions.length > 0) {
-              event.preventDefault();
-              selectValue(suggestions[0]);
-            }
-          }}
-        />
-      </div>
-      {query.trim() && suggestions.length > 0 && (
-        <div className="suggestion-menu" aria-label={`${title} suggestions`}>
-          {suggestions.map((item) => (
-            <button key={item} type="button" onClick={() => selectValue(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
-      {query.trim() && suggestions.length === 0 && (
-        <p className="suggestion-empty">Select Other if this major is not listed.</p>
       )}
     </div>
   );
@@ -1709,10 +1729,14 @@ function RecommendationPanel({
   filter,
   onFilterChange,
   busy,
+  onAddSkill,
+  onOpenDetails,
   onAction
 }) {
   const [page, setPage] = useState(1);
   const [sortValue, setSortValue] = useState("recommended");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedJobIds, setExpandedJobIds] = useState(() => new Set());
   const showingDashboardJobs = dashboardJobView !== "recommendations";
   const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
   const dashboardStateJobs = showingDashboardJobs
@@ -1721,13 +1745,14 @@ function RecommendationPanel({
   const jobs = showingDashboardJobs ? dashboardStateJobs : recommendations?.results ?? [];
   const counts = recommendationCounts(jobs);
   const visibleJobs = showingDashboardJobs ? jobs : visibleRecommendations(jobs, filter);
-  const sortedJobs = sortJobs(visibleJobs, sortValue);
+  const searchedJobs = filterJobsByQuery(visibleJobs, searchQuery);
+  const sortedJobs = sortJobs(searchedJobs, sortValue);
   const freshnessSummary = sourceFreshnessSummary(sortedJobs);
   const hasBoard = showingDashboardJobs ? Boolean(dashboard) : Boolean(recommendations);
   const heading = showingDashboardJobs
     ? dashboardView.heading
     : selectedRun ? DASHBOARD_JOB_VIEWS.recommendations.heading : "No shortlist loaded";
-  const resultTotal = showingDashboardJobs ? jobs.length : recommendations?.returned_jobs;
+  const resultTotal = sortedJobs.length;
   const pageCount = Math.max(1, Math.ceil(sortedJobs.length / RECOMMENDATION_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const pageStart = sortedJobs.length === 0 ? 0 : (currentPage - 1) * RECOMMENDATION_PAGE_SIZE + 1;
@@ -1736,7 +1761,19 @@ function RecommendationPanel({
 
   useEffect(() => {
     setPage(1);
-  }, [dashboardJobView, selectedRun, filter, sortValue, visibleJobs.length]);
+  }, [dashboardJobView, selectedRun, filter, searchQuery, sortValue, visibleJobs.length]);
+
+  function toggleJobExpanded(jobId) {
+    setExpandedJobIds((current) => {
+      const next = new Set(current);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  }
 
   return (
     <section className="panel results-panel">
@@ -1774,6 +1811,14 @@ function RecommendationPanel({
             </div>
           )}
           <div className="list-toolbar">
+            <label className="list-search">
+              Search
+              <input
+                value={searchQuery}
+                placeholder="Company, role, location, skill"
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </label>
             <label>
               Sort
               <select value={sortValue} onChange={(event) => setSortValue(event.target.value)}>
@@ -1795,7 +1840,7 @@ function RecommendationPanel({
                   ? dashboardView.empty
                   : jobs.length === 0
                   ? "This shortlist has no visible roles. Applied and hidden roles are excluded from new shortlists."
-                  : "No jobs match the selected recommendation filter."}
+                  : "No jobs match the selected filter or search."}
               </span>
             </div>
           ) : (
@@ -1810,7 +1855,16 @@ function RecommendationPanel({
               />
               <div className="job-list">
                 {pagedJobs.map((job) => (
-                  <JobCard key={job.job_id} job={job} busy={busy} onAction={onAction} />
+                  <JobCard
+                    key={job.job_id}
+                    job={job}
+                    busy={busy}
+                    expanded={expandedJobIds.has(job.job_id)}
+                    onToggleExpanded={() => toggleJobExpanded(job.job_id)}
+                    onAddSkill={onAddSkill}
+                    onOpenDetails={onOpenDetails}
+                    onAction={onAction}
+                  />
                 ))}
               </div>
               <PaginationControls
@@ -1875,7 +1929,7 @@ function PaginationControls({ currentPage, pageCount, pageStart, pageEnd, total,
         Previous
       </button>
       <span>
-        {pageStart}-{pageEnd} of {total} · Page {currentPage} / {pageCount}
+        {pageStart}-{pageEnd} of {total} | Page {currentPage} / {pageCount}
       </span>
       <button type="button" disabled={currentPage === pageCount} onClick={() => onPageChange(currentPage + 1)}>
         Next
@@ -1884,7 +1938,7 @@ function PaginationControls({ currentPage, pageCount, pageStart, pageEnd, total,
   );
 }
 
-function JobCard({ job, busy, onAction }) {
+function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDetails, onAction }) {
   const score = displayScore(job);
   const label = actionLabel(job);
   const action = actionValue(job);
@@ -1924,22 +1978,39 @@ function JobCard({ job, busy, onAction }) {
         <h3>{job.title}</h3>
         <p className="fit-summary">{fitSummary(job)}</p>
         {job.summary && <p className="job-summary">{job.summary}</p>}
-        {(skills.length > 0 || skillGaps.length > 0) && <SkillSignalPanel skills={skills} gaps={skillGaps} />}
-        {eligibility && (
+        {skillGaps.length > 0 && (
           <div className="job-detail-row">
-            <span>{eligibility}</span>
+            <span>{skillGaps.length} skill gap{skillGaps.length === 1 ? "" : "s"}</span>
           </div>
         )}
-        {breakdown.length > 0 && <MatchBreakdown items={breakdown} />}
+        {expanded && (
+          <div className="job-expanded-content">
+            {(skills.length > 0 || skillGaps.length > 0) && (
+              <SkillSignalPanel skills={skills} gaps={skillGaps} onAddSkill={onAddSkill} />
+            )}
+            {eligibility && (
+              <div className="job-detail-row">
+                <span>{eligibility}</span>
+              </div>
+            )}
+            {breakdown.length > 0 && <MatchBreakdown items={breakdown} />}
 
-        <div className="evidence-grid">
-          <EvidenceList title="Why it fits" items={positives} empty="No strong positive signals surfaced." />
-          <EvidenceList title="What to check" items={watchouts} empty="No major watchouts surfaced." />
-        </div>
+            <div className="evidence-grid">
+              <EvidenceList title="Why it fits" items={positives} empty="No strong positive signals surfaced." />
+              <EvidenceList title="What to check" items={watchouts} empty="No major watchouts surfaced." />
+            </div>
+          </div>
+        )}
       </div>
       <div className="job-side">
         <ScoreDial score={score} fitLevel={job.fit_level} />
         <div className="job-actions">
+          <button type="button" disabled={busy} onClick={onToggleExpanded}>
+            {expanded ? "Hide signals" : "Show signals"}
+          </button>
+          <button type="button" disabled={busy} onClick={() => onOpenDetails(job.job_id)}>
+            Details
+          </button>
           {job.application_link && (
             <a href={job.application_link} target="_blank" rel="noreferrer">
               Open
@@ -1970,7 +2041,7 @@ function JobCard({ job, busy, onAction }) {
   );
 }
 
-function SkillSignalPanel({ skills, gaps }) {
+function SkillSignalPanel({ skills, gaps, onAddSkill }) {
   return (
     <div className="skill-signal-panel" aria-label="Skill match and gap signals">
       {skills.length > 0 && (
@@ -1989,10 +2060,153 @@ function SkillSignalPanel({ skills, gaps }) {
           <p>These missing or unclear signals lowered the skills score.</p>
           <div className="skill-chip-row gaps" aria-label="Skill gaps">
             {gaps.map((skill) => (
-              <span key={skill}>{skill}</span>
+              <button key={skill} type="button" onClick={() => onAddSkill(skill)} title={`Add ${skill} to profile skills`}>
+                {skill}
+                <span>Add</span>
+              </button>
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function JobDetailModal({ detail, status, onClose }) {
+  const isOpen = status.loading || status.error || detail;
+  if (!isOpen) {
+    return null;
+  }
+
+  const metaItems = detail
+    ? [
+        detail.company,
+        detail.location,
+        detail.team,
+        detail.remote_status,
+        postedAgeLabel(detail.posting_date),
+        detail.source ? `Source: ${detail.source}` : ""
+      ].filter(Boolean)
+    : [];
+  const requirements = detail?.possible_requirements?.filter(Boolean) ?? [];
+  const blockers = detail?.possible_blockers?.filter(Boolean) ?? [];
+  const signals = detail?.internship_signals?.filter(Boolean) ?? [];
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <section className="job-detail-modal" role="dialog" aria-modal="true" aria-labelledby="job-detail-title">
+        <div className="modal-heading">
+          <div>
+            <p className="eyebrow">Job details</p>
+            <h2 id="job-detail-title">{detail?.title ?? "Loading job"}</h2>
+            {metaItems.length > 0 && (
+              <div className="detail-meta">
+                {metaItems.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        {status.loading ? (
+          <div className="detail-loading">Loading details...</div>
+        ) : status.error ? (
+          <div className="detail-error">{status.error}</div>
+        ) : (
+          detail && (
+            <div className="detail-content">
+              <div className="detail-actions">
+                {detail.application_link && (
+                  <a href={detail.application_link} target="_blank" rel="noreferrer">
+                    Apply
+                  </a>
+                )}
+                {detail.source_url && (
+                  <a href={detail.source_url} target="_blank" rel="noreferrer">
+                    Source posting
+                  </a>
+                )}
+              </div>
+
+              <section>
+                <h3>Summary</h3>
+                <p>{detail.short_description || detail.description || "No description available."}</p>
+              </section>
+
+              <section>
+                <h3>Requirements</h3>
+                {requirements.length > 0 ? (
+                  <ul>
+                    {requirements.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{detail.min_qualifications || "No structured requirements found."}</p>
+                )}
+              </section>
+
+              {detail.preferred_qualifications && (
+                <section>
+                  <h3>Preferred qualifications</h3>
+                  <p>{detail.preferred_qualifications}</p>
+                </section>
+              )}
+
+              <section>
+                <h3>Signals to review</h3>
+                {signals.length > 0 || blockers.length > 0 ? (
+                  <div className="detail-signal-columns">
+                    <DetailList title="Internship signals" items={signals} empty="No strong internship signals found." />
+                    <DetailList title="Possible blockers" items={blockers} empty="No major blockers surfaced." />
+                  </div>
+                ) : (
+                  <p>No extra signals found.</p>
+                )}
+              </section>
+
+              <section>
+                <h3>Source freshness</h3>
+                <div className="detail-meta">
+                  {detail.fetched_at && <span>Checked {checkedAgeLabel(detail.fetched_at)}</span>}
+                  {detail.expires_at && <span>Refresh by {detail.expires_at}</span>}
+                  {detail.freshness_days !== null && detail.freshness_days !== undefined && (
+                    <span>{detail.freshness_days} freshness days</span>
+                  )}
+                </div>
+              </section>
+            </div>
+          )
+        )}
+      </section>
+    </div>
+  );
+}
+
+function DetailList({ title, items, empty }) {
+  return (
+    <div>
+      <strong>{title}</strong>
+      {items.length > 0 ? (
+        <ul>
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{empty}</p>
       )}
     </div>
   );
