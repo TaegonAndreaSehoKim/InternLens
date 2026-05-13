@@ -1017,6 +1017,30 @@ textarea {
   background: rgba(255, 253, 248, 0.2);
 }
 
+.list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.list-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.list-toolbar select {
+  width: auto;
+  min-width: 178px;
+  padding: 9px 12px;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.68);
+}
+
 .pagination {
   display: flex;
   justify-content: space-between;

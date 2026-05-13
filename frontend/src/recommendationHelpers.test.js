@@ -7,6 +7,7 @@ import {
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
+  sortJobs,
   sourceFreshnessSummary,
   stateAgeLabel,
   visibleRecommendations
@@ -33,6 +34,20 @@ describe("recommendationHelpers", () => {
       skip: 1
     });
     expect(visibleRecommendations(jobs, "apply_later")).toEqual([jobs[1]]);
+  });
+
+  it("sorts jobs without mutating the original order", () => {
+    const sortableJobs = [
+      { job_id: "a", score: 70, posting_date: "2026-05-10", fetched_at: "2026-05-09T00:00:00Z" },
+      { job_id: "b", score: 92, posting_date: "2026-05-08", fetched_at: "2026-05-12T00:00:00Z" },
+      { job_id: "c", score: 81, posting_date: "2026-05-12", fetched_at: "2026-05-10T00:00:00Z" }
+    ];
+
+    expect(sortJobs(sortableJobs, "recommended").map((job) => job.job_id)).toEqual(["a", "b", "c"]);
+    expect(sortJobs(sortableJobs, "newest").map((job) => job.job_id)).toEqual(["c", "a", "b"]);
+    expect(sortJobs(sortableJobs, "checked").map((job) => job.job_id)).toEqual(["b", "c", "a"]);
+    expect(sortJobs(sortableJobs, "score").map((job) => job.job_id)).toEqual(["b", "c", "a"]);
+    expect(sortableJobs.map((job) => job.job_id)).toEqual(["a", "b", "c"]);
   });
 
   it("prefers rounded reranked score when present", () => {

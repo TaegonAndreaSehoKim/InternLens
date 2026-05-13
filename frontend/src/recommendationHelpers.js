@@ -5,6 +5,13 @@ export const ACTION_FILTERS = [
   { value: "skip", label: "Skip" }
 ];
 
+export const JOB_SORT_OPTIONS = [
+  { value: "recommended", label: "Recommended" },
+  { value: "newest", label: "Newest posting" },
+  { value: "checked", label: "Recently checked" },
+  { value: "score", label: "Highest score" }
+];
+
 export function actionClass(value = "") {
   return value.toLowerCase().replace(/\s+/g, "-");
 }
@@ -20,6 +27,15 @@ export function actionLabel(job) {
 export function displayScore(job) {
   const score = job.reranked_score ?? job.score;
   return typeof score === "number" ? Math.round(score) : null;
+}
+
+function dateValue(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
 export function postedAgeLabel(postingDate, now = new Date()) {
@@ -182,4 +198,18 @@ export function recommendationCounts(jobs = []) {
 
 export function visibleRecommendations(jobs = [], filter = "all") {
   return filter === "all" ? jobs : jobs.filter((job) => actionValue(job) === filter);
+}
+
+export function sortJobs(jobs = [], sortValue = "recommended") {
+  const indexedJobs = jobs.map((job, index) => ({ job, index }));
+
+  if (sortValue === "newest") {
+    indexedJobs.sort((a, b) => dateValue(b.job.posting_date) - dateValue(a.job.posting_date) || a.index - b.index);
+  } else if (sortValue === "checked") {
+    indexedJobs.sort((a, b) => dateValue(b.job.fetched_at) - dateValue(a.job.fetched_at) || a.index - b.index);
+  } else if (sortValue === "score") {
+    indexedJobs.sort((a, b) => (displayScore(b.job) ?? -1) - (displayScore(a.job) ?? -1) || a.index - b.index);
+  }
+
+  return indexedJobs.map((item) => item.job);
 }

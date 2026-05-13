@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "react-oidc-context";
 import "./styles.css";
 import {
   ACTION_FILTERS,
+  JOB_SORT_OPTIONS,
   actionClass,
   actionLabel,
   actionValue,
@@ -12,6 +13,7 @@ import {
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
+  sortJobs,
   sourceFreshnessSummary,
   stateAgeLabel,
   visibleRecommendations
@@ -1706,6 +1708,7 @@ function RecommendationPanel({
   onAction
 }) {
   const [page, setPage] = useState(1);
+  const [sortValue, setSortValue] = useState("recommended");
   const showingDashboardJobs = dashboardJobView !== "recommendations";
   const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
   const dashboardStateJobs = showingDashboardJobs
@@ -1714,21 +1717,22 @@ function RecommendationPanel({
   const jobs = showingDashboardJobs ? dashboardStateJobs : recommendations?.results ?? [];
   const counts = recommendationCounts(jobs);
   const visibleJobs = showingDashboardJobs ? jobs : visibleRecommendations(jobs, filter);
-  const freshnessSummary = sourceFreshnessSummary(visibleJobs);
+  const sortedJobs = sortJobs(visibleJobs, sortValue);
+  const freshnessSummary = sourceFreshnessSummary(sortedJobs);
   const hasBoard = showingDashboardJobs ? Boolean(dashboard) : Boolean(recommendations);
   const heading = showingDashboardJobs
     ? dashboardView.heading
     : selectedRun ? DASHBOARD_JOB_VIEWS.recommendations.heading : "No shortlist loaded";
   const resultTotal = showingDashboardJobs ? jobs.length : recommendations?.returned_jobs;
-  const pageCount = Math.max(1, Math.ceil(visibleJobs.length / RECOMMENDATION_PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(sortedJobs.length / RECOMMENDATION_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const pageStart = visibleJobs.length === 0 ? 0 : (currentPage - 1) * RECOMMENDATION_PAGE_SIZE + 1;
-  const pageEnd = Math.min(currentPage * RECOMMENDATION_PAGE_SIZE, visibleJobs.length);
-  const pagedJobs = visibleJobs.slice(pageStart === 0 ? 0 : pageStart - 1, pageEnd);
+  const pageStart = sortedJobs.length === 0 ? 0 : (currentPage - 1) * RECOMMENDATION_PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * RECOMMENDATION_PAGE_SIZE, sortedJobs.length);
+  const pagedJobs = sortedJobs.slice(pageStart === 0 ? 0 : pageStart - 1, pageEnd);
 
   useEffect(() => {
     setPage(1);
-  }, [dashboardJobView, selectedRun, filter, visibleJobs.length]);
+  }, [dashboardJobView, selectedRun, filter, sortValue, visibleJobs.length]);
 
   return (
     <section className="panel results-panel">
@@ -1765,9 +1769,21 @@ function RecommendationPanel({
               ))}
             </div>
           )}
+          <div className="list-toolbar">
+            <label>
+              Sort
+              <select value={sortValue} onChange={(event) => setSortValue(event.target.value)}>
+                {JOB_SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <SourceFreshnessSummary summary={freshnessSummary} />
 
-          {visibleJobs.length === 0 ? (
+          {sortedJobs.length === 0 ? (
             <div className="empty-state">
               <strong>No jobs shown</strong>
               <span>
@@ -1785,7 +1801,7 @@ function RecommendationPanel({
                 pageCount={pageCount}
                 pageStart={pageStart}
                 pageEnd={pageEnd}
-                total={visibleJobs.length}
+                total={sortedJobs.length}
                 onPageChange={setPage}
               />
               <div className="job-list">
@@ -1798,7 +1814,7 @@ function RecommendationPanel({
                 pageCount={pageCount}
                 pageStart={pageStart}
                 pageEnd={pageEnd}
-                total={visibleJobs.length}
+                total={sortedJobs.length}
                 onPageChange={setPage}
               />
             </>
