@@ -8,6 +8,7 @@ import {
   postedAgeLabel,
   recommendationCounts,
   sourceFreshnessSummary,
+  stateAgeLabel,
   visibleRecommendations
 } from "./recommendationHelpers";
 
@@ -56,6 +57,15 @@ describe("recommendationHelpers", () => {
     expect(checkedAgeLabel("2026-05-11T23:10:00+00:00", now)).toBe("checked 1 day ago");
     expect(checkedAgeLabel("2026-05-09T23:10:00+00:00", now)).toBe("checked 3 days ago");
     expect(checkedAgeLabel("not-a-date", now)).toBe("");
+  });
+
+  it("formats saved job state age", () => {
+    const now = new Date("2026-05-12T18:00:00Z");
+
+    expect(stateAgeLabel("saved", "2026-05-12T01:10:00+00:00", now)).toBe("saved today");
+    expect(stateAgeLabel("applied", "2026-05-11T23:10:00+00:00", now)).toBe("applied 1 day ago");
+    expect(stateAgeLabel("dismissed", "2026-05-09T23:10:00+00:00", now)).toBe("hidden 3 days ago");
+    expect(stateAgeLabel("saved", "bad-date", now)).toBe("");
   });
 
   it("summarizes source expiry status", () => {

@@ -13,6 +13,7 @@ import {
   postedAgeLabel,
   recommendationCounts,
   sourceFreshnessSummary,
+  stateAgeLabel,
   visibleRecommendations
 } from "./recommendationHelpers";
 import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
@@ -801,11 +802,12 @@ function storedJobStateToRecommendation(item) {
     freshness_days: snapshot.freshness_days ?? null,
     application_link: snapshot.application_link ?? null,
     user_job_state: item.state,
-    user_job_state_source_run_id: item.source_run_id
+    user_job_state_source_run_id: item.source_run_id,
+    user_job_state_updated_at: item.updated_at
   };
 }
 
-function updateRecommendationJobState(recommendations, jobId, state, sourceRunId) {
+function updateRecommendationJobState(recommendations, jobId, state, sourceRunId, updatedAt) {
   if (!recommendations) {
     return recommendations;
   }
@@ -820,9 +822,11 @@ function updateRecommendationJobState(recommendations, jobId, state, sourceRunId
       if (state) {
         updatedJob.user_job_state = state;
         updatedJob.user_job_state_source_run_id = sourceRunId ?? null;
+        updatedJob.user_job_state_updated_at = updatedAt ?? null;
       } else {
         delete updatedJob.user_job_state;
         delete updatedJob.user_job_state_source_run_id;
+        delete updatedJob.user_job_state_updated_at;
       }
       return updatedJob;
     })
@@ -1003,7 +1007,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       current,
       jobId,
       response.job_state?.state ?? null,
-      response.job_state?.source_run_id
+      response.job_state?.source_run_id,
+      response.job_state?.updated_at
     ));
     await loadDashboard();
     if (dashboardJobView !== "recommendations") {
@@ -1867,6 +1872,7 @@ function JobCard({ job, busy, onAction }) {
   const checkedAge = checkedAgeLabel(job.fetched_at);
   const freshness = freshnessStatus(job.expires_at);
   const currentState = job.user_job_state;
+  const stateAge = stateAgeLabel(currentState, job.user_job_state_updated_at);
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
   const skills = skillSignals(job);
@@ -1892,6 +1898,7 @@ function JobCard({ job, busy, onAction }) {
           <span>{titleCase(job.fit_level)}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
+          {stateAge && <span title={`State updated: ${job.user_job_state_updated_at}`}>{stateAge}</span>}
         </div>
         <h3>{job.title}</h3>
         <p className="fit-summary">{fitSummary(job)}</p>

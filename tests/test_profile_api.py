@@ -928,6 +928,7 @@ def test_profile_recommend_can_include_dismissed_jobs(tmp_path: Path, monkeypatc
     assert [result["job_id"] for result in body["results"]] == ["job_a", "job_b"]
     assert body["results"][0]["user_job_state"] == "dismissed"
     assert body["results"][0]["user_job_state_source_run_id"] == run_id
+    assert "user_job_state_updated_at" in body["results"][0]
 
 
 def test_profile_recommend_excludes_applied_jobs_by_default(tmp_path: Path, monkeypatch) -> None:
@@ -1059,6 +1060,7 @@ def test_profile_recommend_can_include_applied_jobs(tmp_path: Path, monkeypatch)
     assert run_detail_response.status_code == 200
     assert run_detail_body["results"][0]["user_job_state"] == "applied"
     assert run_detail_body["results"][0]["user_job_state_source_run_id"] == run_id
+    assert "user_job_state_updated_at" in run_detail_body["results"][0]
 
     response = client.post(
         "/profiles/user_001/recommend",
@@ -1070,6 +1072,7 @@ def test_profile_recommend_can_include_applied_jobs(tmp_path: Path, monkeypatch)
     assert [result["job_id"] for result in body["results"]] == ["job_a", "job_b"]
     assert body["results"][0]["user_job_state"] == "applied"
     assert body["results"][0]["user_job_state_source_run_id"] == run_id
+    assert "user_job_state_updated_at" in body["results"][0]
 
 
 def test_save_job_rejects_missing_recommendation_run(tmp_path: Path, monkeypatch) -> None:

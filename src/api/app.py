@@ -283,6 +283,7 @@ class JobResult(BaseModel):
     freshness_days: Optional[int] = None
     user_job_state: Optional[str] = None
     user_job_state_source_run_id: Optional[str] = None
+    user_job_state_updated_at: Optional[str] = None
 
     # Expose reranking fields only when feedback-based reranking is applied.
     feedback_adjustment: Optional[float] = None
@@ -584,6 +585,7 @@ def _annotate_results_with_job_state(
         if job_state is not None:
             enriched_job["user_job_state"] = job_state["state"]
             enriched_job["user_job_state_source_run_id"] = job_state.get("source_run_id")
+            enriched_job["user_job_state_updated_at"] = job_state.get("updated_at")
         annotated_jobs.append(enriched_job)
     return annotated_jobs
 

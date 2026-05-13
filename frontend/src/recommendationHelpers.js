@@ -74,6 +74,38 @@ export function checkedAgeLabel(fetchedAt, now = new Date()) {
   return `checked ${days} days ago`;
 }
 
+export function stateAgeLabel(state, updatedAt, now = new Date()) {
+  if (!state || !updatedAt) {
+    return "";
+  }
+
+  const updated = new Date(updatedAt);
+  if (Number.isNaN(updated.getTime())) {
+    return "";
+  }
+
+  const verbs = {
+    applied: "applied",
+    dismissed: "hidden",
+    saved: "saved"
+  };
+  const verb = verbs[state] ?? state;
+  const updatedDay = Date.UTC(updated.getUTCFullYear(), updated.getUTCMonth(), updated.getUTCDate());
+  const currentDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const days = Math.floor((currentDay - updatedDay) / 86400000);
+
+  if (Number.isNaN(days)) {
+    return "";
+  }
+  if (days <= 0) {
+    return `${verb} today`;
+  }
+  if (days === 1) {
+    return `${verb} 1 day ago`;
+  }
+  return `${verb} ${days} days ago`;
+}
+
 export function freshnessStatus(expiresAt, now = new Date()) {
   if (!expiresAt) {
     return null;
