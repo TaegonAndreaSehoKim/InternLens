@@ -263,6 +263,7 @@ class JobResult(BaseModel):
     company: str
     title: str
     location: str
+    posting_date: Optional[str] = None
     score: Optional[float] = None
     action_label: Optional[str] = None
     matched_skills: Optional[List[str]] = None
@@ -339,6 +340,7 @@ class StoredJobStateSnapshot(BaseModel):
     company: str
     title: str
     location: str
+    posting_date: Optional[str] = None
     recommendation: str
     fit_level: str
     eligibility_status: str

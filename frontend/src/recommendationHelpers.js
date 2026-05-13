@@ -22,6 +22,32 @@ export function displayScore(job) {
   return typeof score === "number" ? Math.round(score) : null;
 }
 
+export function postedAgeLabel(postingDate, now = new Date()) {
+  if (!postingDate) {
+    return "";
+  }
+
+  const [year, month, day] = String(postingDate).split("-").map(Number);
+  if (!year || !month || !day) {
+    return "";
+  }
+
+  const postedTime = Date.UTC(year, month - 1, day);
+  const currentTime = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const days = Math.floor((currentTime - postedTime) / 86400000);
+
+  if (Number.isNaN(days)) {
+    return "";
+  }
+  if (days <= 0) {
+    return "posted today";
+  }
+  if (days === 1) {
+    return "posted 1 day ago";
+  }
+  return `posted ${days} days ago`;
+}
+
 export function recommendationCounts(jobs = []) {
   return ACTION_FILTERS.reduce((current, item) => {
     current[item.value] = item.value === "all"

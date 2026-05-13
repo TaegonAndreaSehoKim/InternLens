@@ -3,6 +3,7 @@ import {
   actionLabel,
   actionValue,
   displayScore,
+  postedAgeLabel,
   recommendationCounts,
   visibleRecommendations
 } from "./recommendationHelpers";
@@ -34,5 +35,14 @@ describe("recommendationHelpers", () => {
     expect(displayScore(jobs[0])).toBe(92);
     expect(displayScore(jobs[1])).toBe(72);
     expect(displayScore({ job_id: "d" })).toBeNull();
+  });
+
+  it("formats posting age from a posting date", () => {
+    const now = new Date("2026-05-12T18:00:00Z");
+
+    expect(postedAgeLabel("2026-05-12", now)).toBe("posted today");
+    expect(postedAgeLabel("2026-05-11", now)).toBe("posted 1 day ago");
+    expect(postedAgeLabel("2026-05-07", now)).toBe("posted 5 days ago");
+    expect(postedAgeLabel("", now)).toBe("");
   });
 });

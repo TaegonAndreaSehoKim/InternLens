@@ -8,6 +8,7 @@ import {
   actionLabel,
   actionValue,
   displayScore,
+  postedAgeLabel,
   recommendationCounts,
   visibleRecommendations
 } from "./recommendationHelpers";
@@ -1744,6 +1745,7 @@ function JobCard({ job, busy, onAction }) {
   const score = displayScore(job);
   const label = actionLabel(job);
   const action = actionValue(job);
+  const postedAge = postedAgeLabel(job.posting_date);
   const currentState = job.user_job_state;
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
@@ -1759,6 +1761,7 @@ function JobCard({ job, busy, onAction }) {
         <div className="job-meta">
           <span>{job.company}</span>
           <span>{job.location}</span>
+          {postedAge && <span title={`Posting date: ${job.posting_date}`}>{postedAge}</span>}
           <span>{titleCase(job.fit_level)}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
