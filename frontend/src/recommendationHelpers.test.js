@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   actionLabel,
   actionValue,
+  checkedAgeLabel,
   displayScore,
   postedAgeLabel,
   recommendationCounts,
@@ -44,5 +45,14 @@ describe("recommendationHelpers", () => {
     expect(postedAgeLabel("2026-05-11", now)).toBe("posted 1 day ago");
     expect(postedAgeLabel("2026-05-07", now)).toBe("posted 5 days ago");
     expect(postedAgeLabel("", now)).toBe("");
+  });
+
+  it("formats source freshness from a fetched timestamp", () => {
+    const now = new Date("2026-05-12T18:00:00Z");
+
+    expect(checkedAgeLabel("2026-05-12T01:10:00+00:00", now)).toBe("checked today");
+    expect(checkedAgeLabel("2026-05-11T23:10:00+00:00", now)).toBe("checked 1 day ago");
+    expect(checkedAgeLabel("2026-05-09T23:10:00+00:00", now)).toBe("checked 3 days ago");
+    expect(checkedAgeLabel("not-a-date", now)).toBe("");
   });
 });

@@ -48,6 +48,32 @@ export function postedAgeLabel(postingDate, now = new Date()) {
   return `posted ${days} days ago`;
 }
 
+export function checkedAgeLabel(fetchedAt, now = new Date()) {
+  if (!fetchedAt) {
+    return "";
+  }
+
+  const fetched = new Date(fetchedAt);
+  if (Number.isNaN(fetched.getTime())) {
+    return "";
+  }
+
+  const fetchedDay = Date.UTC(fetched.getUTCFullYear(), fetched.getUTCMonth(), fetched.getUTCDate());
+  const currentDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const days = Math.floor((currentDay - fetchedDay) / 86400000);
+
+  if (Number.isNaN(days)) {
+    return "";
+  }
+  if (days <= 0) {
+    return "checked today";
+  }
+  if (days === 1) {
+    return "checked 1 day ago";
+  }
+  return `checked ${days} days ago`;
+}
+
 export function recommendationCounts(jobs = []) {
   return ACTION_FILTERS.reduce((current, item) => {
     current[item.value] = item.value === "all"

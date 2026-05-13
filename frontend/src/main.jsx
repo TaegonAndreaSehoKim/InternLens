@@ -7,6 +7,7 @@ import {
   actionClass,
   actionLabel,
   actionValue,
+  checkedAgeLabel,
   displayScore,
   postedAgeLabel,
   recommendationCounts,
@@ -793,6 +794,9 @@ function storedJobStateToRecommendation(item) {
     watchouts: snapshot.watchouts ?? [],
     matched_skills: snapshot.matched_skills ?? [],
     component_scores: snapshot.component_scores ?? null,
+    fetched_at: snapshot.fetched_at ?? null,
+    expires_at: snapshot.expires_at ?? null,
+    freshness_days: snapshot.freshness_days ?? null,
     application_link: snapshot.application_link ?? null,
     user_job_state: item.state,
     user_job_state_source_run_id: item.source_run_id
@@ -1821,6 +1825,7 @@ function JobCard({ job, busy, onAction }) {
   const label = actionLabel(job);
   const action = actionValue(job);
   const postedAge = postedAgeLabel(job.posting_date);
+  const checkedAge = checkedAgeLabel(job.fetched_at);
   const currentState = job.user_job_state;
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
@@ -1838,6 +1843,7 @@ function JobCard({ job, busy, onAction }) {
           <span>{job.company}</span>
           <span>{job.location}</span>
           {postedAge && <span title={`Posting date: ${job.posting_date}`}>{postedAge}</span>}
+          {checkedAge && <span title={`Last source refresh: ${job.fetched_at}`}>{checkedAge}</span>}
           <span>{titleCase(job.fit_level)}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}
