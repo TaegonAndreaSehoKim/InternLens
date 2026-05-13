@@ -9,6 +9,7 @@ import {
   actionValue,
   checkedAgeLabel,
   displayScore,
+  freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
   visibleRecommendations
@@ -1826,6 +1827,7 @@ function JobCard({ job, busy, onAction }) {
   const action = actionValue(job);
   const postedAge = postedAgeLabel(job.posting_date);
   const checkedAge = checkedAgeLabel(job.fetched_at);
+  const freshness = freshnessStatus(job.expires_at);
   const currentState = job.user_job_state;
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
@@ -1844,6 +1846,11 @@ function JobCard({ job, busy, onAction }) {
           <span>{job.location}</span>
           {postedAge && <span title={`Posting date: ${job.posting_date}`}>{postedAge}</span>}
           {checkedAge && <span title={`Last source refresh: ${job.fetched_at}`}>{checkedAge}</span>}
+          {freshness && (
+            <span className={`freshness-pill ${freshness.tone}`} title={`Source expires: ${job.expires_at}`}>
+              {freshness.label}
+            </span>
+          )}
           <span>{titleCase(job.fit_level)}</span>
           {label && <span className={`action-pill ${actionClass(label)}`}>{label}</span>}
           {currentState && <span className={`state-pill ${currentState}`}>{JOB_STATE_LABELS[currentState] ?? currentState}</span>}

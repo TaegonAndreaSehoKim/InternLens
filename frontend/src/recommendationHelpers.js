@@ -74,6 +74,35 @@ export function checkedAgeLabel(fetchedAt, now = new Date()) {
   return `checked ${days} days ago`;
 }
 
+export function freshnessStatus(expiresAt, now = new Date()) {
+  if (!expiresAt) {
+    return null;
+  }
+
+  const expires = new Date(expiresAt);
+  if (Number.isNaN(expires.getTime())) {
+    return null;
+  }
+
+  const expiresDay = Date.UTC(expires.getUTCFullYear(), expires.getUTCMonth(), expires.getUTCDate());
+  const currentDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const daysLeft = Math.ceil((expiresDay - currentDay) / 86400000);
+
+  if (Number.isNaN(daysLeft)) {
+    return null;
+  }
+  if (daysLeft < 0) {
+    return { label: "refresh due", tone: "stale" };
+  }
+  if (daysLeft === 0) {
+    return { label: "refresh due today", tone: "stale" };
+  }
+  if (daysLeft <= 2) {
+    return { label: `refresh in ${daysLeft}d`, tone: "soon" };
+  }
+  return { label: "fresh source", tone: "fresh" };
+}
+
 export function recommendationCounts(jobs = []) {
   return ACTION_FILTERS.reduce((current, item) => {
     current[item.value] = item.value === "all"

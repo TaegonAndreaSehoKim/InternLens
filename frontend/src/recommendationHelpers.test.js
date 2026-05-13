@@ -4,6 +4,7 @@ import {
   actionValue,
   checkedAgeLabel,
   displayScore,
+  freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
   visibleRecommendations
@@ -54,5 +55,27 @@ describe("recommendationHelpers", () => {
     expect(checkedAgeLabel("2026-05-11T23:10:00+00:00", now)).toBe("checked 1 day ago");
     expect(checkedAgeLabel("2026-05-09T23:10:00+00:00", now)).toBe("checked 3 days ago");
     expect(checkedAgeLabel("not-a-date", now)).toBe("");
+  });
+
+  it("summarizes source expiry status", () => {
+    const now = new Date("2026-05-12T18:00:00Z");
+
+    expect(freshnessStatus("2026-05-20T00:00:00+00:00", now)).toEqual({
+      label: "fresh source",
+      tone: "fresh"
+    });
+    expect(freshnessStatus("2026-05-14T00:00:00+00:00", now)).toEqual({
+      label: "refresh in 2d",
+      tone: "soon"
+    });
+    expect(freshnessStatus("2026-05-12T00:00:00+00:00", now)).toEqual({
+      label: "refresh due today",
+      tone: "stale"
+    });
+    expect(freshnessStatus("2026-05-10T00:00:00+00:00", now)).toEqual({
+      label: "refresh due",
+      tone: "stale"
+    });
+    expect(freshnessStatus("bad-date", now)).toBeNull();
   });
 });

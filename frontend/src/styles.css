@@ -1139,6 +1139,26 @@ textarea {
   text-transform: uppercase;
 }
 
+.freshness-pill {
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.freshness-pill.fresh {
+  color: #63735c;
+  background: rgba(155, 170, 144, 0.18);
+}
+
+.freshness-pill.soon {
+  color: #7f6831;
+  background: rgba(243, 223, 138, 0.28);
+}
+
+.freshness-pill.stale {
+  color: #946f60;
+  background: rgba(236, 213, 199, 0.36);
+}
+
 .job-card h3 {
   margin: 10px 0 8px;
   font-family: "Fraunces", Georgia, serif;
