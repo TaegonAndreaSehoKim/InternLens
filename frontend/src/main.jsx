@@ -12,6 +12,7 @@ import {
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
+  sourceFreshnessSummary,
   visibleRecommendations
 } from "./recommendationHelpers";
 import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
@@ -1708,6 +1709,7 @@ function RecommendationPanel({
   const jobs = showingDashboardJobs ? dashboardStateJobs : recommendations?.results ?? [];
   const counts = recommendationCounts(jobs);
   const visibleJobs = showingDashboardJobs ? jobs : visibleRecommendations(jobs, filter);
+  const freshnessSummary = sourceFreshnessSummary(visibleJobs);
   const hasBoard = showingDashboardJobs ? Boolean(dashboard) : Boolean(recommendations);
   const heading = showingDashboardJobs
     ? dashboardView.heading
@@ -1758,6 +1760,7 @@ function RecommendationPanel({
               ))}
             </div>
           )}
+          <SourceFreshnessSummary summary={freshnessSummary} />
 
           {visibleJobs.length === 0 ? (
             <div className="empty-state">
@@ -1798,6 +1801,41 @@ function RecommendationPanel({
         </>
       )}
     </section>
+  );
+}
+
+function SourceFreshnessSummary({ summary }) {
+  if (!summary?.total) {
+    return null;
+  }
+
+  return (
+    <div className="source-freshness-summary" aria-label="Source freshness summary">
+      <div>
+        <strong>Source freshness</strong>
+        <span>{summary.latestCheckedLabel || "No refresh timestamp"}</span>
+      </div>
+      <dl>
+        <div>
+          <dt>Fresh</dt>
+          <dd>{summary.fresh}</dd>
+        </div>
+        <div>
+          <dt>Soon</dt>
+          <dd>{summary.soon}</dd>
+        </div>
+        <div>
+          <dt>Due</dt>
+          <dd>{summary.stale}</dd>
+        </div>
+        {summary.unknown > 0 && (
+          <div>
+            <dt>Unknown</dt>
+            <dd>{summary.unknown}</dd>
+          </div>
+        )}
+      </dl>
+    </div>
   );
 }
 

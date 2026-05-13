@@ -103,6 +103,42 @@ export function freshnessStatus(expiresAt, now = new Date()) {
   return { label: "fresh source", tone: "fresh" };
 }
 
+export function sourceFreshnessSummary(jobs = [], now = new Date()) {
+  const summary = {
+    total: jobs.length,
+    fresh: 0,
+    soon: 0,
+    stale: 0,
+    unknown: 0,
+    latestFetchedAt: null,
+    latestCheckedLabel: ""
+  };
+
+  jobs.forEach((job) => {
+    const status = freshnessStatus(job.expires_at, now);
+    if (status?.tone === "fresh") {
+      summary.fresh += 1;
+    } else if (status?.tone === "soon") {
+      summary.soon += 1;
+    } else if (status?.tone === "stale") {
+      summary.stale += 1;
+    } else {
+      summary.unknown += 1;
+    }
+
+    const fetched = new Date(job.fetched_at);
+    if (!Number.isNaN(fetched.getTime())) {
+      const currentLatest = summary.latestFetchedAt ? new Date(summary.latestFetchedAt) : null;
+      if (!currentLatest || fetched > currentLatest) {
+        summary.latestFetchedAt = job.fetched_at;
+      }
+    }
+  });
+
+  summary.latestCheckedLabel = checkedAgeLabel(summary.latestFetchedAt, now);
+  return summary;
+}
+
 export function recommendationCounts(jobs = []) {
   return ACTION_FILTERS.reduce((current, item) => {
     current[item.value] = item.value === "all"

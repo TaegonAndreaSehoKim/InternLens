@@ -1097,6 +1097,57 @@ textarea {
   gap: 14px;
 }
 
+.source-freshness-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 253, 248, 0.62);
+}
+
+.source-freshness-summary > div {
+  display: grid;
+  gap: 3px;
+}
+
+.source-freshness-summary strong {
+  color: var(--ink);
+  font-size: 0.84rem;
+}
+
+.source-freshness-summary span,
+.source-freshness-summary dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.source-freshness-summary dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.source-freshness-summary dl div {
+  min-width: 64px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(243, 242, 238, 0.78);
+}
+
+.source-freshness-summary dd {
+  margin: 2px 0 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
 .job-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(122px, 148px);

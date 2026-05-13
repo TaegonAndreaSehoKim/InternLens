@@ -7,6 +7,7 @@ import {
   freshnessStatus,
   postedAgeLabel,
   recommendationCounts,
+  sourceFreshnessSummary,
   visibleRecommendations
 } from "./recommendationHelpers";
 
@@ -77,5 +78,37 @@ describe("recommendationHelpers", () => {
       tone: "stale"
     });
     expect(freshnessStatus("bad-date", now)).toBeNull();
+  });
+
+  it("summarizes freshness across a visible job list", () => {
+    const now = new Date("2026-05-12T18:00:00Z");
+    const summary = sourceFreshnessSummary([
+      {
+        job_id: "fresh",
+        expires_at: "2026-05-20T00:00:00+00:00",
+        fetched_at: "2026-05-12T01:00:00+00:00"
+      },
+      {
+        job_id: "soon",
+        expires_at: "2026-05-14T00:00:00+00:00",
+        fetched_at: "2026-05-10T01:00:00+00:00"
+      },
+      {
+        job_id: "stale",
+        expires_at: "2026-05-10T00:00:00+00:00",
+        fetched_at: "2026-05-09T01:00:00+00:00"
+      },
+      { job_id: "unknown" }
+    ], now);
+
+    expect(summary).toEqual({
+      total: 4,
+      fresh: 1,
+      soon: 1,
+      stale: 1,
+      unknown: 1,
+      latestFetchedAt: "2026-05-12T01:00:00+00:00",
+      latestCheckedLabel: "checked today"
+    });
   });
 });
