@@ -684,13 +684,16 @@ function positiveEvidence(job) {
 function watchoutEvidence(job) {
   return uniqueItems([
     ...(job.watchouts ?? []),
-    ...(job.blocking_issues ?? []),
-    ...(job.skill_gaps ?? []).map((skill) => `Missing or unclear signal: ${skill}`)
+    ...(job.blocking_issues ?? [])
   ]).map(cleanSignal);
 }
 
 function skillSignals(job) {
   return uniqueItems(job.matched_skills ?? []).slice(0, 6).map(cleanSignal);
+}
+
+function skillGapSignals(job) {
+  return uniqueItems(job.skill_gaps ?? []).slice(0, 6).map(cleanSignal);
 }
 
 function hasEvidence(job, pattern) {
@@ -798,6 +801,7 @@ function storedJobStateToRecommendation(item) {
     why_apply: snapshot.why_apply ?? [],
     watchouts: snapshot.watchouts ?? [],
     matched_skills: snapshot.matched_skills ?? [],
+    skill_gaps: snapshot.skill_gaps ?? [],
     component_scores: snapshot.component_scores ?? null,
     fetched_at: snapshot.fetched_at ?? null,
     expires_at: snapshot.expires_at ?? null,
@@ -1892,6 +1896,7 @@ function JobCard({ job, busy, onAction }) {
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
   const skills = skillSignals(job);
+  const skillGaps = skillGapSignals(job);
   const breakdown = matchBreakdown(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
@@ -1919,13 +1924,7 @@ function JobCard({ job, busy, onAction }) {
         <h3>{job.title}</h3>
         <p className="fit-summary">{fitSummary(job)}</p>
         {job.summary && <p className="job-summary">{job.summary}</p>}
-        {skills.length > 0 && (
-          <div className="skill-chip-row" aria-label="Matched skills">
-            {skills.map((skill) => (
-              <span key={skill}>{skill}</span>
-            ))}
-          </div>
-        )}
+        {(skills.length > 0 || skillGaps.length > 0) && <SkillSignalPanel skills={skills} gaps={skillGaps} />}
         {eligibility && (
           <div className="job-detail-row">
             <span>{eligibility}</span>
@@ -1968,6 +1967,34 @@ function JobCard({ job, busy, onAction }) {
         )}
       </div>
     </article>
+  );
+}
+
+function SkillSignalPanel({ skills, gaps }) {
+  return (
+    <div className="skill-signal-panel" aria-label="Skill match and gap signals">
+      {skills.length > 0 && (
+        <div>
+          <strong>Matched skills</strong>
+          <div className="skill-chip-row matched" aria-label="Matched skills">
+            {skills.map((skill) => (
+              <span key={skill}>{skill}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {gaps.length > 0 && (
+        <div>
+          <strong>Skill gaps</strong>
+          <p>These missing or unclear signals lowered the skills score.</p>
+          <div className="skill-chip-row gaps" aria-label="Skill gaps">
+            {gaps.map((skill) => (
+              <span key={skill}>{skill}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -349,6 +349,7 @@ class StoredJobStateSnapshot(BaseModel):
     why_apply: List[str]
     watchouts: List[str]
     matched_skills: Optional[List[str]] = None
+    skill_gaps: Optional[List[str]] = None
     component_scores: Optional[Dict[str, float]] = None
     fetched_at: Optional[str] = None
     expires_at: Optional[str] = None

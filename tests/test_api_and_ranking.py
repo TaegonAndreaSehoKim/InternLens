@@ -141,6 +141,7 @@ def test_recommend_endpoint_defaults_to_internal_corpus_when_jobs_dir_is_omitted
     assert body["jobs_dir"] == "data/processed/jobs"
     assert body["returned_jobs"] == 1
     assert body["results"][0]["posting_date"] == "2026-04-06"
+    assert "skill_gaps" not in body["results"][0]
 
 
 def test_recommend_endpoint_supports_visibility_filters() -> None:
