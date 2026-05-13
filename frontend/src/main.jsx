@@ -675,6 +675,37 @@ function fitSummary(job) {
   return `${company} ${role} is a ${fit.toLowerCase()} match with a ${score}/100 fit score.`;
 }
 
+function scoreExplanation(job) {
+  const skills = skillSignals(job);
+  const gaps = skillGapSignals(job);
+  const breakdown = matchBreakdown(job);
+  const strongSignals = breakdown
+    .filter((item) => typeof item.percent === "number" && item.percent >= 75)
+    .map((item) => item.label.toLowerCase());
+  const weakSignals = breakdown
+    .filter((item) => typeof item.percent === "number" && item.percent < 35)
+    .map((item) => item.label.toLowerCase());
+
+  if (skills.length === 0 && gaps.length === 0 && strongSignals.length === 0 && weakSignals.length === 0) {
+    return "The score is based on the visible posting text and the saved profile signals.";
+  }
+
+  const parts = [];
+  if (skills.length > 0) {
+    parts.push(`matched ${skills.slice(0, 3).join(", ")}`);
+  }
+  if (strongSignals.length > 0) {
+    parts.push(`strong ${strongSignals.slice(0, 2).join(" and ")} signal`);
+  }
+  if (gaps.length > 0) {
+    parts.push(`missing or unclear ${gaps.slice(0, 3).join(", ")}`);
+  } else if (weakSignals.length > 0) {
+    parts.push(`weaker ${weakSignals.slice(0, 2).join(" and ")} signal`);
+  }
+
+  return `Score explanation: ${parts.join("; ")}.`;
+}
+
 function positiveEvidence(job) {
   return uniqueItems([
     ...(job.why_apply ?? []),
@@ -916,6 +947,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [dashboardJobView, setDashboardJobView] = useState("recommendations");
   const [dashboardJobLists, setDashboardJobLists] = useState({});
   const [jobDetail, setJobDetail] = useState(null);
+  const [jobDetailSummary, setJobDetailSummary] = useState(null);
   const [jobDetailStatus, setJobDetailStatus] = useState({ loading: false, error: "" });
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
@@ -980,6 +1012,10 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     await loadDashboard();
   }
 
+  function saveProfile() {
+    return runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." });
+  }
+
   async function runRecommendations() {
     setDashboardJobView("recommendations");
     const data = await api("/me/recommend", {
@@ -1039,7 +1075,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     });
   }
 
-  async function openJobDetail(jobId) {
+  async function openJobDetail(job) {
+    const jobId = typeof job === "string" ? job : job.job_id;
+    setJobDetailSummary(typeof job === "string" ? null : job);
     setJobDetailStatus({ loading: true, error: "" });
     setJobDetail(null);
     try {
@@ -1147,6 +1185,18 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         </div>
       </header>
 
+      {profileState === "changed" && (
+        <section className="unsaved-change-banner" aria-label="Unsaved profile changes">
+          <div>
+            <strong>Profile changes are not saved yet.</strong>
+            <span>Save the profile before running a fresh shortlist so new skills and preferences affect ranking.</span>
+          </div>
+          <button type="button" disabled={busy || !quality.isReady} onClick={saveProfile}>
+            Save profile
+          </button>
+        </section>
+      )}
+
       <section className="grid two">
         <ProfilePanel
           form={form}
@@ -1155,7 +1205,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           quality={quality}
           busy={busy}
           status={profileStatus}
-          onSubmit={() => runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." })}
+          onSubmit={saveProfile}
         />
         <DashboardPanel
           dashboard={dashboard}
@@ -1185,9 +1235,11 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       />
       <JobDetailModal
         detail={jobDetail}
+        summaryJob={jobDetailSummary}
         status={jobDetailStatus}
         onClose={() => {
           setJobDetail(null);
+          setJobDetailSummary(null);
           setJobDetailStatus({ loading: false, error: "" });
         }}
       />
@@ -1736,7 +1788,7 @@ function RecommendationPanel({
   const [page, setPage] = useState(1);
   const [sortValue, setSortValue] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedJobIds, setExpandedJobIds] = useState(() => new Set());
+  const [hiddenSignalJobIds, setHiddenSignalJobIds] = useState(() => new Set());
   const showingDashboardJobs = dashboardJobView !== "recommendations";
   const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
   const dashboardStateJobs = showingDashboardJobs
@@ -1763,8 +1815,8 @@ function RecommendationPanel({
     setPage(1);
   }, [dashboardJobView, selectedRun, filter, searchQuery, sortValue, visibleJobs.length]);
 
-  function toggleJobExpanded(jobId) {
-    setExpandedJobIds((current) => {
+  function toggleJobSignals(jobId) {
+    setHiddenSignalJobIds((current) => {
       const next = new Set(current);
       if (next.has(jobId)) {
         next.delete(jobId);
@@ -1859,10 +1911,10 @@ function RecommendationPanel({
                     key={job.job_id}
                     job={job}
                     busy={busy}
-                    expanded={expandedJobIds.has(job.job_id)}
-                    onToggleExpanded={() => toggleJobExpanded(job.job_id)}
+                    expanded={!hiddenSignalJobIds.has(job.job_id)}
+                    onToggleExpanded={() => toggleJobSignals(job.job_id)}
                     onAddSkill={onAddSkill}
-                    onOpenDetails={onOpenDetails}
+                    onOpenDetails={() => onOpenDetails(job)}
                     onAction={onAction}
                   />
                 ))}
@@ -1952,6 +2004,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
   const skills = skillSignals(job);
   const skillGaps = skillGapSignals(job);
   const breakdown = matchBreakdown(job);
+  const explanation = scoreExplanation(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
   const isApplied = currentState === "applied";
@@ -1977,6 +2030,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
         </div>
         <h3>{job.title}</h3>
         <p className="fit-summary">{fitSummary(job)}</p>
+        <p className="score-explanation">{explanation}</p>
         {job.summary && <p className="job-summary">{job.summary}</p>}
         {skillGaps.length > 0 && (
           <div className="job-detail-row">
@@ -2008,7 +2062,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
           <button type="button" disabled={busy} onClick={onToggleExpanded}>
             {expanded ? "Hide signals" : "Show signals"}
           </button>
-          <button type="button" disabled={busy} onClick={() => onOpenDetails(job.job_id)}>
+          <button type="button" disabled={busy} onClick={onOpenDetails}>
             Details
           </button>
           {job.application_link && (
@@ -2072,20 +2126,27 @@ function SkillSignalPanel({ skills, gaps, onAddSkill }) {
   );
 }
 
-function JobDetailModal({ detail, status, onClose }) {
-  const isOpen = status.loading || status.error || detail;
+function JobDetailModal({ detail, summaryJob, status, onClose }) {
+  const isOpen = status.loading || status.error || detail || summaryJob;
   if (!isOpen) {
     return null;
   }
 
-  const metaItems = detail
+  const visibleJob = detail ?? summaryJob;
+  const matchedSkills = skillSignals(summaryJob ?? {});
+  const skillGaps = skillGapSignals(summaryJob ?? {});
+  const explanation = summaryJob ? scoreExplanation(summaryJob) : "";
+  const fullDescription = detail?.description && detail.description !== detail.short_description
+    ? detail.description
+    : "";
+  const metaItems = visibleJob
     ? [
-        detail.company,
-        detail.location,
-        detail.team,
-        detail.remote_status,
-        postedAgeLabel(detail.posting_date),
-        detail.source ? `Source: ${detail.source}` : ""
+        visibleJob.company,
+        visibleJob.location,
+        visibleJob.team,
+        visibleJob.remote_status,
+        postedAgeLabel(visibleJob.posting_date),
+        visibleJob.source ? `Source: ${visibleJob.source}` : ""
       ].filter(Boolean)
     : [];
   const requirements = detail?.possible_requirements?.filter(Boolean) ?? [];
@@ -2106,7 +2167,7 @@ function JobDetailModal({ detail, status, onClose }) {
         <div className="modal-heading">
           <div>
             <p className="eyebrow">Job details</p>
-            <h2 id="job-detail-title">{detail?.title ?? "Loading job"}</h2>
+            <h2 id="job-detail-title">{visibleJob?.title ?? "Loading job"}</h2>
             {metaItems.length > 0 && (
               <div className="detail-meta">
                 {metaItems.map((item) => (
@@ -2142,7 +2203,38 @@ function JobDetailModal({ detail, status, onClose }) {
 
               <section>
                 <h3>Summary</h3>
-                <p>{detail.short_description || detail.description || "No description available."}</p>
+                <p>{detail.short_description || summaryJob?.summary || detail.description || "No description available."}</p>
+                {explanation && <p className="detail-score-explanation">{explanation}</p>}
+                {(matchedSkills.length > 0 || skillGaps.length > 0) && (
+                  <div className="detail-skill-panel">
+                    {matchedSkills.length > 0 && (
+                      <div>
+                        <strong>Matched skills</strong>
+                        <div className="skill-chip-row matched">
+                          {matchedSkills.map((skill) => (
+                            <span key={skill}>{skill}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {skillGaps.length > 0 && (
+                      <div>
+                        <strong>Skill gaps</strong>
+                        <div className="skill-chip-row plain-gaps">
+                          {skillGaps.map((skill) => (
+                            <span key={skill}>{skill}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {fullDescription && (
+                  <details className="detail-description">
+                    <summary>Full posting text</summary>
+                    <p>{fullDescription}</p>
+                  </details>
+                )}
               </section>
 
               <section>
@@ -2335,4 +2427,15 @@ function PreviewList({ title, items, empty }) {
   );
 }
 
-createRoot(document.getElementById("root")).render(<Root />);
+const rootElement = typeof document !== "undefined" ? document.getElementById("root") : null;
+if (rootElement) {
+  createRoot(rootElement).render(<Root />);
+}
+
+export {
+  JobCard,
+  JobDetailModal,
+  ProfileQuality,
+  RecommendationPanel,
+  scoreExplanation
+};

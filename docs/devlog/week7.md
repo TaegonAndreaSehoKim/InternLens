@@ -159,6 +159,42 @@ Shortlist review now behaves more like a working application board: compact by d
 
 ---
 
+## Day 50 - Visible Signals and Frontend Component Coverage
+
+### Focus
+Restore recommendation-card transparency while keeping the newer shortlist workflow test-backed.
+
+### What was done
+- Changed recommendation cards so match signals are visible by default again.
+- Kept `Hide signals` as the optional action for users who want a more compact card.
+- Added plain-language score explanations to each job card, summarizing:
+  - matched skills
+  - strong profile signals
+  - missing or unclear skill gaps
+- Improved the job detail modal with:
+  - matched skills
+  - skill gaps
+  - score explanation context
+  - collapsed full posting text
+- Added a top-level unsaved-profile banner so users know to save profile edits before running a fresh shortlist.
+- Added server-rendered frontend component tests for:
+  - visible-by-default recommendation signals
+  - hidden signal mode
+  - profile readiness summary
+  - job detail modal match context
+  - score explanation text
+  - skill-gap add action wiring
+
+### Validation
+- `npm run lint` -> passed
+- `npm test -- --run` -> **21 passed**
+- `npm run build` -> passed
+
+### Result
+The shortlist is transparent by default again, but users still have a compact mode. The most important review components now have direct regression coverage beyond pure helper tests.
+
+---
+
 ## Week 7 Snapshot
 
 ### Current project state
@@ -166,19 +202,20 @@ Shortlist review now behaves more like a working application board: compact by d
 - Cognito-protected staging smoke checks can validate health, auth enforcement, and deployed schema.
 - The frontend uses `/me/...` account-scoped APIs for the main browser workflow.
 - Profile Setup collects structured recommendation signals through searchable selectors.
-- Recommendation cards explain matches more clearly with fit summaries, matched skills, skill gaps, expandable signals, job detail lookup, and check items.
-- Shortlist review supports search, sorting, 20-item pagination, expandable match evidence, and account-scoped job actions.
+- Recommendation cards explain matches more clearly with fit summaries, matched skills, skill gaps, visible-by-default signals, score explanations, job detail lookup, and check items.
+- Shortlist review supports search, sorting, 20-item pagination, optional signal hiding, and account-scoped job actions.
+- Frontend coverage now includes server-rendered component checks for the main shortlist review pieces.
 
 ### Latest quality checkpoint
 - Backend tests: **188 passed**
 - Frontend checks:
   - `npm run lint` -> passed
-  - `npm test -- --run` -> **15 passed**
+  - `npm test -- --run` -> **21 passed**
   - `npm run build` -> passed
 
 ### Remaining next steps
 - Continue tightening ranking precision for broader non-CS candidate profiles.
 - Review whether the profile taxonomy should move from hardcoded frontend constants to a shared config file.
-- Add component-level frontend tests for the shortlist review panel, job detail modal, and profile setup interactions.
+- Expand frontend tests from static server-render checks toward browser-level interaction coverage.
 - Improve dashboard copy and empty states now that profile setup and shortlist review are less free-form.
 - Plan managed database migration before treating multi-user persistence as production-ready.

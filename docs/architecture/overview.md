@@ -128,7 +128,8 @@ The frontend uses these APIs to support:
 - searching shortlist results by company, role, location, matched skills, and skill gaps
 - job actions for save, applied, and hidden states
 - undo controls for saved, applied, and hidden job states
-- expandable recommendation-card signals
+- visible-by-default recommendation-card signals with optional hiding
+- plain-language score explanations
 - job detail modal backed by `GET /jobs/{job_id}`
 
 ---
@@ -166,8 +167,10 @@ Recent work focused on:
 - demoting non-core marketing/communications internships that were overpromoted by broad analytics wording
 - adding account-scoped `/me/...` API aliases so browser users no longer handle profile IDs directly
 - redesigning Profile Setup around searchable structured selectors and quality checks instead of broad free-text entry
-- making shortlist review searchable and compact by default, with expandable match signals and job detail lookup
+- making shortlist review searchable, with visible-by-default match signals, optional signal hiding, and job detail lookup
 - adding direct skill-gap actions so users can update profile skills from recommendation cards before rerunning matches
+- adding score explanations and an unsaved-profile banner so users understand why a role ranked where it did and when profile edits need saving
+- adding server-rendered frontend component tests for shortlist cards, profile readiness, job detail modal context, and skill-gap action wiring
 - stress-testing company-seed-based source discovery with a larger seed draft
 - hardening source discovery with ATS URL normalization, checkpointed saves, structured warning summaries, opt-in direct ATS probing, and blocked-page manual review records
 - tightening source promotion safeguards for direct ATS probe candidates and inactive registry entries
@@ -177,7 +180,7 @@ Recent work focused on:
 
 The latest validation state shows:
 - `188 passed`
-- `npm run lint`, `npm test -- --run` (`15 passed`), and `npm run build` passing in `frontend/`
+- `npm run lint`, `npm test -- --run` (`21 passed`), and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
 - Waymo shortlist remains very small and focused under applyable-only filtering
@@ -248,7 +251,7 @@ It also shows good engineering discipline:
 - structured qualification fields are often sparse
 
 ### Product limitations
-- shortlist filtering, search, pagination, expandable signals, and job detail lookup are useful, but the frontend still needs stronger empty states and error states across the full workflow
+- shortlist filtering, search, pagination, visible signals, optional signal hiding, score explanations, and job detail lookup are useful, but the frontend still needs stronger empty states and error states across the full workflow
 - saved/applied/hidden state transitions are now clearer, but dashboard copy and broader interaction polish still need iteration
 - corpus-level deduplication is in place, but grouping similar multi-location results is still conservative and optional
 - company normalization remains lightweight
@@ -279,7 +282,7 @@ The strongest next steps are:
 
 4. improve presentation
    - clearer frontend empty and error states
-   - component-level frontend tests for shortlist search, expandable card signals, job detail modal, and job actions
+   - browser-level interaction tests for shortlist search, signal hiding, job detail modal, and job actions
    - more polished saved/applied/hidden dashboard views
    - demo screenshots or a short walkthrough
 

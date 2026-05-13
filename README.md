@@ -13,7 +13,7 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 - **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk behind CloudFront, and backend release automation through CodePipeline/CodeBuild.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
-- **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, searchable/paginated shortlist review, expandable match signals, skill-gap actions, and job detail modals are available through the API and frontend.
+- **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, searchable/paginated shortlist review, visible-by-default match signals, skill-gap actions, and job detail modals are available through the API and frontend.
 - **Quality checkpoint:** Python suite currently passes at `188 passed`; frontend lint, tests, and production build are also passing.
 - **Prototype boundary:** staging uses single-server SQLite and is not yet production hardened for authentication, multi-user persistence, or custom-domain operations.
 
@@ -37,7 +37,7 @@ InternLens currently supports:
 - API endpoints for recommendation and job detail lookup
 - user-scoped stored profile, feedback, recommendation history, job action, and dashboard APIs
 - Cognito JWT auth mode for account-scoped API access, with development auth still available for local demos
-- Vite/React frontend for account-scoped profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, searchable/paginated shortlist inspection, expandable match signals, and job detail modals
+- Vite/React frontend for account-scoped profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, searchable/paginated shortlist inspection, visible-by-default match signals, and job detail modals
 - AWS staging deployment with Amplify frontend auto-deploys and a CodePipeline path for backend test/package/deploy to Elastic Beanstalk
 - regression-tested iteration
 
@@ -51,7 +51,7 @@ Current architecture planning also includes a long-term source acquisition strat
 Latest validation state:
 - full test suite passing
 - current total: `188 passed`
-- frontend lint, Vitest, and production build passing with `npm run lint`, `npm test -- --run` (`15 passed`), and `npm run build`
+- frontend lint, Vitest, and production build passing with `npm run lint`, `npm test -- --run` (`21 passed`), and `npm run build`
 - Cloudflare shortlist narrowed to a small applyable-only subset focused on more relevant roles such as Data Analytics Intern, Business Analyst Intern, DCSC Automation Coordinator Intern, Network Deployment Engineer Intern, and Data Engineer Intern
 - GitHub Actions test workflow added for `push` and `pull_request` on `main`
 
@@ -113,7 +113,7 @@ The current implementation is intentionally simple and transparent. It is design
 - API endpoint for `/jobs/{id}`
 - profile persistence and stored-feedback recommendation flow
 - shared output filtering between CLI and API, including optional similar-result suppression
-- local frontend dashboard workflow with clickable saved/applied/hidden state summaries, searchable result review, expandable card signals, and job detail lookup
+- local frontend dashboard workflow with clickable saved/applied/hidden state summaries, searchable result review, visible card signals, optional signal hiding, and job detail lookup
 
 ### Validation
 - ingestion client tests
@@ -637,8 +637,11 @@ Useful notes:
 - the frontend asks the API for a larger shortlist snapshot and paginates visible results in groups of 20, so users can review the full available result set without a long scrolling wall
 - profile setup now uses searchable structured selectors for roles, skills, locations, and industries, with free-text background kept as optional context
 - shortlist review includes search across company, role, location, matched skills, and skill gaps
-- recommendation cards keep detailed match evidence collapsed by default, and users can expand signals or open a job detail modal when needed
+- recommendation cards show detailed match evidence by default, and users can hide signals or open a job detail modal when needed
 - visible skill gaps can be added back into profile skills directly from the recommendation card, then saved before the next shortlist run
+- score explanations summarize matched skills, strong profile signals, and missing or unclear skill gaps in plain language
+- unsaved profile changes are surfaced in a top-level banner so users know to save before rerunning matches
+- component-level frontend tests now cover shortlist review defaults, hidden signal mode, profile readiness, job detail modal context, score explanations, and skill-gap action wiring
 
 Save, apply, or hide a job from a stored-profile workflow:
 
@@ -678,7 +681,7 @@ The dashboard response combines:
 - saved, applied, and hidden job previews
 
 In the frontend, clicking the dashboard `Shortlists`, `Saved`, `Applied`, or `Hidden` count changes the lower review panel to the matching job set. Hidden jobs are not deleted; they are suppressed from future shortlists until the user chooses `Show again`.
-The same review panel supports search, sorting, 20-item pagination, expandable match signals, and a job detail modal backed by `GET /jobs/{job_id}`.
+The same review panel supports search, sorting, 20-item pagination, visible-by-default match signals with optional hiding, and a job detail modal backed by `GET /jobs/{job_id}`.
 
 The frontend's account-scoped workflow calls these profile aliases:
 
@@ -881,8 +884,8 @@ That makes it a strong base for future work such as:
 
 Planned follow-up improvements:
 - improve frontend empty states and error messages
-- add component-level frontend tests around profile setup, shortlist search, job detail modal, and job actions
-- expand frontend tests beyond the current helper coverage
+- expand frontend tests from server-rendered component checks toward browser interaction coverage
+- improve profile-save and shortlist-run guidance around unsaved changes
 - continue refining ranking noise for broad non-core internships
 - continue improving company, team, and location normalization
 - measure source-discovery recall on larger seed subsets and use promotion-candidate smoke reports to judge quality

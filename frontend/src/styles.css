@@ -523,6 +523,44 @@ button:disabled {
   background: rgba(246, 237, 189, 0.34);
 }
 
+.unsaved-change-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin: 0 0 18px;
+  border: 1px solid rgba(243, 223, 138, 0.82);
+  border-radius: 16px;
+  padding: 13px 15px;
+  background: rgba(246, 237, 189, 0.42);
+}
+
+.unsaved-change-banner div {
+  display: grid;
+  gap: 3px;
+}
+
+.unsaved-change-banner strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.unsaved-change-banner span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.unsaved-change-banner button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #fffdf8;
+  background: var(--accent);
+  font-weight: 900;
+}
+
 .quality-card {
   display: grid;
   gap: 10px;
@@ -1291,6 +1329,14 @@ textarea {
   font-weight: 800;
 }
 
+.job-card .score-explanation {
+  margin-top: 6px;
+  color: #5d6c74;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .job-card .job-summary {
   margin-top: 7px;
   line-height: 1.42;
@@ -1362,6 +1408,11 @@ textarea {
   font-size: 0.62rem;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.skill-chip-row.plain-gaps > span {
+  color: #946f60;
+  background: rgba(236, 213, 199, 0.42);
 }
 
 .job-side .state-note {
@@ -1691,6 +1742,53 @@ textarea {
 .detail-content ul {
   margin: 0;
   padding-left: 18px;
+}
+
+.detail-score-explanation {
+  border-left: 4px solid rgba(127, 169, 191, 0.42);
+  padding-left: 10px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.detail-skill-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.detail-skill-panel > div {
+  display: grid;
+  gap: 7px;
+}
+
+.detail-skill-panel strong {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.detail-description {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(243, 242, 238, 0.68);
+}
+
+.detail-description summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.detail-description[open] summary {
+  margin-bottom: 8px;
 }
 
 .detail-actions {
@@ -2180,6 +2278,7 @@ textarea {
   .evidence-grid,
   .match-signal-grid,
   .detail-signal-columns,
+  .detail-skill-panel,
   .public-workflow {
     grid-template-columns: 1fr;
   }
@@ -2218,6 +2317,11 @@ textarea {
   }
 
   .modal-heading {
+    flex-direction: column;
+  }
+
+  .unsaved-change-banner {
+    align-items: stretch;
     flex-direction: column;
   }
 }
