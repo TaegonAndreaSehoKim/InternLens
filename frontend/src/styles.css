@@ -1,23 +1,23 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,750&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --ink: #4f4f50;
-  --muted: #74706e;
-  --paper: #f4f2ed;
-  --card: rgba(255, 253, 248, 0.88);
-  --line: rgba(79, 79, 80, 0.14);
-  --steel: #7fa9bf;
-  --moss: #9baa90;
-  --cedar: #c99a86;
-  --gold: #f3df8a;
-  --sky: #cfe4f2;
-  --rose: #ead8dd;
-  --peach: #ecd5c7;
-  --orchid: #d9d1dd;
-  --cloud: #f3f2ee;
-  --accent: #607f8d;
-  --accent-soft: #dbeaf1;
-  --shadow: 0 24px 80px rgba(86, 82, 76, 0.13);
+  --ink: #1f2933;
+  --muted: #667085;
+  --paper: #f7f8fa;
+  --card: #ffffff;
+  --line: #d9dee7;
+  --steel: #4d7c9b;
+  --moss: #5f8f6f;
+  --cedar: #b76e5f;
+  --gold: #d6a82d;
+  --sky: #e7f0f6;
+  --rose: #f4e6ea;
+  --peach: #f2ded4;
+  --orchid: #ece7f0;
+  --cloud: #f1f3f6;
+  --accent: #315f7d;
+  --accent-soft: #e7f0f6;
+  --shadow: none;
 }
 
 * {
@@ -1588,5 +1588,363 @@ textarea {
   .quality-list,
   .public-workflow {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Product polish pass: quieter typography, flatter surfaces, and dashboard-first density. */
+body {
+  font-family: "Inter", "Aptos", "Segoe UI", sans-serif;
+  background: var(--paper);
+}
+
+.shell {
+  width: min(100% - 40px, 1500px);
+  padding: 24px 0 40px;
+}
+
+.public-shell {
+  width: min(100% - 40px, 1200px);
+  padding: 18px 0 42px;
+}
+
+.app-header {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: 16px;
+  animation: none;
+}
+
+.product-title,
+.status-card,
+.panel,
+.public-alert,
+.public-feature-list article,
+.public-preview,
+.sample-job-card,
+.quality-card,
+.profile-state,
+.match-breakdown,
+.evidence-list,
+.source-freshness-summary,
+.pagination,
+.job-card,
+.public-workflow article {
+  border-color: var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.product-title {
+  display: grid;
+  align-content: center;
+  border: 1px solid var(--line);
+  padding: 20px 22px;
+}
+
+.product-title h1,
+.server-status h2,
+.auth-panel h1,
+.public-hero h1,
+.public-feature-list h2,
+.public-preview h2,
+.panel-heading h2,
+.job-card h3,
+.score-dial strong {
+  font-family: inherit;
+  letter-spacing: 0;
+}
+
+.product-title h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.7rem, 2.6vw, 2.7rem);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.hero-copy {
+  max-width: 720px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.status-card {
+  min-height: auto;
+  padding: 18px;
+}
+
+.server-status {
+  justify-content: space-between;
+  text-align: left;
+}
+
+.server-status-main {
+  justify-content: flex-start;
+}
+
+.server-status h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.account-strip {
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.grid.two {
+  grid-template-columns: minmax(360px, 0.78fr) minmax(460px, 1.22fr);
+  gap: 16px;
+}
+
+.panel {
+  border-radius: 8px;
+  padding: 18px;
+  animation: none;
+}
+
+.panel-heading {
+  margin-bottom: 14px;
+}
+
+.panel-heading h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.form-grid {
+  gap: 12px;
+}
+
+label,
+.selector-heading strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.primary-action,
+.ghost-action,
+.job-actions button,
+.job-actions a,
+.run-list button,
+.account-strip button,
+.filter-bar button,
+.pagination button {
+  border-radius: 6px;
+}
+
+.primary-action {
+  padding: 12px 14px;
+}
+
+.profile-state,
+.quality-card,
+.source-freshness-summary,
+.pagination {
+  padding: 12px;
+}
+
+.quality-list > div,
+.match-signal,
+.source-freshness-summary dl div {
+  border-radius: 6px;
+  background: var(--cloud);
+}
+
+.metric-row,
+.filter-bar,
+.mini-columns {
+  gap: 10px;
+}
+
+.metric,
+.filter-bar button {
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.dashboard-lower {
+  gap: 14px;
+}
+
+.job-card {
+  grid-template-columns: minmax(0, 1fr) 136px;
+  gap: 16px;
+  padding: 16px;
+}
+
+.job-card h3 {
+  margin: 8px 0 6px;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.job-meta {
+  gap: 6px;
+  font-size: 0.7rem;
+}
+
+.skill-chip-row span,
+.job-detail-row span,
+.selected-chip-row button,
+.search-select button,
+.suggestion-menu button,
+.state-pill,
+.action-pill,
+.result-count,
+.freshness-pill,
+.health-pill,
+.status-refresh {
+  border-radius: 999px;
+}
+
+.match-breakdown,
+.evidence-grid {
+  margin-top: 12px;
+}
+
+.evidence-list {
+  padding: 12px;
+}
+
+.score-dial {
+  width: 96px;
+  height: 96px;
+  border-width: 8px;
+}
+
+.score-dial strong {
+  margin-top: -12px;
+  font-size: 1.9rem;
+}
+
+.score-dial span {
+  margin-top: 30px;
+  font-size: 0.62rem;
+}
+
+.public-nav {
+  padding: 10px 0 28px;
+}
+
+.public-hero {
+  max-width: 760px;
+  padding: 42px 0 28px;
+}
+
+.public-hero h1 {
+  font-size: clamp(2.6rem, 7vw, 5.6rem);
+  line-height: 0.96;
+  font-weight: 800;
+}
+
+.public-hero p:not(.eyebrow) {
+  font-size: clamp(1rem, 1.8vw, 1.16rem);
+}
+
+.public-content-grid {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr);
+}
+
+.public-feature-list h2,
+.public-preview h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.public-feature-list article,
+.public-preview,
+.sample-job-card {
+  padding: 16px;
+}
+
+@media (min-width: 1180px) {
+  .results-panel {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .app-header,
+  .grid.two,
+  .public-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-card {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell,
+  .public-shell {
+    width: min(100% - 24px, 1500px);
+    padding-top: 14px;
+  }
+
+  .product-title {
+    padding: 16px;
+  }
+
+  .product-title h1 {
+    font-size: 1.75rem;
+  }
+
+  .split,
+  .source-freshness-summary,
+  .public-nav {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .quality-list,
+  .metric-row,
+  .mini-columns,
+  .filter-bar,
+  .evidence-grid,
+  .match-signal-grid,
+  .public-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .job-card {
+    grid-template-columns: 1fr;
+  }
+
+  .score-dial {
+    justify-self: start;
+  }
+
+  .job-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .list-toolbar {
+    justify-content: stretch;
+  }
+
+  .list-toolbar label,
+  .list-toolbar select {
+    width: 100%;
   }
 }
