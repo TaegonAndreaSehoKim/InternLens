@@ -687,6 +687,79 @@ function skillSignals(job) {
   return uniqueItems(job.matched_skills ?? []).slice(0, 6).map(cleanSignal);
 }
 
+function hasEvidence(job, pattern) {
+  return [
+    ...(job.why_apply ?? []),
+    ...(job.reasons ?? [])
+  ].some((item) => pattern.test(String(item)));
+}
+
+function scorePercent(value) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return null;
+  }
+  const percent = value <= 1 ? value * 100 : value;
+  return Math.round(Math.max(0, Math.min(percent, 100)));
+}
+
+function signalStrength(percent) {
+  if (percent === null) {
+    return "No data";
+  }
+  if (percent >= 75) {
+    return "Strong";
+  }
+  if (percent >= 35) {
+    return "Partial";
+  }
+  if (percent > 0) {
+    return "Light";
+  }
+  return "No signal";
+}
+
+function matchBreakdown(job) {
+  const scores = job.component_scores;
+  if (!scores) {
+    return [];
+  }
+
+  const matchedSkills = skillSignals(job);
+  const skillPercent = scorePercent(scores.skill_score);
+  const rolePercent = scorePercent(scores.role_score);
+  const majorPercent = scorePercent(scores.major_score);
+  const locationPercent = scorePercent(scores.location_score);
+  const roleOpen = rolePercent === 100 && !hasEvidence(job, /preferred role/i);
+  const locationOpen = locationPercent === 100 && !hasEvidence(job, /location matches/i);
+
+  return [
+    {
+      label: "Skills",
+      value: signalStrength(skillPercent),
+      detail: matchedSkills.length > 0 ? matchedSkills.slice(0, 3).join(", ") : "No matched skills surfaced",
+      percent: skillPercent
+    },
+    {
+      label: "Role",
+      value: roleOpen ? "Open search" : signalStrength(rolePercent),
+      detail: roleOpen ? "No preferred job title filter" : "Title compared with preferred roles",
+      percent: rolePercent
+    },
+    {
+      label: "Major",
+      value: signalStrength(majorPercent),
+      detail: hasEvidence(job, /major aligns/i) ? "Posting mentions related field signals" : "No clear major signal",
+      percent: majorPercent
+    },
+    {
+      label: "Location",
+      value: locationOpen ? "Any location" : signalStrength(locationPercent),
+      detail: locationOpen ? "No location filter applied" : "Compared with location preferences",
+      percent: locationPercent
+    }
+  ];
+}
+
 function clearActionLabel(state) {
   const labels = {
     applied: "Undo applied",
@@ -718,6 +791,8 @@ function storedJobStateToRecommendation(item) {
     summary: snapshot.summary ?? `${JOB_STATE_LABELS[item.state] ?? titleCase(item.state)} role from your dashboard.`,
     why_apply: snapshot.why_apply ?? [],
     watchouts: snapshot.watchouts ?? [],
+    matched_skills: snapshot.matched_skills ?? [],
+    component_scores: snapshot.component_scores ?? null,
     application_link: snapshot.application_link ?? null,
     user_job_state: item.state,
     user_job_state_source_run_id: item.source_run_id
@@ -1750,6 +1825,7 @@ function JobCard({ job, busy, onAction }) {
   const positives = positiveEvidence(job);
   const watchouts = watchoutEvidence(job);
   const skills = skillSignals(job);
+  const breakdown = matchBreakdown(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
   const isApplied = currentState === "applied";
@@ -1781,6 +1857,7 @@ function JobCard({ job, busy, onAction }) {
             <span>{eligibility}</span>
           </div>
         )}
+        {breakdown.length > 0 && <MatchBreakdown items={breakdown} />}
 
         <div className="evidence-grid">
           <EvidenceList title="Why it fits" items={positives} empty="No strong positive signals surfaced." />
@@ -1817,6 +1894,31 @@ function JobCard({ job, busy, onAction }) {
         )}
       </div>
     </article>
+  );
+}
+
+function MatchBreakdown({ items }) {
+  return (
+    <div className="match-breakdown" aria-label="Match breakdown">
+      <div className="match-breakdown-heading">
+        <strong>Match breakdown</strong>
+        <span>signals used for ranking</span>
+      </div>
+      <div className="match-signal-grid">
+        {items.map((item) => (
+          <div key={item.label} className="match-signal">
+            <div className="match-signal-top">
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+            <div className="signal-meter" aria-hidden="true">
+              <span style={{ width: `${item.percent ?? 0}%` }} />
+            </div>
+            <small>{item.detail}</small>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

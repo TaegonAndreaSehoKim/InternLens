@@ -347,6 +347,8 @@ class StoredJobStateSnapshot(BaseModel):
     summary: str
     why_apply: List[str]
     watchouts: List[str]
+    matched_skills: Optional[List[str]] = None
+    component_scores: Optional[Dict[str, float]] = None
     application_link: Optional[str] = None
 
 
