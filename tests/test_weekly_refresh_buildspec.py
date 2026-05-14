@@ -10,6 +10,8 @@ def test_weekly_refresh_buildspec_refreshes_packages_and_deploys() -> None:
     assert "aws s3 cp outputs/internlens_eb_backend.zip" in buildspec
     assert "aws elasticbeanstalk create-application-version" in buildspec
     assert "aws elasticbeanstalk update-environment" in buildspec
+    assert "aws elasticbeanstalk wait environment-updated" in buildspec
+    assert 'test "${DEPLOYED_VERSION}" = "${VERSION_LABEL}"' in buildspec
 
 
 def test_weekly_refresh_buildspec_requires_explicit_aws_targets() -> None:

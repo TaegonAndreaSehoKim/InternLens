@@ -27,6 +27,9 @@ phases:
       - aws s3 cp outputs/internlens_eb_backend.zip "s3://${EB_ARTIFACT_BUCKET}/${S3_KEY}"
       - aws elasticbeanstalk create-application-version --application-name "${EB_APPLICATION_NAME}" --version-label "${VERSION_LABEL}" --source-bundle S3Bucket="${EB_ARTIFACT_BUCKET}",S3Key="${S3_KEY}"
       - aws elasticbeanstalk update-environment --application-name "${EB_APPLICATION_NAME}" --environment-name "${EB_ENVIRONMENT_NAME}" --version-label "${VERSION_LABEL}"
+      - aws elasticbeanstalk wait environment-updated --application-name "${EB_APPLICATION_NAME}" --environment-names "${EB_ENVIRONMENT_NAME}"
+      - export DEPLOYED_VERSION="$(aws elasticbeanstalk describe-environments --application-name "${EB_APPLICATION_NAME}" --environment-names "${EB_ENVIRONMENT_NAME}" --query 'Environments[0].VersionLabel' --output text)"
+      - test "${DEPLOYED_VERSION}" = "${VERSION_LABEL}"
 
 artifacts:
   files:
