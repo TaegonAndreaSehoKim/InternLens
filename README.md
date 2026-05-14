@@ -10,6 +10,31 @@ Live staging app:
 https://main.d1d00e49guhewo.amplifyapp.com
 ```
 
+## Project Diagram
+
+```mermaid
+flowchart LR
+    user["User"] --> frontend["React Frontend<br/>Profile, Dashboard, Shortlist"]
+    frontend --> auth["Cognito Auth<br/>Hosted UI + JWT"]
+    frontend --> api["FastAPI Backend<br/>Recommendation + Profile APIs"]
+
+    api --> store["SQLite Store<br/>Profiles, Runs, Job Actions"]
+    api --> ranker["Ranking Engine<br/>Signals, Blockers, Skill Gaps"]
+    ranker --> corpus["Processed Job Corpus<br/>data/processed/jobs"]
+
+    ats["Public ATS Boards<br/>Lever + Greenhouse"] --> ingest["Ingestion Scripts<br/>Fetch + Normalize"]
+    ingest --> raw["Raw Snapshots<br/>data/raw"]
+    ingest --> corpus
+
+    schedule["EventBridge Weekly Schedule"] --> codebuild["CodeBuild Refresh Job"]
+    codebuild --> ingest
+    codebuild --> eb["Elastic Beanstalk Backend Deploy"]
+    eb --> cloudfront["CloudFront HTTPS API"]
+    cloudfront --> api
+
+    amplify["AWS Amplify Hosting"] --> frontend
+```
+
 ## What It Does
 
 - Maintains a refreshed internship corpus from public ATS job boards.
@@ -34,16 +59,6 @@ The browser workflow supports:
 - dashboard views for shortlists, saved, applied, and hidden jobs
 
 ## Architecture At A Glance
-
-```text
-public ATS boards
-  -> ingestion scripts
-  -> raw snapshots under data/raw
-  -> normalized jobs under data/processed/jobs
-  -> ranking + feedback logic
-  -> FastAPI backend
-  -> React frontend
-```
 
 Main runtime pieces:
 
