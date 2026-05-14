@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The current local validation state is `188 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -149,6 +149,7 @@ The frontend uses these APIs to support:
 - Cognito JWT auth mode can scope stored workflow data by signed-in account while development auth remains available for local demos
 - GitHub Actions runs backend tests and has a scheduled/manual corpus refresh artifact workflow
 - AWS staging is live with Amplify for the frontend, Elastic Beanstalk for the backend, and CloudFront for HTTPS API access
+- a weekly AWS refresh/deploy path now refreshes the staging job corpus through EventBridge and CodeBuild
 
 ### What improved most recently
 Recent work focused on:
@@ -177,9 +178,10 @@ Recent work focused on:
 - adding high-intent same-site priority-link following for student, internship, campus, and early-career discovery pages
 - adding promotion dry-run diagnostics that show internship signal examples
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
+- adding scheduled AWS corpus refresh automation that deploys refreshed job data back to the staging backend
 
 The latest validation state shows:
-- `188 passed`
+- weekly backend CodeBuild suite: `200 passed`
 - `npm run lint`, `npm test -- --run` (`21 passed`), and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset

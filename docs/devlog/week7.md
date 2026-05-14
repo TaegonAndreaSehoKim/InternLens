@@ -195,10 +195,44 @@ The shortlist is transparent by default again, but users still have a compact mo
 
 ---
 
+## Day 51 - Weekly AWS Corpus Refresh Automation
+
+### Focus
+Make the staging backend refresh its job corpus without a manual user request.
+
+### What was done
+- Added and hardened `buildspec.weekly-refresh.yml` for the scheduled backend refresh path.
+- Added tests for the weekly buildspec so the refresh/package/deploy steps stay explicit.
+- Created AWS resources for the weekly automation:
+  - CodeBuild project `internlens-weekly-corpus-refresh`
+  - EventBridge rule `internlens-weekly-corpus-refresh`
+  - schedule `cron(0 9 ? * MON *)`
+  - CodeBuild role `internlens-weekly-corpus-refresh-codebuild-role`
+  - EventBridge role `internlens-weekly-corpus-refresh-events-role`
+  - SNS topic `internlens-weekly-refresh-alerts`
+  - failure rule `internlens-weekly-corpus-refresh-failures`
+- Added email subscription for `helios473@gmail.com`; it remains pending until the AWS confirmation email is accepted.
+- Replaced root CLI usage with an IAM user credential path and documented credential rotation guidance.
+- Simplified the top-level README and moved detailed local commands into `docs/development/local_workflows.md`.
+
+### Validation
+- Weekly CodeBuild manual run -> **succeeded**
+- Refreshed processed jobs saved in build -> **167**
+- Backend tests inside CodeBuild -> **200 passed**
+- Elastic Beanstalk deployed version -> `weekly-corpus-20260514031631-5d9ae2d3b1fa`
+- Elastic Beanstalk health -> `Ready / Green`
+- CloudFront smoke check -> passed
+
+### Result
+The staging backend now has a working weekly job-corpus refresh and deploy loop. The README is much shorter and points readers to focused docs for local workflows and AWS operations.
+
+---
+
 ## Week 7 Snapshot
 
 ### Current project state
 - Backend staging deployment is automated through CodePipeline and CodeBuild.
+- Weekly corpus refresh is automated through EventBridge and CodeBuild, then deployed to Elastic Beanstalk.
 - Cognito-protected staging smoke checks can validate health, auth enforcement, and deployed schema.
 - The frontend uses `/me/...` account-scoped APIs for the main browser workflow.
 - Profile Setup collects structured recommendation signals through searchable selectors.
@@ -207,13 +241,14 @@ The shortlist is transparent by default again, but users still have a compact mo
 - Frontend coverage now includes server-rendered component checks for the main shortlist review pieces.
 
 ### Latest quality checkpoint
-- Backend tests: **188 passed**
+- Backend tests in latest weekly CodeBuild: **200 passed**
 - Frontend checks:
   - `npm run lint` -> passed
   - `npm test -- --run` -> **21 passed**
   - `npm run build` -> passed
 
 ### Remaining next steps
+- Confirm the SNS email subscription from `helios473@gmail.com`.
 - Continue tightening ranking precision for broader non-CS candidate profiles.
 - Review whether the profile taxonomy should move from hardcoded frontend constants to a shared config file.
 - Expand frontend tests from static server-render checks toward browser-level interaction coverage.

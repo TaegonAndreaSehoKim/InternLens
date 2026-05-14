@@ -275,7 +275,7 @@ This keeps refresh work out of the FastAPI web process. Do not implement this as
 
 ### Scheduled CodeBuild project
 
-Create a second CodeBuild project, separate from `internlens-backend-build`, named something like:
+Create a second CodeBuild project, separate from `internlens-backend-build`, named:
 
 ```text
 internlens-weekly-corpus-refresh
@@ -295,24 +295,51 @@ Required CodeBuild environment variables:
 ```text
 EB_APPLICATION_NAME=internlens
 EB_ENVIRONMENT_NAME=Internlens-env
-EB_ARTIFACT_BUCKET=<s3-bucket-for-eb-source-bundles>
+EB_ARTIFACT_BUCKET=elasticbeanstalk-us-east-2-195687035252
 EB_ARTIFACT_PREFIX=internlens-backend
 ```
 
 `EB_ARTIFACT_PREFIX` is optional; it defaults to `internlens-backend`.
 
-The CodeBuild service role for this scheduled project needs permission to:
+The current scheduled project uses:
+
+```text
+CodeBuild project: internlens-weekly-corpus-refresh
+CodeBuild role: arn:aws:iam::195687035252:role/internlens-weekly-corpus-refresh-codebuild-role
+EventBridge rule: internlens-weekly-corpus-refresh
+Schedule: cron(0 9 ? * MON *)
+Failure rule: internlens-weekly-corpus-refresh-failures
+SNS topic: arn:aws:sns:us-east-2:195687035252:internlens-weekly-refresh-alerts
+```
+
+The CodeBuild service role needs permission to:
 
 ```text
 s3:PutObject
+s3:PutObjectAcl
 s3:GetObject
+s3:GetObjectVersion
+s3:GetObjectAcl
+s3:DeleteObject
+s3:DeleteObjectVersion
+s3:GetBucketLocation
+s3:ListBucket
 elasticbeanstalk:CreateApplicationVersion
 elasticbeanstalk:UpdateEnvironment
 elasticbeanstalk:DescribeApplications
 elasticbeanstalk:DescribeEnvironments
+elasticbeanstalk:DescribeApplicationVersions
+elasticbeanstalk:DescribeEvents
+cloudformation:DescribeStacks
+cloudformation:DescribeStackResource
+cloudformation:DescribeStackResources
+cloudformation:DescribeStackEvents
+cloudformation:GetTemplate
+cloudformation:ValidateTemplate
 ```
 
-Scope the S3 permissions to the artifact bucket and the Elastic Beanstalk permissions to the staging application/environment when possible.
+The current staging role also has `AdministratorAccess-AWSElasticBeanstalk` attached because Elastic Beanstalk environment updates perform several internal checks across Beanstalk-managed resources.
+This is acceptable for the staging automation checkpoint, but should be reduced later after reviewing CloudTrail access.
 
 ### Schedule
 
@@ -337,6 +364,73 @@ on the weekly refresh CodeBuild project.
 It uploads refreshed corpus artifacts, but it does not deploy the staging backend.
 
 `buildspec.weekly-refresh.yml` is the server-facing path: it refreshes the corpus and deploys a new Elastic Beanstalk application version.
+
+### Latest weekly refresh validation
+
+Manual run verified:
+
+```text
+CodeBuild build: internlens-weekly-corpus-refresh:f49c06a9-0d55-4cf1-91a0-693012a6d635
+Status: SUCCEEDED
+Processed jobs saved: 167
+Backend tests in CodeBuild: 200 passed
+Elastic Beanstalk version: weekly-corpus-20260514031631-5d9ae2d3b1fa
+Elastic Beanstalk health: Ready / Green
+CloudFront smoke: passed
+```
+
+Smoke command:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net --top-k 1000 --expect-auth-required --output-file outputs\deployment_smoke_weekly_refresh.json
+```
+
+Failure email subscription:
+
+```text
+SNS topic: internlens-weekly-refresh-alerts
+Email endpoint: helios473@gmail.com
+Status after creation: PendingConfirmation
+```
+
+The email recipient must click the AWS subscription confirmation email before notifications are delivered.
+
+### AWS CLI credentials
+
+Use an IAM user access key for local AWS CLI work, not the root account access key.
+
+Recommended user for this staging project:
+
+```text
+IAM user: InternLensAdmin
+```
+
+To switch local CLI credentials:
+
+```powershell
+aws configure
+```
+
+Use:
+
+```text
+Default region name: us-east-2
+Default output format: json
+```
+
+Verify:
+
+```powershell
+aws sts get-caller-identity
+```
+
+The ARN should look like:
+
+```text
+arn:aws:iam::195687035252:user/InternLensAdmin
+```
+
+After the IAM user credential works, remove any root access key from the AWS account security credentials page.
 
 ### Required Elastic Beanstalk environment variables
 
