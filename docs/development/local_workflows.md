@@ -165,6 +165,17 @@ Shortlist-style filters:
 .\.venv\Scripts\python.exe scripts\run_baseline.py --applyable-only --suppress-similar-results
 ```
 
+## Ranking Quality Report
+
+Generate a representative ranking sanity-check report across CS engineering, data/ML, marketing/growth, and finance/analyst profiles:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\generate_ranking_quality_report.py --top-k 20 --output-file outputs\ranking_quality_report.md --json-output-file outputs\ranking_quality_report.json
+```
+
+The Markdown report is for human review, and the JSON report is for comparing future ranking changes.
+Both outputs are generated artifacts and are ignored by git.
+
 ## API Workflow
 
 Health:

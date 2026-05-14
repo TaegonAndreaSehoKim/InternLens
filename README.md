@@ -104,6 +104,7 @@ Main runtime pieces:
 - Frontend: `frontend/src/main.jsx`
 - AWS backend packaging: `scripts/package_eb.py`
 - Weekly refresh deploy: `buildspec.weekly-refresh.yml`
+- Ranking quality report: `scripts/generate_ranking_quality_report.py`
 
 ## Quick Start
 
@@ -169,7 +170,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Local backend suite after ranking v2 updates: `206 passed`
+- Local backend suite after ranking quality updates: `208 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `21 passed`
 - Frontend lint and production build: passing

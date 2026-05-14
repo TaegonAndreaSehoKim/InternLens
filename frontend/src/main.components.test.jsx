@@ -17,9 +17,12 @@ const baseJob = {
   skill_gaps: ["AWS"],
   component_scores: {
     skill_score: 0.7,
+    qualification_coverage_score: 0.55,
     role_score: 1,
     major_score: 0.8,
-    location_score: 1
+    location_score: 1,
+    freshness_score: 1,
+    internship_bonus: 1
   },
   why_apply: ["preferred role matches software engineering"],
   watchouts: ["AWS is not visible in the profile"],
@@ -49,6 +52,10 @@ describe("main UI components", () => {
     expect(html).toContain("Hide signals");
     expect(html).toContain("Matched skills");
     expect(html).toContain("Skill gaps");
+    expect(html).toContain("Qualification coverage");
+    expect(html).toContain("Freshness");
+    expect(html).toContain("Internship signal");
+    expect(html).toContain("Highest priority");
     expect(html).toContain("Score explanation:");
     expect(html).not.toContain("Show signals");
   });
@@ -137,6 +144,7 @@ describe("main UI components", () => {
     );
 
     expect(html).toContain("title=\"Add AWS to profile skills\"");
+    expect(html).toContain("Highest priority");
     expect(html).toContain(">Add</span>");
   });
 });

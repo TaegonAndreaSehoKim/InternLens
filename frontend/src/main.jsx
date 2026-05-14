@@ -728,6 +728,13 @@ function skillGapSignals(job) {
   return uniqueItems(job.skill_gaps ?? []).slice(0, 6).map(cleanSignal);
 }
 
+function prioritizedSkillGaps(job) {
+  return skillGapSignals(job).map((skill, index) => ({
+    skill,
+    priorityLabel: index === 0 ? "Highest priority" : `Priority ${index + 1}`
+  }));
+}
+
 function hasEvidence(job, pattern) {
   return [
     ...(job.why_apply ?? []),
@@ -759,6 +766,22 @@ function signalStrength(percent) {
   return "No signal";
 }
 
+function componentDetail(label, percent, fallback) {
+  if (percent === null) {
+    return fallback;
+  }
+  if (percent >= 75) {
+    return `${label} is a strong contributor`;
+  }
+  if (percent >= 35) {
+    return `${label} is a partial contributor`;
+  }
+  if (percent > 0) {
+    return `${label} is a light contributor`;
+  }
+  return fallback;
+}
+
 function matchBreakdown(job) {
   const scores = job.component_scores;
   if (!scores) {
@@ -767,11 +790,16 @@ function matchBreakdown(job) {
 
   const matchedSkills = skillSignals(job);
   const skillPercent = scorePercent(scores.skill_score);
+  const qualificationPercent = scorePercent(scores.qualification_coverage_score);
   const rolePercent = scorePercent(scores.role_score);
   const majorPercent = scorePercent(scores.major_score);
   const locationPercent = scorePercent(scores.location_score);
+  const freshnessPercent = scorePercent(scores.freshness_score);
+  const internshipPercent = scorePercent(scores.internship_bonus);
   const roleOpen = rolePercent === 100 && !hasEvidence(job, /preferred role/i);
   const locationOpen = locationPercent === 100 && !hasEvidence(job, /location matches/i);
+  const majorOpen = majorPercent === 50 && !hasEvidence(job, /major aligns/i);
+  const qualificationNeutral = qualificationPercent === 50 && matchedSkills.length === 0 && skillGapSignals(job).length === 0;
 
   return [
     {
@@ -781,6 +809,12 @@ function matchBreakdown(job) {
       percent: skillPercent
     },
     {
+      label: "Qualification coverage",
+      value: qualificationNeutral ? "Sparse posting" : signalStrength(qualificationPercent),
+      detail: qualificationNeutral ? "No structured qualification text found" : componentDetail("Qualification coverage", qualificationPercent, "No qualification coverage"),
+      percent: qualificationPercent
+    },
+    {
       label: "Role",
       value: roleOpen ? "Open search" : signalStrength(rolePercent),
       detail: roleOpen ? "No preferred job title filter" : "Title compared with preferred roles",
@@ -788,8 +822,8 @@ function matchBreakdown(job) {
     },
     {
       label: "Major",
-      value: signalStrength(majorPercent),
-      detail: hasEvidence(job, /major aligns/i) ? "Posting mentions related field signals" : "No clear major signal",
+      value: majorOpen ? "Open major" : signalStrength(majorPercent),
+      detail: majorOpen ? "No specific major signal required" : hasEvidence(job, /major aligns/i) ? "Posting mentions related field signals" : "No clear major signal",
       percent: majorPercent
     },
     {
@@ -797,6 +831,18 @@ function matchBreakdown(job) {
       value: locationOpen ? "Any location" : signalStrength(locationPercent),
       detail: locationOpen ? "No location filter applied" : "Compared with location preferences",
       percent: locationPercent
+    },
+    {
+      label: "Freshness",
+      value: signalStrength(freshnessPercent),
+      detail: componentDetail("Freshness", freshnessPercent, "Posting date is missing or stale"),
+      percent: freshnessPercent
+    },
+    {
+      label: "Internship signal",
+      value: signalStrength(internshipPercent),
+      detail: internshipPercent >= 75 ? "Explicit internship wording found" : internshipPercent > 0 ? "Internship wording found in description" : "No internship signal found",
+      percent: internshipPercent
     }
   ];
 }
@@ -2003,6 +2049,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
   const watchouts = watchoutEvidence(job);
   const skills = skillSignals(job);
   const skillGaps = skillGapSignals(job);
+  const skillGapItems = prioritizedSkillGaps(job);
   const breakdown = matchBreakdown(job);
   const explanation = scoreExplanation(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
@@ -2040,7 +2087,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
         {expanded && (
           <div className="job-expanded-content">
             {(skills.length > 0 || skillGaps.length > 0) && (
-              <SkillSignalPanel skills={skills} gaps={skillGaps} onAddSkill={onAddSkill} />
+              <SkillSignalPanel skills={skills} gapItems={skillGapItems} onAddSkill={onAddSkill} />
             )}
             {eligibility && (
               <div className="job-detail-row">
@@ -2095,7 +2142,9 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
   );
 }
 
-function SkillSignalPanel({ skills, gaps, onAddSkill }) {
+function SkillSignalPanel({ skills, gapItems, onAddSkill }) {
+  const gaps = gapItems ?? [];
+
   return (
     <div className="skill-signal-panel" aria-label="Skill match and gap signals">
       {skills.length > 0 && (
@@ -2111,11 +2160,12 @@ function SkillSignalPanel({ skills, gaps, onAddSkill }) {
       {gaps.length > 0 && (
         <div>
           <strong>Skill gaps</strong>
-          <p>These missing or unclear signals lowered the skills score.</p>
+          <p>Shown in the priority order used by the scorer.</p>
           <div className="skill-chip-row gaps" aria-label="Skill gaps">
-            {gaps.map((skill) => (
-              <button key={skill} type="button" onClick={() => onAddSkill(skill)} title={`Add ${skill} to profile skills`}>
-                {skill}
+            {gaps.map((item) => (
+              <button key={item.skill} type="button" onClick={() => onAddSkill(item.skill)} title={`Add ${item.skill} to profile skills`}>
+                <strong>{item.skill}</strong>
+                <small>{item.priorityLabel}</small>
                 <span>Add</span>
               </button>
             ))}

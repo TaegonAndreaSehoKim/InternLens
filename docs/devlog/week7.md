@@ -262,6 +262,37 @@ The scorer is still heuristic and explainable, but it now distinguishes required
 
 ---
 
+## Day 53 - Score Breakdown UX and Ranking Quality Report
+
+### Focus
+Make ranking v2 easier to inspect in the product UI and add a repeatable quality report for representative candidate profiles.
+
+### What was done
+- Expanded job-card match breakdown from the older four-signal view to the full ranking v2 component set:
+  - skills
+  - qualification coverage
+  - role
+  - major
+  - location
+  - freshness
+  - internship signal
+- Changed skill gap display so gaps appear in scorer priority order with visible priority labels.
+- Kept the score breakdown user-facing instead of exposing raw debug fields.
+- Added `scripts/generate_ranking_quality_report.py` to generate Markdown and JSON quality reports for CS engineering, data/ML, marketing/growth, and finance/analyst profiles.
+- Ignored generated `outputs/ranking_quality_report.*` files.
+
+### Validation
+- `npm test -- --run main.components.test.jsx` -> **6 passed**
+- `pytest tests/test_generate_ranking_quality_report.py -q` -> **2 passed**
+- `pytest -q` -> **208 passed**
+- `npm run lint`, `npm test -- --run` (**21 passed**), and `npm run build` -> passed
+- Generated `outputs/ranking_quality_report.md` and `outputs/ranking_quality_report.json` locally.
+
+### Result
+Users can now see why a score is high or low without reading raw component data, and ranking changes can be sanity-checked against multiple profile archetypes.
+
+---
+
 ## Week 7 Snapshot
 
 ### Current project state
@@ -272,11 +303,12 @@ The scorer is still heuristic and explainable, but it now distinguishes required
 - Profile Setup collects structured recommendation signals through searchable selectors.
 - Recommendation cards explain matches more clearly with fit summaries, matched skills, skill gaps, visible-by-default signals, score explanations, job detail lookup, and check items.
 - Ranking v2 separates skill match, qualification coverage, role fit, major fit, location, freshness, and internship signal into documented component scores.
+- Job cards now show the full ranking v2 score breakdown, and the repo has a representative ranking quality report script.
 - Shortlist review supports search, sorting, 20-item pagination, optional signal hiding, and account-scoped job actions.
 - Frontend coverage now includes server-rendered component checks for the main shortlist review pieces.
 
 ### Latest quality checkpoint
-- Local backend tests after ranking v2: **206 passed**
+- Local backend tests after ranking quality updates: **208 passed**
 - Backend tests in latest weekly CodeBuild: **200 passed**
 - Frontend checks:
   - `npm run lint` -> passed

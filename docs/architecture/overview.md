@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `206 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `208 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -187,7 +187,7 @@ Recent work focused on:
 - splitting the fit score into clearer weighted components for skills, qualification coverage, role fit, major fit, location, freshness, and internship signal strength
 
 The latest validation state shows:
-- local backend suite after ranking v2 updates: `206 passed`
+- local backend suite after ranking quality updates: `208 passed`
 - weekly backend CodeBuild suite: `200 passed`
 - `npm run lint`, `npm test -- --run` (`21 passed`), and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction

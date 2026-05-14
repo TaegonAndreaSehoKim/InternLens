@@ -1400,6 +1400,18 @@ textarea {
   font-weight: 900;
 }
 
+.skill-chip-row.gaps button strong,
+.skill-chip-row.gaps button small {
+  font: inherit;
+  line-height: 1;
+}
+
+.skill-chip-row.gaps button small {
+  color: #7f6831;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
 .skill-chip-row.gaps button span {
   border-radius: 999px;
   padding: 2px 5px;
@@ -1481,7 +1493,7 @@ textarea {
 
 .match-signal-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
