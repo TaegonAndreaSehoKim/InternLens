@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
@@ -367,6 +368,16 @@ ACTION_PRIORITY = {
     "Skip": 2,
 }
 
+# Skill signals are not equal. A required qualification should count more than
+# a broad description mention, and repeated signals should keep the strongest
+# priority instead of double-counting noisy text.
+SKILL_SIGNAL_WEIGHTS = {
+    "required": 1.00,
+    "title": 0.70,
+    "preferred": 0.55,
+    "description": 0.35,
+}
+
 
 def _tokenize(text: str) -> Set[str]:
     """Split lowercase text into unique whitespace tokens."""
@@ -423,6 +434,39 @@ def _extract_job_skill_keywords(job: Dict[str, Any]) -> Tuple[Set[str], Set[str]
     description_keywords = _extract_keywords_from_text(job["description"])
 
     return required_keywords, preferred_keywords, title_keywords, description_keywords
+
+
+def _add_skill_weights(
+    skill_weights: Dict[str, float],
+    skills: Set[str],
+    source: str,
+) -> None:
+    weight = SKILL_SIGNAL_WEIGHTS[source]
+    for skill in skills:
+        skill_weights[skill] = max(skill_weights.get(skill, 0.0), weight)
+
+
+def _score_weighted_skill_match(
+    candidate_skills: Set[str],
+    skill_weights: Dict[str, float],
+) -> Tuple[float, List[str]]:
+    if not skill_weights:
+        return 0.0, []
+
+    matched_skills = candidate_skills & set(skill_weights)
+    total_weight = sum(skill_weights.values())
+    matched_weight = sum(skill_weights[skill] for skill in matched_skills)
+    score = _safe_ratio(matched_weight, total_weight)
+    ordered_matches = sorted(
+        matched_skills,
+        key=lambda skill: (-skill_weights[skill], skill),
+    )
+
+    return min(1.0, score), ordered_matches
+
+
+def _order_skills_by_priority(skills: Set[str], skill_weights: Dict[str, float]) -> List[str]:
+    return sorted(skills, key=lambda skill: (-skill_weights.get(skill, 0.0), skill))
 
 def _meaningful_role_tokens(text: str) -> Set[str]:
     """
@@ -486,16 +530,16 @@ def _looks_like_senior_role(job: Dict[str, Any]) -> bool:
 
 def _compute_internship_signal_bonus(job: Dict[str, Any]) -> float:
     """
-    Give a stronger bonus to jobs that explicitly identify themselves as internships.
+    Score whether a posting identifies itself as an internship.
 
     This helps real internship postings surface above generic non-intern roles
     that happen to share location or title overlap.
     """
     if _has_explicit_internship_signal(job):
-        return 0.30
+        return 1.0
 
     if _has_description_internship_signal(job):
-        return 0.10
+        return 0.33
 
     return 0.0
 
@@ -520,47 +564,57 @@ def _compute_skill_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
 
     has_structured_qualifications = bool(required_keywords or preferred_keywords)
 
-    required_matches = sorted(candidate_skills & required_keywords)
-    preferred_matches = sorted(candidate_skills & preferred_keywords)
-
     if has_structured_qualifications:
         # For curated/sample jobs, trust structured qualification fields first.
-        matched_skills = sorted(set(required_matches + preferred_matches))
-
-        required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
-        preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
-
-        skill_score = min(
-            1.0,
-            (required_overlap_score * 0.75)
-            + (preferred_overlap_score * 0.25),
-        )
+        skill_weights: Dict[str, float] = {}
+        _add_skill_weights(skill_weights, required_keywords, "required")
+        _add_skill_weights(skill_weights, preferred_keywords, "preferred")
+        skill_score, matched_skills = _score_weighted_skill_match(candidate_skills, skill_weights)
     else:
         use_fallback = _title_supports_fallback_skill_matching(job["title"])
 
         if use_fallback:
-            title_matches = sorted(candidate_skills & title_keywords)
-            description_matches = sorted(candidate_skills & description_keywords)
+            skill_weights = {}
+            _add_skill_weights(skill_weights, title_keywords, "title")
+            _add_skill_weights(skill_weights, description_keywords, "description")
+            skill_score, matched_skills = _score_weighted_skill_match(candidate_skills, skill_weights)
         else:
-            title_matches = []
-            description_matches = []
+            skill_score = 0.0
+            matched_skills = []
 
-        matched_skills = sorted(set(required_matches + preferred_matches + title_matches + description_matches))
+    required_matches = sorted(candidate_skills & required_keywords)
+    return skill_score, matched_skills, required_matches
 
-        required_overlap_score = _safe_ratio(len(required_matches), len(required_keywords))
-        preferred_overlap_score = _safe_ratio(len(preferred_matches), len(preferred_keywords))
-        title_overlap_score = _safe_ratio(len(title_matches), len(title_keywords))
-        description_overlap_score = _safe_ratio(len(description_matches), len(description_keywords))
 
-        skill_score = min(
+def _compute_qualification_coverage(profile: Dict[str, Any], job: Dict[str, Any]) -> float:
+    """
+    Measure how much of the structured qualification signal is covered.
+
+    This keeps required/preferred qualification coverage visible as its own
+    signal instead of hiding it entirely inside broad skill matching.
+    Sparse public postings without structured qualifications are treated as
+    neutral rather than punished.
+    """
+    candidate_skills = _normalize_candidate_skills(profile)
+    required_keywords, preferred_keywords, _, _ = _extract_job_skill_keywords(job)
+
+    if not required_keywords and not preferred_keywords:
+        return 0.50
+
+    required_matches = candidate_skills & required_keywords
+    preferred_matches = candidate_skills & preferred_keywords
+
+    if required_keywords and preferred_keywords:
+        return min(
             1.0,
-            (required_overlap_score * 0.50)
-            + (preferred_overlap_score * 0.20)
-            + (title_overlap_score * 0.20)
-            + (description_overlap_score * 0.10),
+            (_safe_ratio(len(required_matches), len(required_keywords)) * 0.80)
+            + (_safe_ratio(len(preferred_matches), len(preferred_keywords)) * 0.20),
         )
 
-    return skill_score, matched_skills, required_matches
+    if required_keywords:
+        return _safe_ratio(len(required_matches), len(required_keywords))
+
+    return _safe_ratio(len(preferred_matches), len(preferred_keywords))
 
 def _compute_role_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str], Optional[str]]:
     """
@@ -663,7 +717,7 @@ def _profile_majors(profile: Dict[str, Any]) -> List[str]:
 def _compute_major_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[float, List[str]]:
     majors = [major for major in _profile_majors(profile) if major and major != "other"]
     if not majors:
-        return 0.0, []
+        return 0.50, []
 
     keywords = sorted({
         keyword
@@ -693,6 +747,60 @@ def _compute_major_match(profile: Dict[str, Any], job: Dict[str, Any]) -> Tuple[
     # Major is an important directional signal, but it should not overpower
     # explicit skills and preferred-role alignment.
     return min(1.0, 0.35 + (0.13 * len(matches))), matches
+
+
+def _parse_datetime(value: str) -> Optional[datetime]:
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+
+    for candidate in (normalized, normalized[:10]):
+        try:
+            parsed = datetime.fromisoformat(candidate)
+        except ValueError:
+            continue
+
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+
+    return None
+
+
+def _compute_freshness_score(job: Dict[str, Any]) -> float:
+    """
+    Return a small tie-breaker score for newer postings.
+
+    Prefer a normalized `freshness_days` field when available so tests and
+    refresh pipelines can keep this deterministic.
+    """
+    freshness_days = job.get("freshness_days")
+    if freshness_days is not None:
+        try:
+            days_old = int(freshness_days)
+        except (TypeError, ValueError):
+            days_old = None
+    else:
+        days_old = None
+
+    if days_old is None:
+        posted_at = _parse_datetime(str(job.get("posting_date", "")))
+        if posted_at is None:
+            return 0.50
+        days_old = (datetime.now(timezone.utc) - posted_at).days
+
+    if days_old <= 14:
+        return 1.0
+    if days_old <= 45:
+        return 0.75
+    if days_old <= 90:
+        return 0.45
+    if days_old <= 180:
+        return 0.20
+    return 0.0
 
 
 def _extract_grad_year(grad_date: str) -> Optional[int]:
@@ -761,12 +869,14 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
 
 def _generate_reasons(
     skill_score: float,
+    qualification_coverage_score: float,
     role_score: float,
     best_preferred_role: Optional[str],
     location_score: float,
     has_location_preferences: bool,
     major_score: float,
     major_matches: List[str],
+    freshness_score: float,
     internship_bonus: float,
     matched_skills: List[str],
     blockers: List[str],
@@ -779,6 +889,9 @@ def _generate_reasons(
     if skill_score >= 0.15 and matched_skills:
         reasons.append(f"Matched on key skills: {', '.join(matched_skills[:4])}")
 
+    if qualification_coverage_score >= 0.67:
+        reasons.append("Covers core qualification signals")
+
     if role_score >= 0.34 and best_preferred_role:
         reasons.append(f"Title aligns with preferred role: {best_preferred_role}")
 
@@ -790,6 +903,9 @@ def _generate_reasons(
 
     if has_location_preferences and location_score >= 1.0:
         reasons.append("Location matches a preferred target")
+
+    if freshness_score >= 0.85:
+        reasons.append("Recently posted role")
 
     if blockers:
         reasons.append("Blocked by eligibility constraints in the posting")
@@ -813,13 +929,18 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
 
     has_structured_qualifications = bool(required_keywords or preferred_keywords)
 
-    missing_required = sorted(required_keywords - candidate_skills)
-    missing_preferred = sorted(preferred_keywords - candidate_skills)
+    skill_weights: Dict[str, float] = {}
+    _add_skill_weights(skill_weights, required_keywords, "required")
+    _add_skill_weights(skill_weights, preferred_keywords, "preferred")
+
+    missing_required = _order_skills_by_priority(required_keywords - candidate_skills, skill_weights)
+    missing_preferred = _order_skills_by_priority(preferred_keywords - candidate_skills, skill_weights)
 
     gaps = missing_required + [skill for skill in missing_preferred if skill not in missing_required]
 
     if not has_structured_qualifications and _title_supports_fallback_skill_matching(job["title"]):
-        missing_title = sorted(title_keywords - candidate_skills)
+        _add_skill_weights(skill_weights, title_keywords, "title")
+        missing_title = _order_skills_by_priority(title_keywords - candidate_skills, skill_weights)
         gaps += [skill for skill in missing_title if skill not in gaps]
 
     return gaps[:4]
@@ -830,6 +951,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     Score one job, derive a recommendation label, and attach explanations.
     """
     skill_score, matched_skills, _ = _compute_skill_match(profile, job)
+    qualification_coverage_score = _compute_qualification_coverage(profile, job)
     role_score, _, best_preferred_role = _compute_role_match(profile, job)
     has_role_preferences = any(
         str(role).strip() for role in profile.get("preferred_roles", [])
@@ -839,16 +961,19 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         str(location).strip() for location in profile.get("preferred_locations", [])
     )
     major_score, major_matches = _compute_major_match(profile, job)
+    freshness_score = _compute_freshness_score(job)
     internship_bonus = _compute_internship_signal_bonus(job)
     blockers = _check_blocking_constraints(profile, job)
 
     # Fit score is intentionally separated from blockers.
     raw_score = (
-        (skill_score * 0.50)
-        + (role_score * 0.22)
-        + (major_score * 0.18)
-        + (location_score * 0.10)
-        + internship_bonus
+        (skill_score * 0.35)
+        + (qualification_coverage_score * 0.17)
+        + (role_score * 0.18)
+        + (major_score * 0.12)
+        + (location_score * 0.08)
+        + (freshness_score * 0.04)
+        + (internship_bonus * 0.06)
     )
 
     bounded_score = max(0.0, min(1.0, raw_score))
@@ -859,16 +984,16 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
     has_relevance_signal = (
         bool(matched_skills)
         or (has_role_preferences and role_score >= 0.20)
-        or major_score >= 0.35
+        or (bool(major_matches) and major_score >= 0.35)
     )
 
     if blockers:
         action_label = "Skip"
     elif looks_like_non_core_business_internship:
         action_label = "Skip"
-    elif final_score >= 70:
+    elif final_score >= 70 and has_relevance_signal:
         action_label = "Apply Now"
-    elif final_score >= 45:
+    elif final_score >= 45 and has_relevance_signal:
         action_label = "Apply Later"
     elif (
         has_explicit_internship
@@ -883,12 +1008,14 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
 
     reasons = _generate_reasons(
         skill_score=skill_score,
+        qualification_coverage_score=qualification_coverage_score,
         role_score=role_score,
         best_preferred_role=best_preferred_role,
         location_score=location_score,
         has_location_preferences=has_location_preferences,
         major_score=major_score,
         major_matches=major_matches,
+        freshness_score=freshness_score,
         internship_bonus=internship_bonus,
         matched_skills=matched_skills,
         blockers=blockers,
@@ -920,9 +1047,11 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         "blocking_issues": blockers,
         "component_scores": {
             "skill_score": round(skill_score, 4),
+            "qualification_coverage_score": round(qualification_coverage_score, 4),
             "role_score": round(role_score, 4),
             "major_score": round(major_score, 4),
             "location_score": round(location_score, 4),
+            "freshness_score": round(freshness_score, 4),
             "internship_bonus": round(internship_bonus, 4),
         },
     }
@@ -974,12 +1103,14 @@ def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, int, float, float,
     - obvious non-intern or senior roles lower
     """
     internship_bonus = float(job["component_scores"].get("internship_bonus", 0.0))
+    freshness_score = float(job["component_scores"].get("freshness_score", 0.0))
 
     return (
         ACTION_PRIORITY.get(job["action_label"], 99),
         _blocking_sort_bucket(job),
         len(job["blocking_issues"]),
         -internship_bonus,
+        -freshness_score,
         -job["score"],
         job["title"],
     )

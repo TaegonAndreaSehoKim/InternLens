@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `206 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -68,10 +68,13 @@ The job parser supports recursively loading processed jobs from source-specific 
 The ranking layer is currently heuristic and transparent.
 
 It uses:
-- skill overlap
+- weighted skill matching
+- qualification coverage
 - preferred role overlap
+- major alignment
 - location match
-- internship bonus
+- posting freshness
+- internship signal strength
 - blocker logic
 
 Important ranking improvements added so far:
@@ -81,6 +84,8 @@ Important ranking improvements added so far:
 - internship-aware ordering
 - blocker-aware shortlist filters
 - fallback skill extraction for sparse public postings
+- priority-weighted skill scoring across required qualifications, title, preferred qualifications, and descriptions
+- separate qualification coverage and freshness score components
 - reduced noisy fallback skill matching for non-technical internship titles
 - tighter shortlist precision for noisy public boards
 
@@ -179,8 +184,10 @@ Recent work focused on:
 - adding promotion dry-run diagnostics that show internship signal examples
 - adding discovery recall comparison and promotion-candidate smoke scripts to connect source discovery changes to ranking quality
 - adding scheduled AWS corpus refresh automation that deploys refreshed job data back to the staging backend
+- splitting the fit score into clearer weighted components for skills, qualification coverage, role fit, major fit, location, freshness, and internship signal strength
 
 The latest validation state shows:
+- local backend suite after ranking v2 updates: `206 passed`
 - weekly backend CodeBuild suite: `200 passed`
 - `npm run lint`, `npm test -- --run` (`21 passed`), and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction

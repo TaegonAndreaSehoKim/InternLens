@@ -713,3 +713,202 @@ def test_empty_role_preferences_do_not_create_relevance_by_themselves() -> None:
 
     assert result["component_scores"]["role_score"] == 1.0
     assert result["action_label"] == "Skip"
+
+
+def test_qualification_coverage_boosts_required_skill_matches() -> None:
+    profile = _build_profile()
+    covered_job = {
+        "job_id": "covered_required_skills",
+        "company": "example",
+        "title": "Machine Learning Engineer Intern",
+        "location": "Remote",
+        "description": "Join an internship program building ML systems.",
+        "min_qualifications": "Python, machine learning",
+        "preferred_qualifications": "PyTorch",
+        "posting_date": "2026-03-30",
+        "freshness_days": 7,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+    weak_coverage_job = {
+        **covered_job,
+        "job_id": "weak_required_skills",
+        "min_qualifications": "SQL, statistics",
+        "preferred_qualifications": "AWS",
+    }
+
+    covered_result = score_job(profile, covered_job)
+    weak_result = score_job(profile, weak_coverage_job)
+
+    assert covered_result["component_scores"]["qualification_coverage_score"] > weak_result[
+        "component_scores"
+    ]["qualification_coverage_score"]
+    assert covered_result["score"] > weak_result["score"]
+    assert any("qualification" in reason.lower() for reason in covered_result["reasons"])
+
+
+def test_required_skill_match_counts_more_than_preferred_skill_match() -> None:
+    base_profile = {
+        **_build_profile(),
+        "skill_set": {"python"},
+        "extracted_skills": ["python"],
+    }
+    required_match_job = {
+        "job_id": "required_python",
+        "company": "example",
+        "title": "Software Engineering Intern",
+        "location": "Remote",
+        "description": "Join an internship program building services.",
+        "min_qualifications": "Python",
+        "preferred_qualifications": "AWS",
+        "posting_date": "2026-03-30",
+        "freshness_days": 7,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+    preferred_match_job = {
+        **required_match_job,
+        "job_id": "preferred_python",
+        "min_qualifications": "AWS",
+        "preferred_qualifications": "Python",
+    }
+
+    required_result = score_job(base_profile, required_match_job)
+    preferred_result = score_job(base_profile, preferred_match_job)
+
+    assert required_result["component_scores"]["skill_score"] > preferred_result[
+        "component_scores"
+    ]["skill_score"]
+    assert required_result["component_scores"]["qualification_coverage_score"] > preferred_result[
+        "component_scores"
+    ]["qualification_coverage_score"]
+
+
+def test_matched_skills_are_ordered_by_skill_priority() -> None:
+    profile = {
+        **_build_profile(),
+        "skill_set": {"python", "aws"},
+        "extracted_skills": ["python", "aws"],
+    }
+    job = {
+        "job_id": "priority_order",
+        "company": "example",
+        "title": "Software Engineering Intern",
+        "location": "Remote",
+        "description": "Join an internship program building services.",
+        "min_qualifications": "AWS",
+        "preferred_qualifications": "Python",
+        "posting_date": "2026-03-30",
+        "freshness_days": 7,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["matched_skills"][:2] == ["aws", "python"]
+
+
+def test_skill_gaps_show_required_skills_before_preferred_skills() -> None:
+    profile = {
+        **_build_profile(),
+        "skill_set": {"python"},
+        "extracted_skills": ["python"],
+    }
+    job = {
+        "job_id": "priority_gaps",
+        "company": "example",
+        "title": "Software Engineering Intern",
+        "location": "Remote",
+        "description": "Join an internship program building services.",
+        "min_qualifications": "SQL",
+        "preferred_qualifications": "AWS",
+        "posting_date": "2026-03-30",
+        "freshness_days": 7,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Engineering",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["skill_gaps"][:2] == ["sql", "aws"]
+
+
+def test_freshness_score_uses_normalized_freshness_days() -> None:
+    profile = _build_profile()
+    recent_job = {
+        "job_id": "recent_data_intern",
+        "company": "example",
+        "title": "Data Science Intern",
+        "location": "Remote",
+        "description": "Use Python and machine learning to analyze product data.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "",
+        "freshness_days": 3,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Data",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+    stale_job = {
+        **recent_job,
+        "job_id": "stale_data_intern",
+        "freshness_days": 240,
+    }
+
+    recent_result = score_job(profile, recent_job)
+    stale_result = score_job(profile, stale_job)
+
+    assert recent_result["component_scores"]["freshness_score"] == 1.0
+    assert stale_result["component_scores"]["freshness_score"] == 0.0
+    assert recent_result["score"] > stale_result["score"]
+
+
+def test_neutral_defaults_alone_do_not_create_apply_later() -> None:
+    profile = {
+        **_build_profile(),
+        "major": "other",
+        "majors": ["other"],
+        "preferred_roles": [],
+        "preferred_locations": [],
+        "skill_set": set(),
+        "extracted_skills": [],
+    }
+    job = {
+        "job_id": "generic_program_intern",
+        "company": "example",
+        "title": "Program Intern",
+        "location": "Remote",
+        "description": "Join an internship program and support internal coordination.",
+        "min_qualifications": "",
+        "preferred_qualifications": "",
+        "posting_date": "",
+        "freshness_days": 2,
+        "sponsorship_info": "",
+        "employment_type": "Internship",
+        "team": "Programs",
+        "source": "manual",
+        "remote_status": "remote",
+    }
+
+    result = score_job(profile, job)
+
+    assert result["blocking_issues"] == []
+    assert result["matched_skills"] == []
+    assert result["component_scores"]["role_score"] == 1.0
+    assert result["component_scores"]["location_score"] == 1.0
+    assert result["action_label"] == "Skip"

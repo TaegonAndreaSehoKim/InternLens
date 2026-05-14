@@ -35,6 +35,41 @@ flowchart LR
     amplify["AWS Amplify Hosting"] --> frontend
 ```
 
+## How Ranking Works
+
+```mermaid
+flowchart LR
+    profile["Candidate Profile<br/>skills, roles, majors, locations, graduation"] --> scorer["Ranking Engine"]
+    job["Job Posting<br/>title, description, qualifications, location"] --> scorer
+
+    scorer --> skill["Skill Match<br/>35%"]
+    scorer --> quals["Qualification Coverage<br/>17%"]
+    scorer --> role["Preferred Role Match<br/>22%"]
+    scorer --> major["Major Match<br/>12%"]
+    scorer --> location["Location Fit<br/>8%"]
+    scorer --> fresh["Freshness<br/>4%"]
+    scorer --> intern["Internship Signal<br/>6%"]
+
+    skill --> score["Fit Score<br/>0-100"]
+    quals --> score
+    role --> score
+    major --> score
+    location --> score
+    fresh --> score
+    intern --> score
+
+    scorer --> blockers["Eligibility Blockers<br/>not internship, senior role, PhD-only, sponsorship, grad timing"]
+    scorer --> guard["Noise Guardrails<br/>non-core business role checks"]
+
+    score --> action["Action Label<br/>Apply Now / Apply Later / Skip"]
+    blockers --> action
+    guard --> action
+
+    action --> card["Job Card<br/>score, reasons, matched skills, skill gaps"]
+```
+
+For the detailed scoring rules, see [docs/architecture/ranking_logic.md](docs/architecture/ranking_logic.md).
+
 ## What It Does
 
 - Maintains a refreshed internship corpus from public ATS job boards.
@@ -123,6 +158,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 ## Documentation Map
 
 - [Architecture overview](docs/architecture/overview.md)
+- [Ranking logic](docs/architecture/ranking_logic.md)
 - [Data schema](docs/architecture/schema.md)
 - [Source acquisition strategy](docs/architecture/source_acquisition_strategy.md)
 - [Local workflows](docs/development/local_workflows.md)
@@ -133,6 +169,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
+- Local backend suite after ranking v2 updates: `206 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `21 passed`
 - Frontend lint and production build: passing

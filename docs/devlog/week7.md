@@ -228,6 +228,40 @@ The staging backend now has a working weekly job-corpus refresh and deploy loop.
 
 ---
 
+## Day 52 - Ranking Score V2
+
+### Focus
+Make the recommendation score more expressive without hiding the decision behind an opaque model.
+
+### What was done
+- Added a README ranking diagram so the scoring flow is visible near the top of the project page.
+- Added `docs/architecture/ranking_logic.md` as the detailed scoring reference.
+- Split the fit score into clearer weighted components:
+  - skill match: `35%`
+  - qualification coverage: `17%`
+  - preferred role match: `18%`
+  - major match: `12%`
+  - location fit: `8%`
+  - freshness: `4%`
+  - internship signal: `6%`
+- Added priority-weighted skill scoring:
+  - required qualification: `1.00`
+  - title signal: `0.70`
+  - preferred qualification: `0.55`
+  - description signal: `0.35`
+- Ordered matched skills and skill gaps by priority so user-facing cards can show the most important signals first.
+- Kept blockers separate from fit score so ineligible roles still become `Skip`.
+- Prevented neutral defaults from broad profile settings from creating `Apply Now` or `Apply Later` without a real skill, role, or major signal.
+
+### Validation
+- `pytest tests/test_baseline_scorer_seniority.py tests/test_api_and_ranking.py -q` -> **50 passed**
+- `pytest -q` -> **206 passed**
+
+### Result
+The scorer is still heuristic and explainable, but it now distinguishes required skills from weaker text mentions, accounts for structured qualification coverage, and uses freshness as a light tie-breaker.
+
+---
+
 ## Week 7 Snapshot
 
 ### Current project state
@@ -237,10 +271,12 @@ The staging backend now has a working weekly job-corpus refresh and deploy loop.
 - The frontend uses `/me/...` account-scoped APIs for the main browser workflow.
 - Profile Setup collects structured recommendation signals through searchable selectors.
 - Recommendation cards explain matches more clearly with fit summaries, matched skills, skill gaps, visible-by-default signals, score explanations, job detail lookup, and check items.
+- Ranking v2 separates skill match, qualification coverage, role fit, major fit, location, freshness, and internship signal into documented component scores.
 - Shortlist review supports search, sorting, 20-item pagination, optional signal hiding, and account-scoped job actions.
 - Frontend coverage now includes server-rendered component checks for the main shortlist review pieces.
 
 ### Latest quality checkpoint
+- Local backend tests after ranking v2: **206 passed**
 - Backend tests in latest weekly CodeBuild: **200 passed**
 - Frontend checks:
   - `npm run lint` -> passed
