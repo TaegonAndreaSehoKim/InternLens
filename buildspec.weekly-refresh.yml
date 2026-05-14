@@ -16,7 +16,7 @@ phases:
       - export EB_ARTIFACT_PREFIX="${EB_ARTIFACT_PREFIX:-internlens-backend}"
   build:
     commands:
-      - python scripts/refresh_job_corpus.py
+      - python scripts/refresh_job_corpus.py --timeout "${REFRESH_TIMEOUT_SECONDS:-180}"
       - python -m pytest -q
       - python scripts/package_eb.py --output-file outputs/internlens_eb_backend.zip
   post_build:
@@ -24,6 +24,7 @@ phases:
       - export SHORT_SHA="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-12)"
       - export VERSION_LABEL="weekly-corpus-$(date -u +%Y%m%d%H%M%S)-${SHORT_SHA}"
       - export S3_KEY="${EB_ARTIFACT_PREFIX}/weekly/${VERSION_LABEL}.zip"
+      - test -f outputs/internlens_eb_backend.zip
       - aws s3 cp outputs/internlens_eb_backend.zip "s3://${EB_ARTIFACT_BUCKET}/${S3_KEY}"
       - aws elasticbeanstalk create-application-version --application-name "${EB_APPLICATION_NAME}" --version-label "${VERSION_LABEL}" --source-bundle S3Bucket="${EB_ARTIFACT_BUCKET}",S3Key="${S3_KEY}"
       - aws elasticbeanstalk update-environment --application-name "${EB_APPLICATION_NAME}" --environment-name "${EB_ENVIRONMENT_NAME}" --version-label "${VERSION_LABEL}"
