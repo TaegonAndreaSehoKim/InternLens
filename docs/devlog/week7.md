@@ -293,6 +293,43 @@ Users can now see why a score is high or low without reading raw component data,
 
 ---
 
+## Day 54 - Resume Import for Profile Setup
+
+### Focus
+Reduce profile setup friction by letting users upload a resume and review parsed recommendation signals before saving.
+
+### What was done
+- Added `src/preprocessing/resume_parser.py` for local resume parsing.
+- Supported `.txt`, `.md`, `.pdf`, and `.docx` files through `python-multipart`, `pypdf`, and `python-docx`.
+- Added `POST /me/profile/resume` to parse an uploaded resume into account-profile fields without saving automatically.
+- Extracted profile fields from resume text:
+  - skills
+  - majors
+  - preferred role hints
+  - target industries
+  - preferred locations
+  - degree level
+  - graduation date
+  - sponsorship hints
+  - years of experience
+  - background text
+- Added section-aware parsing so education and skills sections produce stronger suggestions than loose resume text.
+- Returned grouped suggestions with confidence labels and short evidence snippets.
+- Added a resume import review panel to Profile Setup with accept-all, individual add, and dismiss controls.
+- Kept manual selectors as the final user-controlled source of truth before saving.
+
+### Validation
+- `pytest tests/test_resume_parser.py tests/test_profile_api.py -q` -> **32 passed**
+- `npm test -- --run main.components.test.jsx` -> **10 passed**
+- `pytest -q` -> **212 passed**
+- `npm run lint`, `npm test -- --run` (**25 passed**), and `npm run build` -> passed
+
+### Result
+Profile setup can now start from a resume upload instead of requiring users to manually enter every signal.
+The feature remains explainable and reviewable because parsed values are shown as evidence-backed suggestions before they are added to the form.
+
+---
+
 ## Week 7 Snapshot
 
 ### Current project state
@@ -300,7 +337,7 @@ Users can now see why a score is high or low without reading raw component data,
 - Weekly corpus refresh is automated through EventBridge and CodeBuild, then deployed to Elastic Beanstalk.
 - Cognito-protected staging smoke checks can validate health, auth enforcement, and deployed schema.
 - The frontend uses `/me/...` account-scoped APIs for the main browser workflow.
-- Profile Setup collects structured recommendation signals through searchable selectors.
+- Profile Setup can import resume files, then lets users review evidence-backed structured suggestions before saving.
 - Recommendation cards explain matches more clearly with fit summaries, matched skills, skill gaps, visible-by-default signals, score explanations, job detail lookup, and check items.
 - Ranking v2 separates skill match, qualification coverage, role fit, major fit, location, freshness, and internship signal into documented component scores.
 - Job cards now show the full ranking v2 score breakdown, and the repo has a representative ranking quality report script.
@@ -308,11 +345,11 @@ Users can now see why a score is high or low without reading raw component data,
 - Frontend coverage now includes server-rendered component checks for the main shortlist review pieces.
 
 ### Latest quality checkpoint
-- Local backend tests after ranking quality updates: **208 passed**
+- Local backend tests after resume import updates: **212 passed**
 - Backend tests in latest weekly CodeBuild: **200 passed**
 - Frontend checks:
   - `npm run lint` -> passed
-  - `npm test -- --run` -> **21 passed**
+  - `npm test -- --run` -> **25 passed**
   - `npm run build` -> passed
 
 ### Remaining next steps

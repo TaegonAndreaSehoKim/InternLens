@@ -85,6 +85,7 @@ The browser workflow supports:
 
 - public landing page with sign-in entry
 - account-scoped Profile Setup
+- reviewable resume upload import with confidence and evidence for skills, majors, roles, industries, locations, education timeline, and background text
 - searchable role, skill, major, location, and industry selectors
 - recommendation runs over the current processed corpus
 - shortlist search, sorting, and 20-item pagination
@@ -98,6 +99,7 @@ The browser workflow supports:
 Main runtime pieces:
 
 - Backend: `src/api/app.py`
+- Resume parser: `src/preprocessing/resume_parser.py`
 - Ranking: `src/ranking/baseline_scorer.py`
 - Job loading: `src/preprocessing/job_parser.py`
 - Profile persistence: `src/storage/profile_store.py`
@@ -170,9 +172,9 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Local backend suite after ranking quality updates: `208 passed`
+- Local backend suite after resume import updates: `212 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
-- Frontend suite: `21 passed`
+- Frontend suite: `25 passed`
 - Frontend lint and production build: passing
 - CloudFront staging smoke: `health=200`, `auth_required=401`, OpenAPI schema check passing
 

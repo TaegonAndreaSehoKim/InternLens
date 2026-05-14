@@ -199,6 +199,42 @@ def test_account_profile_api_uses_current_user_default_profile(tmp_path: Path, m
     assert second_response.json()["notes"] == "second account"
 
 
+def test_account_resume_upload_parses_profile_signals(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "internlens.db"
+    monkeypatch.setattr(api_app, "_database_path", lambda: db_path)
+
+    resume_text = """
+    Education
+    Master of Science in Data Science, expected graduation June 2027.
+    Skills
+    Python, SQL, PyTorch, machine learning
+    Projects
+    Built applied machine learning projects.
+    Interested in Machine Learning Engineer Intern and Data Science Intern roles.
+    Open to Remote internships.
+    """
+
+    response = client.post(
+        "/me/profile/resume",
+        files={"file": ("resume.txt", resume_text.encode("utf-8"), "text/plain")},
+        headers={"X-InternLens-User-Id": "cognito-sub-a"},
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["filename"] == "resume.txt"
+    assert body["parsed_profile"]["degree_level"] == "Master's"
+    assert body["parsed_profile"]["grad_date"] == "2027-06"
+    assert body["parsed_profile"]["major"] == "Data Science"
+    assert "Python" in body["parsed_profile"]["extracted_skills"]
+    assert "Machine Learning Engineer Intern" in body["parsed_profile"]["preferred_roles"]
+    assert "Remote" in body["parsed_profile"]["preferred_locations"]
+    assert body["suggestions"]["extracted_skills"]
+    assert body["suggestions"]["extracted_skills"][0]["confidence"] == "high"
+    assert body["suggestions"]["extracted_skills"][0]["evidence"]
+    assert body["extracted_text_preview"]
+
+
 def test_account_profile_recommendation_and_job_action_flow(tmp_path: Path, monkeypatch) -> None:
     db_path = tmp_path / "internlens.db"
     monkeypatch.setattr(api_app, "_database_path", lambda: db_path)

@@ -189,6 +189,7 @@ Account-scoped browser aliases:
 ```http
 PUT /me/profile
 GET /me/profile
+POST /me/profile/resume
 GET /me/dashboard
 POST /me/recommend
 GET /me/recommendations/{run_id}
@@ -217,6 +218,10 @@ GET /jobs/{job_id}
 ```
 
 Stored-profile recommendation requests save run snapshots by default. Use `save_run=false` for one-off requests.
+
+Resume import accepts `.txt`, `.md`, `.pdf`, and `.docx` files and returns detected profile fields for user review before saving.
+The parser extracts skills, majors, preferred-role hints, locations, industries, degree level, graduation date, sponsorship hints, years of experience, and resume text.
+It also returns grouped suggestions with confidence levels and short evidence snippets so the frontend can let users accept individual fields instead of silently trusting the parse.
 
 Job action payload:
 

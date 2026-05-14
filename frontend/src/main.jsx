@@ -952,9 +952,10 @@ function oidcConfig() {
 }
 
 async function api(path, options = {}, authToken = null) {
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers ?? {})
     },
@@ -967,6 +968,65 @@ async function api(path, options = {}, authToken = null) {
     throw error;
   }
   return body;
+}
+
+function mergeParsedProfileForm(current, parsedProfile) {
+  const imported = profileToForm(parsedProfile);
+  return {
+    ...current,
+    resume_text: imported.resume_text || current.resume_text,
+    degree_level: imported.degree_level || current.degree_level,
+    major: addCsvItems(current.major, csvToList(imported.major)),
+    grad_date: imported.grad_date || current.grad_date,
+    preferred_roles: addCsvItems(current.preferred_roles, csvToList(imported.preferred_roles)),
+    preferred_locations: addCsvItems(current.preferred_locations, csvToList(imported.preferred_locations)),
+    target_industries: addCsvItems(current.target_industries, csvToList(imported.target_industries)),
+    extracted_skills: addCsvItems(current.extracted_skills, csvToList(imported.extracted_skills)),
+    sponsorship_need: current.sponsorship_need || imported.sponsorship_need,
+    years_of_experience: Math.max(Number(current.years_of_experience || 0), Number(imported.years_of_experience || 0)),
+    notes: current.notes || imported.notes
+  };
+}
+
+function applyResumeSuggestionToForm(current, suggestion) {
+  const value = suggestion?.value;
+  const textValue = String(value ?? "").trim();
+  if (!suggestion?.field || (!textValue && typeof value !== "boolean")) {
+    return current;
+  }
+
+  if (suggestion.field === "extracted_skills") {
+    return { ...current, extracted_skills: addCsvItems(current.extracted_skills, [textValue]) };
+  }
+  if (suggestion.field === "majors" || suggestion.field === "major") {
+    return { ...current, major: addCsvItems(current.major, [textValue]) };
+  }
+  if (suggestion.field === "preferred_roles") {
+    return { ...current, preferred_roles: addCsvItems(current.preferred_roles, [textValue]) };
+  }
+  if (suggestion.field === "target_industries") {
+    return { ...current, target_industries: addCsvItems(current.target_industries, [textValue]) };
+  }
+  if (suggestion.field === "preferred_locations") {
+    return { ...current, preferred_locations: addCsvItems(current.preferred_locations, [textValue]) };
+  }
+  if (suggestion.field === "degree_level") {
+    return { ...current, degree_level: degreeOption(textValue) };
+  }
+  if (suggestion.field === "grad_date") {
+    return { ...current, grad_date: textValue };
+  }
+  if (suggestion.field === "sponsorship_need") {
+    return { ...current, sponsorship_need: Boolean(value) };
+  }
+  if (suggestion.field === "years_of_experience") {
+    return {
+      ...current,
+      years_of_experience: Math.max(Number(current.years_of_experience || 0), Number(value || 0))
+    };
+  }
+
+  return current;
 }
 
 function friendlyErrorMessage(error) {
@@ -995,6 +1055,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [jobDetail, setJobDetail] = useState(null);
   const [jobDetailSummary, setJobDetailSummary] = useState(null);
   const [jobDetailStatus, setJobDetailStatus] = useState({ loading: false, error: "" });
+  const [resumeImport, setResumeImport] = useState(null);
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
@@ -1060,6 +1121,44 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
   function saveProfile() {
     return runTask(createOrLoadProfile, { successMessage: "Profile saved. Dashboard is ready." });
+  }
+
+  async function uploadResume(file) {
+    if (!file) {
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    await runTask(async () => {
+      const data = await api("/me/profile/resume", {
+        method: "POST",
+        body: formData
+      }, authToken);
+      setResumeImport(data);
+      setProfileStatus({
+        type: "success",
+        message: data.warnings?.length
+          ? `Parsed ${file.name}. Review suggestions before saving. ${data.warnings[0]}`
+          : `Parsed ${file.name}. Review suggestions, then add the ones that look right.`
+      });
+    });
+  }
+
+  function acceptResumeSuggestion(suggestion) {
+    setForm((current) => applyResumeSuggestionToForm(current, suggestion));
+  }
+
+  function acceptAllResumeSuggestions() {
+    if (!resumeImport?.parsed_profile) {
+      return;
+    }
+    setForm((current) => mergeParsedProfileForm(current, resumeImport.parsed_profile));
+    setResumeImport(null);
+    setProfileStatus({ type: "success", message: "Resume suggestions added. Review and save the profile." });
+  }
+
+  function dismissResumeImport() {
+    setResumeImport(null);
   }
 
   async function runRecommendations() {
@@ -1252,6 +1351,11 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           busy={busy}
           status={profileStatus}
           onSubmit={saveProfile}
+          onResumeUpload={uploadResume}
+          resumeImport={resumeImport}
+          onResumeAcceptAll={acceptAllResumeSuggestions}
+          onResumeAcceptSuggestion={acceptResumeSuggestion}
+          onResumeDismiss={dismissResumeImport}
         />
         <DashboardPanel
           dashboard={dashboard}
@@ -1432,7 +1536,20 @@ function Root() {
   );
 }
 
-function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSubmit }) {
+function ProfilePanel({
+  form,
+  setForm,
+  profileState,
+  quality,
+  busy,
+  status,
+  onSubmit,
+  onResumeUpload,
+  resumeImport,
+  onResumeAcceptAll,
+  onResumeAcceptSuggestion,
+  onResumeDismiss
+}) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -1477,6 +1594,33 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
         <span>{stateCopy.detail}</span>
       </div>
       <ProfileQuality quality={quality} />
+      <section className="resume-import-panel" aria-label="Resume import">
+        <div>
+          <strong>Import resume</strong>
+          <span>Upload a PDF, DOCX, or text resume to prefill skills, majors, roles, industries, and education fields.</span>
+        </div>
+        <label className="resume-upload-control">
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            disabled={busy}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                onResumeUpload(file);
+                event.target.value = "";
+              }
+            }}
+          />
+          Choose resume
+        </label>
+      </section>
+      <ResumeImportReview
+        resumeImport={resumeImport}
+        onAcceptAll={onResumeAcceptAll}
+        onAcceptSuggestion={onResumeAcceptSuggestion}
+        onDismiss={onResumeDismiss}
+      />
       <div className="form-grid">
         <label>
           Graduation
@@ -1575,6 +1719,84 @@ function ProfilePanel({ form, setForm, profileState, quality, busy, status, onSu
         <p className="profile-save-note">Complete the required items above before saving this profile.</p>
       )}
       {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
+    </section>
+  );
+}
+
+function resumeSuggestionLabel(suggestion) {
+  if (suggestion.field === "sponsorship_need") {
+    return suggestion.value ? "Needs sponsorship" : "No sponsorship needed";
+  }
+  if (suggestion.field === "years_of_experience") {
+    return `${suggestion.value} years of experience`;
+  }
+  return String(suggestion.value ?? "");
+}
+
+function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onDismiss }) {
+  if (!resumeImport) {
+    return null;
+  }
+
+  const groups = [
+    ["extracted_skills", "Skills"],
+    ["majors", "Majors"],
+    ["preferred_roles", "Roles"],
+    ["target_industries", "Industries"],
+    ["preferred_locations", "Locations"],
+    ["education", "Education"],
+    ["profile_flags", "Profile flags"]
+  ]
+    .map(([key, label]) => ({
+      key,
+      label,
+      suggestions: resumeImport.suggestions?.[key] ?? []
+    }))
+    .filter((group) => group.suggestions.length > 0);
+
+  if (groups.length === 0) {
+    return (
+      <section className="resume-review-panel">
+        <div className="resume-review-heading">
+          <div>
+            <strong>No confident suggestions found</strong>
+            <span>Try a resume with clearer education, skills, and project sections, or fill the form manually.</span>
+          </div>
+          <button type="button" onClick={onDismiss}>Dismiss</button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="resume-review-panel" aria-label="Resume import suggestions">
+      <div className="resume-review-heading">
+        <div>
+          <strong>Review imported suggestions</strong>
+          <span>Only add suggestions that match the profile you want to use for ranking.</span>
+        </div>
+        <div className="resume-review-actions">
+          <button type="button" onClick={onAcceptAll}>Accept all</button>
+          <button type="button" onClick={onDismiss}>Dismiss</button>
+        </div>
+      </div>
+      <div className="resume-suggestion-groups">
+        {groups.map((group) => (
+          <div className="resume-suggestion-group" key={group.key}>
+            <h3>{group.label}</h3>
+            {group.suggestions.map((suggestion, index) => (
+              <div className="resume-suggestion" key={`${group.key}-${suggestion.field}-${suggestion.value}-${index}`}>
+                <div>
+                  <strong>{resumeSuggestionLabel(suggestion)}</strong>
+                  <span className={`confidence-chip ${suggestion.confidence}`}>{suggestion.confidence}</span>
+                  {suggestion.evidence?.[0] && <small>{suggestion.evidence[0]}</small>}
+                </div>
+                <button type="button" onClick={() => onAcceptSuggestion(suggestion)}>Add</button>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
@@ -2485,7 +2707,11 @@ if (rootElement) {
 export {
   JobCard,
   JobDetailModal,
+  ProfilePanel,
   ProfileQuality,
   RecommendationPanel,
+  ResumeImportReview,
+  applyResumeSuggestionToForm,
+  mergeParsedProfileForm,
   scoreExplanation
 };

@@ -523,6 +523,171 @@ button:disabled {
   background: rgba(246, 237, 189, 0.34);
 }
 
+.resume-import-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  border: 1px solid rgba(155, 170, 144, 0.42);
+  border-radius: 16px;
+  padding: 13px 14px;
+  background: rgba(155, 170, 144, 0.16);
+}
+
+.resume-import-panel div {
+  display: grid;
+  gap: 3px;
+}
+
+.resume-import-panel strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.resume-import-panel span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.resume-upload-control {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #fffdf8;
+  background: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.resume-upload-control input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.resume-upload-control:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resume-review-panel {
+  display: grid;
+  gap: 14px;
+  margin: -4px 0 18px;
+  border: 1px solid rgba(126, 137, 117, 0.32);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 253, 248, 0.68);
+}
+
+.resume-review-heading,
+.resume-review-actions,
+.resume-suggestion {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.resume-review-heading {
+  justify-content: space-between;
+}
+
+.resume-review-heading > div:first-child,
+.resume-suggestion > div {
+  display: grid;
+  gap: 4px;
+}
+
+.resume-review-heading strong,
+.resume-suggestion strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.resume-review-heading span,
+.resume-suggestion small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.resume-review-actions button,
+.resume-suggestion button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.9);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.resume-review-actions button:first-child,
+.resume-suggestion button {
+  color: #fffdf8;
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.resume-suggestion-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.resume-suggestion-group {
+  display: grid;
+  gap: 8px;
+}
+
+.resume-suggestion-group h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.resume-suggestion {
+  justify-content: space-between;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(243, 242, 238, 0.72);
+}
+
+.confidence-chip {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: var(--muted);
+  background: rgba(79, 79, 80, 0.08);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.confidence-chip.high {
+  color: #566b50;
+  background: rgba(155, 170, 144, 0.24);
+}
+
+.confidence-chip.medium {
+  color: #7a6826;
+  background: rgba(243, 223, 138, 0.34);
+}
+
+.confidence-chip.low {
+  color: #84665a;
+  background: rgba(236, 213, 199, 0.34);
+}
+
 .unsaved-change-banner {
   display: flex;
   justify-content: space-between;
@@ -2275,6 +2440,9 @@ textarea {
   }
 
   .split,
+  .resume-import-panel,
+  .resume-review-heading,
+  .resume-suggestion,
   .source-freshness-summary,
   .public-nav {
     align-items: stretch;

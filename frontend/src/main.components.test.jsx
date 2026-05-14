@@ -1,6 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { JobCard, JobDetailModal, ProfileQuality, RecommendationPanel, scoreExplanation } from "./main.jsx";
+import {
+  JobCard,
+  JobDetailModal,
+  ProfilePanel,
+  ProfileQuality,
+  RecommendationPanel,
+  ResumeImportReview,
+  applyResumeSuggestionToForm,
+  mergeParsedProfileForm,
+  scoreExplanation
+} from "./main.jsx";
 
 const baseJob = {
   job_id: "job_1",
@@ -95,6 +105,149 @@ describe("main UI components", () => {
     expect(html).toContain("Matching readiness");
     expect(html).toContain("Core skills selected");
     expect(html).toContain("Optional signals");
+  });
+
+  it("renders resume import in profile setup", () => {
+    const form = {
+      resume_text: "",
+      degree_level: "",
+      major: "",
+      grad_date: "",
+      preferred_roles: "",
+      preferred_locations: "",
+      target_industries: "",
+      sponsorship_need: false,
+      extracted_skills: "",
+      years_of_experience: 0,
+      notes: ""
+    };
+    const quality = {
+      isReady: false,
+      requiredComplete: 0,
+      requiredTotal: 3,
+      items: []
+    };
+
+    const html = renderToStaticMarkup(
+      <ProfilePanel
+        form={form}
+        setForm={noop}
+        profileState="draft"
+        quality={quality}
+        busy={false}
+        status={null}
+        onSubmit={noop}
+        onResumeUpload={noop}
+        resumeImport={null}
+        onResumeAcceptAll={noop}
+        onResumeAcceptSuggestion={noop}
+        onResumeDismiss={noop}
+      />
+    );
+
+    expect(html).toContain("Import resume");
+    expect(html).toContain("Choose resume");
+    expect(html).toContain(".pdf,.docx,.txt,.md");
+  });
+
+  it("merges parsed resume fields into current profile form", () => {
+    const merged = mergeParsedProfileForm(
+      {
+        resume_text: "",
+        degree_level: "",
+        major: "Computer Science",
+        grad_date: "",
+        preferred_roles: "Software Engineering Intern",
+        preferred_locations: "",
+        target_industries: "",
+        sponsorship_need: false,
+        extracted_skills: "Python",
+        years_of_experience: 0,
+        notes: ""
+      },
+      {
+        resume_text: "Imported resume text",
+        degree_level: "Master's",
+        majors: ["data science"],
+        grad_date: "2027-05",
+        preferred_roles: ["Data Science Intern"],
+        preferred_locations: ["Remote"],
+        target_industries: ["AI"],
+        sponsorship_need: true,
+        extracted_skills: ["Python", "SQL"],
+        years_of_experience: 2,
+        notes: "Imported from resume."
+      }
+    );
+
+    expect(merged.major).toContain("Computer Science");
+    expect(merged.major).toContain("data science");
+    expect(merged.preferred_roles).toContain("Software Engineering Intern");
+    expect(merged.preferred_roles).toContain("Data Science Intern");
+    expect(merged.extracted_skills).toContain("Python");
+    expect(merged.extracted_skills).toContain("SQL");
+    expect(merged.sponsorship_need).toBe(true);
+    expect(merged.years_of_experience).toBe(2);
+  });
+
+  it("renders reviewable resume suggestions with confidence and evidence", () => {
+    const resumeImport = {
+      suggestions: {
+        extracted_skills: [
+          {
+            field: "extracted_skills",
+            value: "Python",
+            confidence: "high",
+            evidence: ["Skills: Python, SQL, AWS"]
+          }
+        ],
+        education: [
+          {
+            field: "grad_date",
+            value: "2027-05",
+            confidence: "high",
+            evidence: ["Education: Bachelor of Science, expected graduation May 2027"]
+          }
+        ]
+      }
+    };
+
+    const html = renderToStaticMarkup(
+      <ResumeImportReview
+        resumeImport={resumeImport}
+        onAcceptAll={noop}
+        onAcceptSuggestion={noop}
+        onDismiss={noop}
+      />
+    );
+
+    expect(html).toContain("Review imported suggestions");
+    expect(html).toContain("Accept all");
+    expect(html).toContain("Python");
+    expect(html).toContain("high");
+    expect(html).toContain("Skills: Python, SQL, AWS");
+  });
+
+  it("applies individual resume suggestions without replacing existing fields", () => {
+    const updated = applyResumeSuggestionToForm(
+      {
+        resume_text: "",
+        degree_level: "",
+        major: "Computer Science",
+        grad_date: "",
+        preferred_roles: "",
+        preferred_locations: "",
+        target_industries: "",
+        sponsorship_need: false,
+        extracted_skills: "Python",
+        years_of_experience: 1,
+        notes: ""
+      },
+      { field: "extracted_skills", value: "SQL" }
+    );
+
+    expect(updated.extracted_skills).toBe("Python, SQL");
+    expect(updated.major).toBe("Computer Science");
   });
 
   it("renders match context in the job detail modal", () => {

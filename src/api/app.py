@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 
@@ -18,6 +18,7 @@ from src.preprocessing.profile_parser import (
     load_candidate_profile,
     normalize_candidate_profile,
 )
+from src.preprocessing.resume_parser import parse_resume_file
 from src.storage.profile_store import (
     DEFAULT_USER_ID,
     add_feedback_events,
@@ -115,6 +116,14 @@ class AccountProfilePayload(BaseModel):
     extracted_skills: List[str] = Field(default_factory=list)
     years_of_experience: int = 0
     notes: str = ""
+
+
+class ResumeParseResponse(BaseModel):
+    filename: str
+    parsed_profile: AccountProfilePayload
+    suggestions: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
+    warnings: List[str] = Field(default_factory=list)
+    extracted_text_preview: str = ""
 
 
 class FeedbackEventPayload(BaseModel):
@@ -1044,6 +1053,32 @@ def get_account_profile_endpoint(
     user_id: str = Depends(current_user_id),
 ) -> StoredProfileResponse:
     return get_profile_endpoint(ACCOUNT_PROFILE_ID, user_id=user_id)
+
+
+@app.post("/me/profile/resume", response_model=ResumeParseResponse)
+async def parse_account_resume_endpoint(
+    file: UploadFile = File(...),
+    user_id: str = Depends(current_user_id),
+) -> ResumeParseResponse:
+    try:
+        content = await file.read()
+        parsed = parse_resume_file(file.filename or "resume", content)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not parse resume: {e}") from e
+
+    warnings = parsed.pop("warnings", [])
+    suggestions = parsed.pop("suggestions", {})
+    payload = AccountProfilePayload(**parsed)
+    preview = " ".join(payload.resume_text.split())[:360]
+    return ResumeParseResponse(
+        filename=file.filename or "resume",
+        parsed_profile=payload,
+        suggestions=suggestions,
+        warnings=warnings,
+        extracted_text_preview=preview,
+    )
 
 
 @app.get("/me/dashboard", response_model=ProfileDashboardResponse)
