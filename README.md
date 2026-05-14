@@ -11,6 +11,7 @@ It also includes a lightweight Vite/React frontend for the stored-profile recomm
 
 - **Live staging app:** `https://main.d1d00e49guhewo.amplifyapp.com`
 - **AWS deployment:** frontend on Amplify, backend on Elastic Beanstalk behind CloudFront, and backend release automation through CodePipeline/CodeBuild.
+- **Scheduled corpus refresh:** a weekly CodeBuild buildspec can refresh public ATS jobs, package the backend bundle, and deploy a new Elastic Beanstalk application version without a user request.
 - **Real public-board ingestion:** Lever and Greenhouse fetchers save raw snapshots and normalized processed job records.
 - **Explainable recommendations:** heuristic internship ranking returns fit reasons, blockers, action labels, and shortlist-friendly output.
 - **Product workflow:** user-scoped stored profiles, Cognito-capable auth, recommendation runs, feedback, saved/applied/hidden job actions, dashboard activity, state-specific job views, searchable/paginated shortlist review, visible-by-default match signals, skill-gap actions, and job detail modals are available through the API and frontend.
@@ -39,6 +40,7 @@ InternLens currently supports:
 - Cognito JWT auth mode for account-scoped API access, with development auth still available for local demos
 - Vite/React frontend for account-scoped profile setup, dashboard review, recommendation runs, job actions, saved/applied/hidden review, searchable/paginated shortlist inspection, visible-by-default match signals, and job detail modals
 - AWS staging deployment with Amplify frontend auto-deploys and a CodePipeline path for backend test/package/deploy to Elastic Beanstalk
+- optional weekly backend corpus refresh/deploy path with `buildspec.weekly-refresh.yml`
 - regression-tested iteration
 
 Current architecture planning also includes a long-term source acquisition strategy centered on:
@@ -827,6 +829,19 @@ GitHub main
 The build runs the Python regression suite, validates the Elastic Beanstalk source bundle, and emits the Beanstalk runtime files as the CodeBuild output artifact. The Elastic Beanstalk deploy action must use the CodeBuild output artifact, not the original GitHub source artifact. The CodePipeline service role also needs Elastic Beanstalk deploy permissions, including `elasticbeanstalk:CreateApplicationVersion`.
 
 Backend deploys are expected to run after changes are pushed to `main`. If the frontend is current but API behavior is stale, check the CodePipeline deploy status before changing frontend configuration.
+
+For automatic weekly job-corpus refreshes, create a separate scheduled CodeBuild project that uses `buildspec.weekly-refresh.yml`.
+That buildspec runs the public ATS refresh, packages the refreshed `data/processed/jobs` corpus into a backend bundle, uploads the bundle to S3, creates a new Elastic Beanstalk application version, and updates the staging environment.
+Trigger it weekly with EventBridge Scheduler or an EventBridge rule; do not expose corpus refresh as a public API endpoint.
+
+Required scheduled-refresh CodeBuild environment variables:
+
+```text
+EB_APPLICATION_NAME=internlens
+EB_ENVIRONMENT_NAME=Internlens-env
+EB_ARTIFACT_BUCKET=<s3-bucket-for-eb-source-bundles>
+EB_ARTIFACT_PREFIX=internlens-backend
+```
 
 Current deployed environment values:
 

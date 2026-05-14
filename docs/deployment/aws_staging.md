@@ -254,6 +254,90 @@ data/processed/jobs/**/*
 13. Use the CodeBuild output artifact as the deploy input artifact, not the original GitHub source artifact.
 14. Save the pipeline and run it once manually.
 
+## Weekly Corpus Refresh and Deploy
+
+The repo also includes `buildspec.weekly-refresh.yml` for unattended weekly corpus refreshes.
+This is separate from the normal push-triggered backend pipeline.
+
+Use this when the goal is:
+
+```text
+weekly schedule
+  -> refresh Lever and Greenhouse registry sources
+  -> run regression tests
+  -> package a backend bundle with the refreshed data/processed/jobs corpus
+  -> upload the bundle to S3
+  -> create a new Elastic Beanstalk application version
+  -> update the staging environment
+```
+
+This keeps refresh work out of the FastAPI web process. Do not implement this as a long-running timer inside the web server.
+
+### Scheduled CodeBuild project
+
+Create a second CodeBuild project, separate from `internlens-backend-build`, named something like:
+
+```text
+internlens-weekly-corpus-refresh
+```
+
+Recommended settings:
+
+1. Source: the same GitHub `InternLens` repository and `main` branch.
+2. Environment: managed Linux image with Python and AWS CLI available.
+3. Buildspec: `buildspec.weekly-refresh.yml`.
+4. Timeout: allow enough time for public ATS requests, for example 45-60 minutes.
+5. Privileged mode: not required.
+6. Artifacts: optional, because the buildspec uploads the Elastic Beanstalk bundle to S3 itself.
+
+Required CodeBuild environment variables:
+
+```text
+EB_APPLICATION_NAME=internlens
+EB_ENVIRONMENT_NAME=Internlens-env
+EB_ARTIFACT_BUCKET=<s3-bucket-for-eb-source-bundles>
+EB_ARTIFACT_PREFIX=internlens-backend
+```
+
+`EB_ARTIFACT_PREFIX` is optional; it defaults to `internlens-backend`.
+
+The CodeBuild service role for this scheduled project needs permission to:
+
+```text
+s3:PutObject
+s3:GetObject
+elasticbeanstalk:CreateApplicationVersion
+elasticbeanstalk:UpdateEnvironment
+elasticbeanstalk:DescribeApplications
+elasticbeanstalk:DescribeEnvironments
+```
+
+Scope the S3 permissions to the artifact bucket and the Elastic Beanstalk permissions to the staging application/environment when possible.
+
+### Schedule
+
+Use EventBridge Scheduler or an EventBridge rule to start the scheduled CodeBuild project once per week.
+For example, every Monday at 09:00 UTC:
+
+```text
+cron(0 9 ? * MON *)
+```
+
+The EventBridge execution role needs permission for:
+
+```text
+codebuild:StartBuild
+```
+
+on the weekly refresh CodeBuild project.
+
+### Relationship to GitHub Actions
+
+`.github/workflows/refresh-job-corpus.yml` is still useful for manual or scheduled artifact-only corpus refresh checks.
+It uploads refreshed corpus artifacts, but it does not deploy the staging backend.
+
+`buildspec.weekly-refresh.yml` is the server-facing path: it refreshes the corpus and deploys a new Elastic Beanstalk application version.
+
 ### Required Elastic Beanstalk environment variables
 
 For Cognito-backed staging auth, the Beanstalk environment must have:
@@ -329,7 +413,7 @@ Returned jobs: None
 - Cognito authentication mode is implemented, but staging should still be treated as a demo environment until auth rollout, callback/logout URLs, and operational settings are reviewed together.
 - `X-InternLens-User-Id` remains only a development bridge for `INTERNLENS_AUTH_MODE=dev`.
 - SQLite is still single-host prototype persistence, though the schema now scopes rows by user.
-- Corpus refresh is not isolated as a separate scheduled worker.
+- Corpus refresh can run through a separate scheduled CodeBuild project with `buildspec.weekly-refresh.yml`, but it is still a staging-oriented automation path rather than a production data pipeline.
 - Generated raw/processed data can be large; avoid rewriting data directories during deploy.
 - CORS should be restricted to the deployed frontend URL, not left broad.
 - Frontend deploys are automatic from `main` through Amplify.
