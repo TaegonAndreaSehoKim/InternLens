@@ -8,6 +8,7 @@ import {
   RecommendationPanel,
   ResumeImportReview,
   applyResumeSuggestionToForm,
+  clearResumeImportBackground,
   mergeParsedProfileForm,
   removeResumeSuggestion,
   scoreExplanation
@@ -254,6 +255,26 @@ describe("main UI components", () => {
 
     expect(updated.extracted_skills).toBe("Python, SQL");
     expect(updated.major).toBe("Computer Science");
+  });
+
+  it("clears additional background when a resume is imported", () => {
+    const updated = clearResumeImportBackground({
+      resume_text: "Manual background that should be cleared after upload.",
+      degree_level: "Bachelor's",
+      major: "Computer Science",
+      grad_date: "",
+      preferred_roles: "",
+      preferred_locations: "",
+      target_industries: "",
+      sponsorship_need: false,
+      extracted_skills: "Python",
+      years_of_experience: 1,
+      notes: ""
+    });
+
+    expect(updated.resume_text).toBe("");
+    expect(updated.major).toBe("Computer Science");
+    expect(updated.extracted_skills).toBe("Python");
   });
 
   it("removes accepted or skipped resume suggestions from the review list", () => {

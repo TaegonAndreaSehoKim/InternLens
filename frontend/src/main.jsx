@@ -986,6 +986,13 @@ function mergeParsedProfileForm(current, parsedProfile) {
   };
 }
 
+function clearResumeImportBackground(current) {
+  return {
+    ...current,
+    resume_text: ""
+  };
+}
+
 function applyResumeSuggestionToForm(current, suggestion) {
   const value = suggestion?.value;
   const textValue = String(value ?? "").trim();
@@ -1157,6 +1164,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         body: formData
       }, authToken);
       setResumeImport(data);
+      setForm((current) => clearResumeImportBackground(current));
       setProfileStatus({
         type: "success",
         message: data.warnings?.length
@@ -2745,6 +2753,7 @@ export {
   RecommendationPanel,
   ResumeImportReview,
   applyResumeSuggestionToForm,
+  clearResumeImportBackground,
   mergeParsedProfileForm,
   removeResumeSuggestion,
   scoreExplanation

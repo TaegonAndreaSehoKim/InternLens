@@ -10,6 +10,8 @@ Live staging app:
 https://main.d1d00e49guhewo.amplifyapp.com
 ```
 
+<img src="docs/assets/internlens-shortlist.jpg" alt="InternLens shortlist dashboard showing ranked internship matches, score breakdown, matched skills, and job actions" width="100%">
+
 ## Project Diagram
 
 ```mermaid
