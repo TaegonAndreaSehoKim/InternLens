@@ -638,6 +638,27 @@ function profileQuality(form) {
   };
 }
 
+function profileSummary(form) {
+  return {
+    degree: [form.degree_level, form.grad_date].filter(Boolean).join(" / ") || "Education not set",
+    majors: csvToList(form.major),
+    roles: csvToList(form.preferred_roles),
+    skills: csvToList(form.extracted_skills),
+    locations: csvToList(form.preferred_locations),
+    industries: csvToList(form.target_industries)
+  };
+}
+
+function compactListLabel(items, emptyLabel) {
+  if (!items.length) {
+    return emptyLabel;
+  }
+  if (items.length <= 3) {
+    return items.join(", ");
+  }
+  return `${items.slice(0, 3).join(", ")} +${items.length - 3}`;
+}
+
 function titleCase(value = "") {
   return String(value)
     .replace(/[_-]/g, " ")
@@ -1085,6 +1106,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [jobDetailSummary, setJobDetailSummary] = useState(null);
   const [jobDetailStatus, setJobDetailStatus] = useState({ loading: false, error: "" });
   const [resumeImport, setResumeImport] = useState(null);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
@@ -1092,6 +1114,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const profileState = savedProfileForm
     ? JSON.stringify(form) === JSON.stringify(savedProfileForm) ? "saved" : "changed"
     : "draft";
+  const showProfileEditor = profileState !== "saved" || profileEditorOpen || Boolean(resumeImport);
 
   async function runTask(task, options = {}) {
     setBusy(true);
@@ -1145,6 +1168,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     const savedForm = profileToForm(savedProfile);
     setForm(savedForm);
     setSavedProfileForm(savedForm);
+    setProfileEditorOpen(false);
     await loadDashboard();
   }
 
@@ -1164,6 +1188,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         body: formData
       }, authToken);
       setResumeImport(data);
+      setProfileEditorOpen(true);
       setForm((current) => clearResumeImportBackground(current));
       setProfileStatus({
         type: "success",
@@ -1249,6 +1274,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       ...current,
       extracted_skills: addCsvItems(current.extracted_skills, [skill])
     }));
+    setProfileEditorOpen(true);
     setProfileStatus({
       type: "success",
       message: `Added ${skill} to profile skills. Save changes before running a new shortlist.`
@@ -1386,6 +1412,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           busy={busy}
           status={profileStatus}
           onSubmit={saveProfile}
+          isEditing={showProfileEditor}
+          onEditProfile={() => setProfileEditorOpen(true)}
           onResumeUpload={uploadResume}
           resumeImport={resumeImport}
           onResumeAcceptAll={acceptAllResumeSuggestions}
@@ -1580,6 +1608,8 @@ function ProfilePanel({
   busy,
   status,
   onSubmit,
+  isEditing,
+  onEditProfile,
   onResumeUpload,
   resumeImport,
   onResumeAcceptAll,
@@ -1619,6 +1649,20 @@ function ProfilePanel({
       detail: "Your dashboard and future shortlists use this profile."
     }
   }[profileState];
+
+  if (!isEditing) {
+    return (
+      <ProfileSummaryPanel
+        form={form}
+        profileState={profileState}
+        quality={quality}
+        status={status}
+        busy={busy}
+        onEditProfile={onEditProfile}
+        onResumeUpload={onResumeUpload}
+      />
+    );
+  }
 
   return (
     <section className="panel profile-panel">
@@ -1756,6 +1800,81 @@ function ProfilePanel({
       {!quality.isReady && (
         <p className="profile-save-note">Complete the required items above before saving this profile.</p>
       )}
+      {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
+    </section>
+  );
+}
+
+function ProfileSummaryPanel({ form, profileState, quality, status, busy, onEditProfile, onResumeUpload }) {
+  const summary = profileSummary(form);
+  const summaryItems = [
+    ["Education", summary.degree],
+    ["Majors", compactListLabel(summary.majors, "No major selected")],
+    ["Roles", compactListLabel(summary.roles, "Any internship role")],
+    ["Skills", `${summary.skills.length} selected`],
+    ["Locations", compactListLabel(summary.locations, "Any location")],
+    ["Industries", compactListLabel(summary.industries, "Any industry")]
+  ];
+  const featuredSkills = summary.skills.slice(0, 8);
+
+  return (
+    <section className="panel profile-panel profile-summary-panel">
+      <div className="panel-heading split">
+        <div>
+          <p className="eyebrow">Profile</p>
+          <h2>Saved candidate</h2>
+        </div>
+        <button type="button" className="ghost-action" onClick={onEditProfile}>
+          Edit profile
+        </button>
+      </div>
+      <div className={`profile-state ${profileState}`}>
+        <strong>Saved to this account</strong>
+        <span>Your dashboard and future shortlists use this profile.</span>
+      </div>
+      <div className={`profile-summary-readiness ${quality.isReady ? "ready" : "needs-work"}`}>
+        <strong>{quality.requiredComplete}/{quality.requiredTotal} required complete</strong>
+        <span>{quality.isReady ? "Ready for matching" : "Needs required profile inputs"}</span>
+      </div>
+      <div className="profile-summary-grid">
+        {summaryItems.map(([label, value]) => (
+          <div key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+      {featuredSkills.length > 0 && (
+        <div className="profile-summary-skills">
+          <span>Top skills</span>
+          <div>
+            {featuredSkills.map((skill) => (
+              <b key={skill}>{skill}</b>
+            ))}
+            {summary.skills.length > featuredSkills.length && <b>+{summary.skills.length - featuredSkills.length}</b>}
+          </div>
+        </div>
+      )}
+      <div className="profile-summary-actions">
+        <label className="resume-upload-control secondary">
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            disabled={busy}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                onResumeUpload(file);
+                event.target.value = "";
+              }
+            }}
+          />
+          Import resume
+        </label>
+        <button type="button" className="primary-action compact" onClick={onEditProfile}>
+          Refine profile
+        </button>
+      </div>
       {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
     </section>
   );

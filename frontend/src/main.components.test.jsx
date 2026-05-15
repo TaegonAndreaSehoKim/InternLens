@@ -139,6 +139,8 @@ describe("main UI components", () => {
         busy={false}
         status={null}
         onSubmit={noop}
+        isEditing={true}
+        onEditProfile={noop}
         onResumeUpload={noop}
         resumeImport={null}
         onResumeAcceptAll={noop}
@@ -151,6 +153,55 @@ describe("main UI components", () => {
     expect(html).toContain("Import resume");
     expect(html).toContain("Choose resume");
     expect(html).toContain(".pdf,.docx,.txt,.md");
+  });
+
+  it("collapses a saved profile into a compact summary", () => {
+    const form = {
+      resume_text: "",
+      degree_level: "Master's",
+      major: "Computer Science, Economics",
+      grad_date: "2027-12",
+      preferred_roles: "Software Engineering Intern, Data Science Intern",
+      preferred_locations: "United States, Remote",
+      target_industries: "",
+      sponsorship_need: false,
+      extracted_skills: "Python, SQL, AWS, React",
+      years_of_experience: 1,
+      notes: ""
+    };
+    const quality = {
+      isReady: true,
+      requiredComplete: 3,
+      requiredTotal: 3,
+      items: []
+    };
+
+    const html = renderToStaticMarkup(
+      <ProfilePanel
+        form={form}
+        setForm={noop}
+        profileState="saved"
+        quality={quality}
+        busy={false}
+        status={null}
+        onSubmit={noop}
+        isEditing={false}
+        onEditProfile={noop}
+        onResumeUpload={noop}
+        resumeImport={null}
+        onResumeAcceptAll={noop}
+        onResumeAcceptSuggestion={noop}
+        onResumeSkipSuggestion={noop}
+        onResumeDismiss={noop}
+      />
+    );
+
+    expect(html).toContain("Saved candidate");
+    expect(html).toContain("Edit profile");
+    expect(html).toContain("Import resume");
+    expect(html).toContain("4 selected");
+    expect(html).not.toContain("Search major");
+    expect(html).not.toContain("Additional background");
   });
 
   it("merges parsed resume fields into current profile form", () => {
