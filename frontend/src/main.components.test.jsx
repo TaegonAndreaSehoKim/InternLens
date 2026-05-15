@@ -44,7 +44,7 @@ const baseJob = {
 const noop = () => {};
 
 describe("main UI components", () => {
-  it("shows recommendation signals by default in the review panel", () => {
+  it("shows compact recommendation signals by default in the review panel", () => {
     const html = renderToStaticMarkup(
       <RecommendationPanel
         recommendations={{ results: [baseJob] }}
@@ -61,15 +61,36 @@ describe("main UI components", () => {
       />
     );
 
-    expect(html).toContain("Hide signals");
+    expect(html).toContain("More detail");
+    expect(html).toContain("Matched");
+    expect(html).toContain("Python, React");
+    expect(html).toContain("Check");
+    expect(html).toContain("AWS");
+    expect(html).toContain("Role");
+    expect(html).toContain("Score explanation:");
+    expect(html).not.toContain("Less detail");
+  });
+
+  it("shows full recommendation evidence when expanded", () => {
+    const html = renderToStaticMarkup(
+      <JobCard
+        job={baseJob}
+        busy={false}
+        expanded
+        onToggleExpanded={noop}
+        onAddSkill={noop}
+        onOpenDetails={noop}
+        onOpenApplication={noop}
+        onAction={noop}
+      />
+    );
+
+    expect(html).toContain("Less detail");
     expect(html).toContain("Matched skills");
     expect(html).toContain("Skill gaps");
-    expect(html).toContain("Qualification coverage");
     expect(html).toContain("Freshness");
     expect(html).toContain("Internship signal");
     expect(html).toContain("Highest priority");
-    expect(html).toContain("Score explanation:");
-    expect(html).not.toContain("Show signals");
   });
 
   it("can render a compact job card when signals are hidden", () => {
@@ -85,8 +106,8 @@ describe("main UI components", () => {
       />
     );
 
-    expect(html).toContain("Show signals");
-    expect(html).toContain("1 skill gap");
+    expect(html).toContain("More detail");
+    expect(html).toContain("AWS");
     expect(html).not.toContain("Matched skills");
   });
 
@@ -282,7 +303,7 @@ describe("main UI components", () => {
     expect(html).toContain("Accept all");
     expect(html).toContain("Skip");
     expect(html).toContain("Python");
-    expect(html).toContain("high");
+    expect(html).toContain("High confidence from Skills section");
     expect(html).toContain("Skills: Python, SQL, AWS");
   });
 
@@ -373,9 +394,10 @@ describe("main UI components", () => {
     );
 
     expect(html).toContain("Job details");
-    expect(html).toContain("Score explanation:");
-    expect(html).toContain("Matched skills");
-    expect(html).toContain("Skill gaps");
+    expect(html).toContain("Posting summary");
+    expect(html).toContain("Application decision");
+    expect(html).toContain("Why it fits");
+    expect(html).toContain("What to check");
     expect(html).toContain("Full posting text");
   });
 
@@ -394,6 +416,7 @@ describe("main UI components", () => {
         onToggleExpanded={noop}
         onAddSkill={onAddSkill}
         onOpenDetails={noop}
+        onOpenApplication={noop}
         onAction={noop}
       />
     );
@@ -401,5 +424,25 @@ describe("main UI components", () => {
     expect(html).toContain("title=\"Add AWS to profile skills\"");
     expect(html).toContain("Highest priority");
     expect(html).toContain(">Add</span>");
+  });
+
+  it("prompts for a follow-up after opening an application link", () => {
+    const html = renderToStaticMarkup(
+      <JobCard
+        job={baseJob}
+        busy={false}
+        expanded={false}
+        applicationOpened
+        onToggleExpanded={noop}
+        onAddSkill={noop}
+        onOpenDetails={noop}
+        onOpenApplication={noop}
+        onAction={noop}
+      />
+    );
+
+    expect(html).toContain("Application opened");
+    expect(html).toContain("Save for later");
+    expect(html).toContain("Mark applied");
   });
 });

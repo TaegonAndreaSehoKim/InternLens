@@ -12,6 +12,8 @@ https://main.d1d00e49guhewo.amplifyapp.com
 
 <img src="docs/assets/internlens-shortlist.jpg" alt="InternLens shortlist dashboard showing ranked internship matches, score breakdown, matched skills, and job actions" width="100%">
 
+Representative shortlist view. The live UI may show saved profiles in a compact summary before the shortlist.
+
 ## Project Diagram
 
 ```mermaid

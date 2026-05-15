@@ -727,6 +727,13 @@ function scoreExplanation(job) {
   return `Score explanation: ${parts.join("; ")}.`;
 }
 
+function compactScoreSignals(job) {
+  return matchBreakdown(job)
+    .filter((item) => typeof item.percent === "number")
+    .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0))
+    .slice(0, 3);
+}
+
 function positiveEvidence(job) {
   return uniqueItems([
     ...(job.why_apply ?? []),
@@ -1107,6 +1114,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   const [jobDetailStatus, setJobDetailStatus] = useState({ loading: false, error: "" });
   const [resumeImport, setResumeImport] = useState(null);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [matchProgress, setMatchProgress] = useState("");
   const [apiHealth, setApiHealth] = useState("checking");
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
@@ -1223,20 +1231,27 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
   async function runRecommendations() {
     setDashboardJobView("recommendations");
-    const data = await api("/me/recommend", {
-      method: "POST",
-      body: JSON.stringify({
-        top_k: RECOMMENDATION_FETCH_LIMIT,
-        include_feedback: true,
-        exclude_dismissed: true,
-        exclude_applied: true,
-        include_debug: true,
-        save_run: true
-      })
-    }, authToken);
-    setRecommendations(data);
-    setSelectedRun(data.run_id);
-    await loadDashboard();
+    setMatchProgress("Loading current profile and job corpus");
+    try {
+      setMatchProgress("Scoring roles and applying feedback");
+      const data = await api("/me/recommend", {
+        method: "POST",
+        body: JSON.stringify({
+          top_k: RECOMMENDATION_FETCH_LIMIT,
+          include_feedback: true,
+          exclude_dismissed: true,
+          exclude_applied: true,
+          include_debug: true,
+          save_run: true
+        })
+      }, authToken);
+      setMatchProgress("Saving shortlist and refreshing dashboard");
+      setRecommendations(data);
+      setSelectedRun(data.run_id);
+      await loadDashboard();
+    } finally {
+      setMatchProgress("");
+    }
   }
 
   async function loadRun(runId, { activate = true } = {}) {
@@ -1426,6 +1441,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           profileState={profileState}
           profileReady={quality.isReady}
           busy={busy}
+          matchProgress={matchProgress}
           onRefresh={() => runTask(() => loadDashboard())}
           onRun={() => runTask(runRecommendations)}
           onLoadRun={(runId) => runTask(() => loadRun(runId))}
@@ -1890,6 +1906,13 @@ function resumeSuggestionLabel(suggestion) {
   return String(suggestion.value ?? "");
 }
 
+function resumeSuggestionQuality(suggestion) {
+  const evidence = String(suggestion.evidence?.[0] ?? "");
+  const section = evidence.includes(":") ? evidence.split(":")[0] : "";
+  const source = section ? ` from ${section} section` : "";
+  return `${titleCase(suggestion.confidence ?? "unknown")} confidence${source}`;
+}
+
 function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onSkipSuggestion, onDismiss }) {
   if (!resumeImport) {
     return null;
@@ -1945,7 +1968,7 @@ function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onS
               <div className="resume-suggestion" key={`${group.key}-${suggestion.field}-${suggestion.value}-${index}`}>
                 <div className="resume-suggestion-body">
                   <strong>{resumeSuggestionLabel(suggestion)}</strong>
-                  <span className={`confidence-chip ${suggestion.confidence}`}>{suggestion.confidence}</span>
+                  <span className={`confidence-chip ${suggestion.confidence}`}>{resumeSuggestionQuality(suggestion)}</span>
                   {suggestion.evidence?.[0] && <small>{suggestion.evidence[0]}</small>}
                 </div>
                 <div className="resume-suggestion-actions">
@@ -2099,6 +2122,7 @@ function DashboardPanel({
   profileState,
   profileReady,
   busy,
+  matchProgress,
   onRefresh,
   onRun,
   onLoadRun,
@@ -2173,6 +2197,12 @@ function DashboardPanel({
           <button className="primary-action" disabled={busy || !canFindMatches} onClick={onRun}>
             {!profileReady ? "Complete profile first" : profileState === "changed" ? "Save changes first" : "Find matches"}
           </button>
+          {matchProgress && (
+            <div className="match-progress" role="status">
+              <span className="pulse-dot active" />
+              <strong>{matchProgress}</strong>
+            </div>
+          )}
           {(!profileReady || profileState !== "saved") && (
             <p className="dashboard-action-note">
               {!profileReady
@@ -2216,7 +2246,8 @@ function RecommendationPanel({
   const [page, setPage] = useState(1);
   const [sortValue, setSortValue] = useState("recommended");
   const [searchQuery, setSearchQuery] = useState("");
-  const [hiddenSignalJobIds, setHiddenSignalJobIds] = useState(() => new Set());
+  const [expandedSignalJobIds, setExpandedSignalJobIds] = useState(() => new Set());
+  const [openedJobIds, setOpenedJobIds] = useState(() => new Set());
   const showingDashboardJobs = dashboardJobView !== "recommendations";
   const dashboardView = DASHBOARD_JOB_VIEWS[dashboardJobView] ?? DASHBOARD_JOB_VIEWS.recommendations;
   const dashboardStateJobs = showingDashboardJobs
@@ -2244,13 +2275,21 @@ function RecommendationPanel({
   }, [dashboardJobView, selectedRun, filter, searchQuery, sortValue, visibleJobs.length]);
 
   function toggleJobSignals(jobId) {
-    setHiddenSignalJobIds((current) => {
+    setExpandedSignalJobIds((current) => {
       const next = new Set(current);
       if (next.has(jobId)) {
         next.delete(jobId);
       } else {
         next.add(jobId);
       }
+      return next;
+    });
+  }
+
+  function noteApplicationOpened(jobId) {
+    setOpenedJobIds((current) => {
+      const next = new Set(current);
+      next.add(jobId);
       return next;
     });
   }
@@ -2339,10 +2378,12 @@ function RecommendationPanel({
                     key={job.job_id}
                     job={job}
                     busy={busy}
-                    expanded={!hiddenSignalJobIds.has(job.job_id)}
+                    expanded={expandedSignalJobIds.has(job.job_id)}
+                    applicationOpened={openedJobIds.has(job.job_id)}
                     onToggleExpanded={() => toggleJobSignals(job.job_id)}
                     onAddSkill={onAddSkill}
                     onOpenDetails={() => onOpenDetails(job)}
+                    onOpenApplication={() => noteApplicationOpened(job.job_id)}
                     onAction={onAction}
                   />
                 ))}
@@ -2418,7 +2459,17 @@ function PaginationControls({ currentPage, pageCount, pageStart, pageEnd, total,
   );
 }
 
-function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDetails, onAction }) {
+function JobCard({
+  job,
+  busy,
+  expanded,
+  applicationOpened,
+  onToggleExpanded,
+  onAddSkill,
+  onOpenDetails,
+  onOpenApplication,
+  onAction
+}) {
   const score = displayScore(job);
   const label = actionLabel(job);
   const action = actionValue(job);
@@ -2433,6 +2484,7 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
   const skillGaps = skillGapSignals(job);
   const skillGapItems = prioritizedSkillGaps(job);
   const breakdown = matchBreakdown(job);
+  const compactSignals = compactScoreSignals(job);
   const explanation = scoreExplanation(job);
   const eligibility = eligibilityLabel(job.eligibility_status);
   const isSaved = currentState === "saved";
@@ -2460,12 +2512,8 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
         <h3>{job.title}</h3>
         <p className="fit-summary">{fitSummary(job)}</p>
         <p className="score-explanation">{explanation}</p>
-        {job.summary && <p className="job-summary">{job.summary}</p>}
-        {skillGaps.length > 0 && (
-          <div className="job-detail-row">
-            <span>{skillGaps.length} skill gap{skillGaps.length === 1 ? "" : "s"}</span>
-          </div>
-        )}
+        {job.summary && <p className="job-summary compact">{job.summary}</p>}
+        <SignalSnapshot skills={skills} skillGaps={skillGaps} compactSignals={compactSignals} />
         {expanded && (
           <div className="job-expanded-content">
             {(skills.length > 0 || skillGaps.length > 0) && (
@@ -2489,13 +2537,13 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
         <ScoreDial score={score} fitLevel={job.fit_level} />
         <div className="job-actions">
           <button type="button" disabled={busy} onClick={onToggleExpanded}>
-            {expanded ? "Hide signals" : "Show signals"}
+            {expanded ? "Less detail" : "More detail"}
           </button>
           <button type="button" disabled={busy} onClick={onOpenDetails}>
             Details
           </button>
           {job.application_link && (
-            <a href={job.application_link} target="_blank" rel="noreferrer">
+            <a href={job.application_link} target="_blank" rel="noreferrer" onClick={onOpenApplication}>
               Open
             </a>
           )}
@@ -2514,6 +2562,16 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
             </button>
           )}
         </div>
+        {applicationOpened && !isApplied && !isDismissed && (
+          <div className="opened-followup">
+            <strong>Application opened</strong>
+            <span>Mark it applied when you finish, or save it for later.</span>
+            <div>
+              <button disabled={busy || isApplied} onClick={() => onAction(job.job_id, "apply")}>Mark applied</button>
+              <button disabled={busy || isSaved} onClick={() => onAction(job.job_id, "save")}>Save for later</button>
+            </div>
+          </div>
+        )}
         {isDismissed && (
           <p className="state-note">
             Hidden from future shortlists. Open Dashboard Hidden to review it or use Show again.
@@ -2521,6 +2579,34 @@ function JobCard({ job, busy, expanded, onToggleExpanded, onAddSkill, onOpenDeta
         )}
       </div>
     </article>
+  );
+}
+
+function SignalSnapshot({ skills, skillGaps, compactSignals }) {
+  const visibleSkills = skills.slice(0, 4);
+  const visibleGaps = skillGaps.slice(0, 2);
+
+  return (
+    <div className="signal-snapshot" aria-label="Recommendation signal summary">
+      {visibleSkills.length > 0 && (
+        <div>
+          <span>Matched</span>
+          <strong>{visibleSkills.join(", ")}{skills.length > visibleSkills.length ? ` +${skills.length - visibleSkills.length}` : ""}</strong>
+        </div>
+      )}
+      {visibleGaps.length > 0 && (
+        <div>
+          <span>Check</span>
+          <strong>{visibleGaps.join(", ")}{skillGaps.length > visibleGaps.length ? ` +${skillGaps.length - visibleGaps.length}` : ""}</strong>
+        </div>
+      )}
+      {compactSignals.map((item) => (
+        <div key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -2567,7 +2653,8 @@ function JobDetailModal({ detail, summaryJob, status, onClose }) {
   const visibleJob = detail ?? summaryJob;
   const matchedSkills = skillSignals(summaryJob ?? {});
   const skillGaps = skillGapSignals(summaryJob ?? {});
-  const explanation = summaryJob ? scoreExplanation(summaryJob) : "";
+  const positives = positiveEvidence(summaryJob ?? {});
+  const watchouts = watchoutEvidence(summaryJob ?? {});
   const fullDescription = detail?.description && detail.description !== detail.short_description
     ? detail.description
     : "";
@@ -2634,38 +2721,27 @@ function JobDetailModal({ detail, summaryJob, status, onClose }) {
               </div>
 
               <section>
-                <h3>Summary</h3>
+                <h3>Posting summary</h3>
                 <p>{detail.short_description || summaryJob?.summary || detail.description || "No description available."}</p>
-                {explanation && <p className="detail-score-explanation">{explanation}</p>}
-                {(matchedSkills.length > 0 || skillGaps.length > 0) && (
-                  <div className="detail-skill-panel">
-                    {matchedSkills.length > 0 && (
-                      <div>
-                        <strong>Matched skills</strong>
-                        <div className="skill-chip-row matched">
-                          {matchedSkills.map((skill) => (
-                            <span key={skill}>{skill}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {skillGaps.length > 0 && (
-                      <div>
-                        <strong>Skill gaps</strong>
-                        <div className="skill-chip-row plain-gaps">
-                          {skillGaps.map((skill) => (
-                            <span key={skill}>{skill}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
                 {fullDescription && (
                   <details className="detail-description">
                     <summary>Full posting text</summary>
                     <p>{fullDescription}</p>
                   </details>
+                )}
+              </section>
+
+              <section>
+                <h3>Application decision</h3>
+                <div className="detail-signal-columns">
+                  <DetailList title="Why it fits" items={positives} empty="No strong positive signals surfaced." />
+                  <DetailList title="What to check" items={watchouts} empty="No major watchouts surfaced." />
+                </div>
+                {(matchedSkills.length > 0 || skillGaps.length > 0) && (
+                  <div className="detail-decision-tags">
+                    {matchedSkills.slice(0, 6).map((skill) => <span key={`match-${skill}`}>{skill}</span>)}
+                    {skillGaps.slice(0, 4).map((skill) => <span className="gap" key={`gap-${skill}`}>Check {skill}</span>)}
+                  </div>
                 )}
               </section>
 
