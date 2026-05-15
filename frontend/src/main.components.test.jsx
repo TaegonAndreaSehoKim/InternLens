@@ -9,6 +9,7 @@ import {
   ResumeImportReview,
   applyResumeSuggestionToForm,
   mergeParsedProfileForm,
+  removeResumeSuggestion,
   scoreExplanation
 } from "./main.jsx";
 
@@ -141,6 +142,7 @@ describe("main UI components", () => {
         resumeImport={null}
         onResumeAcceptAll={noop}
         onResumeAcceptSuggestion={noop}
+        onResumeSkipSuggestion={noop}
         onResumeDismiss={noop}
       />
     );
@@ -188,6 +190,8 @@ describe("main UI components", () => {
     expect(merged.extracted_skills).toContain("SQL");
     expect(merged.sponsorship_need).toBe(true);
     expect(merged.years_of_experience).toBe(2);
+    expect(merged.resume_text).toBe("");
+    expect(merged.notes).toBe("");
   });
 
   it("renders reviewable resume suggestions with confidence and evidence", () => {
@@ -217,12 +221,14 @@ describe("main UI components", () => {
         resumeImport={resumeImport}
         onAcceptAll={noop}
         onAcceptSuggestion={noop}
+        onSkipSuggestion={noop}
         onDismiss={noop}
       />
     );
 
     expect(html).toContain("Review imported suggestions");
     expect(html).toContain("Accept all");
+    expect(html).toContain("Skip");
     expect(html).toContain("Python");
     expect(html).toContain("high");
     expect(html).toContain("Skills: Python, SQL, AWS");
@@ -248,6 +254,30 @@ describe("main UI components", () => {
 
     expect(updated.extracted_skills).toBe("Python, SQL");
     expect(updated.major).toBe("Computer Science");
+  });
+
+  it("removes accepted or skipped resume suggestions from the review list", () => {
+    const suggestion = {
+      field: "extracted_skills",
+      value: "Python",
+      confidence: "high",
+      evidence: ["Skills: Python, SQL"]
+    };
+    const updated = removeResumeSuggestion(
+      {
+        suggestions: {
+          extracted_skills: [
+            suggestion,
+            { field: "extracted_skills", value: "SQL", confidence: "high", evidence: ["Skills: Python, SQL"] }
+          ]
+        }
+      },
+      "extracted_skills",
+      suggestion
+    );
+
+    expect(updated.suggestions.extracted_skills).toHaveLength(1);
+    expect(updated.suggestions.extracted_skills[0].value).toBe("SQL");
   });
 
   it("renders match context in the job detail modal", () => {

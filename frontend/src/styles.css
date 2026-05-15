@@ -600,7 +600,7 @@ button:disabled {
 }
 
 .resume-review-heading > div:first-child,
-.resume-suggestion > div {
+.resume-suggestion-body {
   display: grid;
   gap: 4px;
 }
@@ -631,10 +631,17 @@ button:disabled {
 }
 
 .resume-review-actions button:first-child,
-.resume-suggestion button {
+.resume-suggestion-actions button:first-child {
   color: #fffdf8;
   border-color: var(--accent);
   background: var(--accent);
+}
+
+.resume-suggestion-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
 }
 
 .resume-suggestion-groups {

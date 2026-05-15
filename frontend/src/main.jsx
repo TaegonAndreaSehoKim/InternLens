@@ -974,7 +974,6 @@ function mergeParsedProfileForm(current, parsedProfile) {
   const imported = profileToForm(parsedProfile);
   return {
     ...current,
-    resume_text: imported.resume_text || current.resume_text,
     degree_level: imported.degree_level || current.degree_level,
     major: addCsvItems(current.major, csvToList(imported.major)),
     grad_date: imported.grad_date || current.grad_date,
@@ -983,8 +982,7 @@ function mergeParsedProfileForm(current, parsedProfile) {
     target_industries: addCsvItems(current.target_industries, csvToList(imported.target_industries)),
     extracted_skills: addCsvItems(current.extracted_skills, csvToList(imported.extracted_skills)),
     sponsorship_need: current.sponsorship_need || imported.sponsorship_need,
-    years_of_experience: Math.max(Number(current.years_of_experience || 0), Number(imported.years_of_experience || 0)),
-    notes: current.notes || imported.notes
+    years_of_experience: Math.max(Number(current.years_of_experience || 0), Number(imported.years_of_experience || 0))
   };
 }
 
@@ -1027,6 +1025,30 @@ function applyResumeSuggestionToForm(current, suggestion) {
   }
 
   return current;
+}
+
+function resumeSuggestionKey(suggestion) {
+  return [
+    suggestion?.field ?? "",
+    String(suggestion?.value ?? ""),
+    suggestion?.confidence ?? "",
+    (suggestion?.evidence ?? []).join("|")
+  ].join("::");
+}
+
+function removeResumeSuggestion(resumeImport, groupKey, suggestion) {
+  if (!resumeImport?.suggestions?.[groupKey]) {
+    return resumeImport;
+  }
+
+  const targetKey = resumeSuggestionKey(suggestion);
+  return {
+    ...resumeImport,
+    suggestions: {
+      ...resumeImport.suggestions,
+      [groupKey]: resumeImport.suggestions[groupKey].filter((item) => resumeSuggestionKey(item) !== targetKey)
+    }
+  };
 }
 
 function friendlyErrorMessage(error) {
@@ -1144,8 +1166,13 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     });
   }
 
-  function acceptResumeSuggestion(suggestion) {
+  function acceptResumeSuggestion(groupKey, suggestion) {
     setForm((current) => applyResumeSuggestionToForm(current, suggestion));
+    setResumeImport((current) => removeResumeSuggestion(current, groupKey, suggestion));
+  }
+
+  function skipResumeSuggestion(groupKey, suggestion) {
+    setResumeImport((current) => removeResumeSuggestion(current, groupKey, suggestion));
   }
 
   function acceptAllResumeSuggestions() {
@@ -1355,6 +1382,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           resumeImport={resumeImport}
           onResumeAcceptAll={acceptAllResumeSuggestions}
           onResumeAcceptSuggestion={acceptResumeSuggestion}
+          onResumeSkipSuggestion={skipResumeSuggestion}
           onResumeDismiss={dismissResumeImport}
         />
         <DashboardPanel
@@ -1548,6 +1576,7 @@ function ProfilePanel({
   resumeImport,
   onResumeAcceptAll,
   onResumeAcceptSuggestion,
+  onResumeSkipSuggestion,
   onResumeDismiss
 }) {
   function update(field, value) {
@@ -1619,6 +1648,7 @@ function ProfilePanel({
         resumeImport={resumeImport}
         onAcceptAll={onResumeAcceptAll}
         onAcceptSuggestion={onResumeAcceptSuggestion}
+        onSkipSuggestion={onResumeSkipSuggestion}
         onDismiss={onResumeDismiss}
       />
       <div className="form-grid">
@@ -1733,7 +1763,7 @@ function resumeSuggestionLabel(suggestion) {
   return String(suggestion.value ?? "");
 }
 
-function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onDismiss }) {
+function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onSkipSuggestion, onDismiss }) {
   if (!resumeImport) {
     return null;
   }
@@ -1759,10 +1789,10 @@ function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onD
       <section className="resume-review-panel">
         <div className="resume-review-heading">
           <div>
-            <strong>No confident suggestions found</strong>
-            <span>Try a resume with clearer education, skills, and project sections, or fill the form manually.</span>
+            <strong>No suggestions left</strong>
+            <span>All imported suggestions have been added or skipped. Review the profile fields before saving.</span>
           </div>
-          <button type="button" onClick={onDismiss}>Dismiss</button>
+          <button type="button" onClick={onDismiss}>Close</button>
         </div>
       </section>
     );
@@ -1786,12 +1816,15 @@ function ResumeImportReview({ resumeImport, onAcceptAll, onAcceptSuggestion, onD
             <h3>{group.label}</h3>
             {group.suggestions.map((suggestion, index) => (
               <div className="resume-suggestion" key={`${group.key}-${suggestion.field}-${suggestion.value}-${index}`}>
-                <div>
+                <div className="resume-suggestion-body">
                   <strong>{resumeSuggestionLabel(suggestion)}</strong>
                   <span className={`confidence-chip ${suggestion.confidence}`}>{suggestion.confidence}</span>
                   {suggestion.evidence?.[0] && <small>{suggestion.evidence[0]}</small>}
                 </div>
-                <button type="button" onClick={() => onAcceptSuggestion(suggestion)}>Add</button>
+                <div className="resume-suggestion-actions">
+                  <button type="button" onClick={() => onAcceptSuggestion(group.key, suggestion)}>Add</button>
+                  <button type="button" onClick={() => onSkipSuggestion(group.key, suggestion)}>Skip</button>
+                </div>
               </div>
             ))}
           </div>
@@ -2713,5 +2746,6 @@ export {
   ResumeImportReview,
   applyResumeSuggestionToForm,
   mergeParsedProfileForm,
+  removeResumeSuggestion,
   scoreExplanation
 };
