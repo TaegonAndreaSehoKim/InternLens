@@ -33,6 +33,7 @@ def test_recommend_endpoint_with_inline_profile_returns_ranked_results() -> None
             "profile_id": "seho_001",
             "resume_text": "Graduate student with Python, PyTorch, machine learning, and data analysis experience.",
             "degree_level": "Master's",
+            "major": "Computer Science",
             "grad_date": "2027-12",
             "preferred_roles": [
                 "Machine Learning Engineer Intern",

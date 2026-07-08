@@ -27,6 +27,9 @@ jobs:
       - name: refresh processed job corpus
         run: python scripts/refresh_job_corpus.py
 
+      - name: verify refreshed corpus health
+        run: python scripts/check_corpus_health.py --min-active-jobs 1 --output-file outputs/corpus_health.json
+
       - name: upload refreshed corpus artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -34,3 +37,4 @@ jobs:
           path: |
             data/raw
             data/processed/jobs
+            outputs/corpus_health.json

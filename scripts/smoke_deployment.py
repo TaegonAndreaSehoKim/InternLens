@@ -95,6 +95,23 @@ def _step(
     }
 
 
+def _unchecked_step(
+    *,
+    name: str,
+    request_fn: Callable[[], httpx.Response],
+) -> Dict[str, Any]:
+    started = time.perf_counter()
+    response = request_fn()
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+    return {
+        "name": name,
+        "status_code": response.status_code,
+        "elapsed_ms": elapsed_ms,
+        "ok": 200 <= response.status_code < 300,
+        "body": _response_body(response),
+    }
+
+
 def _response_body(response: httpx.Response) -> Dict[str, Any]:
     try:
         payload = response.json()
@@ -165,6 +182,24 @@ def run_deployment_smoke(
             schema_step["top_k_maximum"] = top_k_maximum
             steps.append(schema_step)
 
+            public_recommend_step = _unchecked_step(
+                name="public_recommend",
+                request_fn=lambda: client.request(
+                    "POST",
+                    _url(base_url, "/recommend"),
+                    json={
+                        "profile_data": _profile_payload(profile_id),
+                        "top_k": top_k,
+                    },
+                ),
+            )
+            public_recommend_body = public_recommend_step["body"]
+            public_recommend_step["ok"] = (
+                public_recommend_step["ok"]
+                and int(public_recommend_body.get("returned_jobs") or 0) > 0
+            )
+            steps.append(public_recommend_step)
+
             return {
                 "generated_at": utc_now_iso(),
                 "base_url": base_url.rstrip("/"),
@@ -179,6 +214,7 @@ def run_deployment_smoke(
                     "applied_jobs": None,
                     "auth_required": steps[1]["ok"],
                     "top_k_maximum": top_k_maximum,
+                    "public_recommend_returned_jobs": public_recommend_body.get("returned_jobs"),
                 },
             }
 

@@ -283,11 +283,15 @@ def load_all_job_postings(
         raise FileNotFoundError(f"Job directory not found: {directory}")
 
     selected_jobs: Dict[str, tuple[Path, Dict[str, Any]]] = {}
+    total_json_files = 0
+    expired_jobs_skipped = 0
 
     # Use recursive glob so crawled jobs under nested source/site folders are also loaded.
     for file_path in sorted(directory.rglob("*.json")):
+        total_json_files += 1
         job = load_job_posting(file_path)
         if not include_expired and is_job_expired(job, now=now):
+            expired_jobs_skipped += 1
             continue
 
         job_id = job["job_id"]
@@ -307,6 +311,12 @@ def load_all_job_postings(
     jobs = [job for _path, job in jobs_with_paths]
 
     if not jobs:
+        if total_json_files and expired_jobs_skipped == total_json_files:
+            raise ValueError(
+                f"No active job posting JSON files found in: {directory}. "
+                f"All {total_json_files} job file(s) are expired. "
+                "Refresh the corpus or pass include_expired=True for inspection."
+            )
         raise ValueError(f"No job posting JSON files found in: {directory}")
 
     return jobs

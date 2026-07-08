@@ -17,6 +17,7 @@ phases:
   build:
     commands:
       - python scripts/refresh_job_corpus.py --timeout "${REFRESH_TIMEOUT_SECONDS:-180}"
+      - python scripts/check_corpus_health.py --min-active-jobs "${MIN_ACTIVE_JOBS:-1}" --output-file outputs/corpus_health.json
       - python -m pytest -q
       - python scripts/package_eb.py --output-file outputs/internlens_eb_backend.zip
   post_build:

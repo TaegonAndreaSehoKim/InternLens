@@ -137,6 +137,12 @@ npm test -- --run
 npm run build
 ```
 
+After refreshing or deploying the job corpus, verify that the processed corpus has non-expired jobs:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\check_corpus_health.py
+```
+
 For full local commands, source refresh commands, CLI ranking examples, and API examples, see [docs/development/local_workflows.md](docs/development/local_workflows.md).
 
 ## AWS Staging
@@ -149,6 +155,8 @@ Current staging shape:
 - Backend deploy: CodePipeline + CodeBuild
 - Weekly corpus refresh: EventBridge -> CodeBuild -> Elastic Beanstalk
 - Failure notification topic: SNS
+
+GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. The staging backend corpus is updated by the AWS CodeBuild weekly refresh/deploy path below. Both refresh paths run `scripts/check_corpus_health.py` so a green run requires at least one non-expired job in the processed corpus.
 
 Latest verified weekly refresh path:
 
@@ -176,11 +184,12 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Local backend suite after resume import updates: `212 passed`
+- Local backend suite after corpus health gate updates: `216 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
-- Frontend suite: `25 passed`
+- Frontend suite: `30 passed`
 - Frontend lint and production build: passing
-- CloudFront staging smoke: `health=200`, `auth_required=401`, OpenAPI schema check passing
+- Corpus health gate: refresh artifacts and weekly deploys must contain at least one non-expired processed job
+- Deployment smoke now checks `health`, auth protection, OpenAPI schema, and the public recommendation corpus
 
 ## Project Status
 

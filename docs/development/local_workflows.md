@@ -90,6 +90,12 @@ Refresh active Lever and Greenhouse registry targets:
 .\.venv\Scripts\python.exe scripts\refresh_job_corpus.py
 ```
 
+Verify that the processed corpus has at least one non-expired job:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\check_corpus_health.py
+```
+
 Useful variants:
 
 ```powershell
@@ -134,6 +140,8 @@ Discovery/promotion tools:
 ```
 
 Source promotion should stay operator-reviewed. Do not auto-promote broad discovered boards without inspecting dry-run output.
+
+The GitHub Actions `refresh-job-corpus` workflow is artifact-only. It refreshes corpus files on the GitHub runner and uploads `refreshed-job-corpus`, including `outputs/corpus_health.json`, but it does not commit generated data or deploy the staging backend. Staging corpus deployment uses the AWS CodeBuild weekly refresh path documented in `docs/deployment/aws_staging.md`.
 
 ## Baseline Ranking CLI
 
@@ -243,7 +251,7 @@ Hidden jobs are suppressed from future shortlists until the user clears the hidd
 
 ## Deployment Smoke
 
-Unauthenticated staging auth/schema smoke:
+Unauthenticated staging auth/schema/default-corpus smoke:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net --top-k 1000 --expect-auth-required --output-file outputs\deployment_smoke_staging_auth.json

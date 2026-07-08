@@ -264,6 +264,7 @@ Use this when the goal is:
 ```text
 weekly schedule
   -> refresh Lever and Greenhouse registry sources
+  -> verify the refreshed corpus has non-expired jobs
   -> run regression tests
   -> package a backend bundle with the refreshed data/processed/jobs corpus
   -> upload the bundle to S3
@@ -361,9 +362,10 @@ on the weekly refresh CodeBuild project.
 ### Relationship to GitHub Actions
 
 `.github/workflows/refresh-job-corpus.yml` is still useful for manual or scheduled artifact-only corpus refresh checks.
-It uploads refreshed corpus artifacts, but it does not deploy the staging backend.
+It uploads refreshed corpus artifacts and a `outputs/corpus_health.json` report, but it does not deploy the staging backend.
 
 `buildspec.weekly-refresh.yml` is the server-facing path: it refreshes the corpus and deploys a new Elastic Beanstalk application version.
+It runs `scripts/check_corpus_health.py` before packaging, so a weekly build fails before deployment when the processed corpus has no non-expired jobs.
 
 ### Latest weekly refresh validation
 

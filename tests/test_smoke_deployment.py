@@ -146,6 +146,22 @@ def test_run_deployment_smoke_can_expect_auth_required() -> None:
                     },
                     request=request,
                 )
+            if method == "POST" and url.endswith("/recommend"):
+                self.requests.append((method, url, json))
+                request = httpx.Request(method, url)
+                return httpx.Response(
+                    200,
+                    json={
+                        "returned_jobs": 2,
+                        "results": [
+                            {
+                                "job_id": "job_1",
+                                "title": "machine learning intern",
+                            }
+                        ],
+                    },
+                    request=request,
+                )
             return super().request(method, url, json=json, headers=headers)
 
     report = smoke_script.run_deployment_smoke(
@@ -158,9 +174,15 @@ def test_run_deployment_smoke_can_expect_auth_required() -> None:
     )
 
     assert report["ok"] is True
-    assert [step["name"] for step in report["steps"]] == ["health", "auth_required", "openapi_schema"]
+    assert [step["name"] for step in report["steps"]] == [
+        "health",
+        "auth_required",
+        "openapi_schema",
+        "public_recommend",
+    ]
     assert report["summary"]["auth_required"] is True
     assert report["summary"]["top_k_maximum"] == 1000
+    assert report["summary"]["public_recommend_returned_jobs"] == 2
 
 
 def test_smoke_deployment_main_writes_report(tmp_path, monkeypatch, capsys) -> None:

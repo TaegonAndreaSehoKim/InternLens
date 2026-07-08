@@ -190,3 +190,22 @@ def test_load_all_job_postings_can_include_expired_jobs(tmp_path: Path) -> None:
     )
 
     assert [job["job_id"] for job in jobs] == ["expired_job"]
+
+
+def test_load_all_job_postings_reports_all_expired_jobs(tmp_path: Path) -> None:
+    _write_job(tmp_path / "expired.json", "expired_job", "expired internship")
+    payload = json.loads((tmp_path / "expired.json").read_text(encoding="utf-8"))
+    payload["expires_at"] = "2026-05-01T00:00:00+00:00"
+    (tmp_path / "expired.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    try:
+        load_all_job_postings(
+            tmp_path,
+            now=datetime(2026, 5, 12, tzinfo=timezone.utc),
+        )
+        assert False, "Expected expired-only corpus to raise a ValueError"
+    except ValueError as exc:
+        message = str(exc)
+
+    assert "No active job posting JSON files found" in message
+    assert "All 1 job file(s) are expired" in message
