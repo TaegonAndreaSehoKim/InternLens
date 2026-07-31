@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `212 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `226 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -189,9 +189,9 @@ Recent work focused on:
 - adding resume upload parsing so profile setup can review evidence-backed suggestions for skills, majors, roles, industries, locations, education timeline, and background text
 
 The latest validation state shows:
-- local backend suite after resume import updates: `212 passed`
+- local backend suite after refresh resilience updates: `226 passed`
 - weekly backend CodeBuild suite: `200 passed`
-- `npm run lint`, `npm test -- --run` (`25 passed`), and `npm run build` passing in `frontend/`
+- `npm run lint`, `npm test -- --run` (`30 passed`), and `npm run build` passing in `frontend/`
 - Cloudflare re-fetched with improved location extraction
 - Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
 - Waymo shortlist remains very small and focused under applyable-only filtering

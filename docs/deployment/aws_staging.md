@@ -362,10 +362,10 @@ on the weekly refresh CodeBuild project.
 ### Relationship to GitHub Actions
 
 `.github/workflows/refresh-job-corpus.yml` is still useful for manual or scheduled artifact-only corpus refresh checks.
-It uploads refreshed corpus artifacts and a `outputs/corpus_health.json` report, but it does not deploy the staging backend.
+It uploads refreshed corpus artifacts, `outputs/corpus_refresh_report.json`, and `outputs/corpus_health.json`, but it does not deploy the staging backend. Artifact upload uses `if: always()` so a source-failure report remains available even when the refresh gate fails.
 
 `buildspec.weekly-refresh.yml` is the server-facing path: it refreshes the corpus and deploys a new Elastic Beanstalk application version.
-It runs `scripts/check_corpus_health.py` before packaging, so a weekly build fails before deployment when the processed corpus has no non-expired jobs.
+Transient ATS failures are retried up to three times. The build attempts every active source, allows at most `${MAX_FAILED_SOURCES:-2}` final source failures, requires at least one successful source, and then runs `scripts/check_corpus_health.py` before packaging. A weekly build therefore fails before deployment when too many sources fail or the processed corpus has no non-expired jobs.
 
 ### Latest weekly refresh validation
 

@@ -156,7 +156,7 @@ Current staging shape:
 - Weekly corpus refresh: EventBridge -> CodeBuild -> Elastic Beanstalk
 - Failure notification topic: SNS
 
-GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. The staging backend corpus is updated by the AWS CodeBuild weekly refresh/deploy path below. Both refresh paths run `scripts/check_corpus_health.py` so a green run requires at least one non-expired job in the processed corpus.
+GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. The staging backend corpus is updated by the AWS CodeBuild weekly refresh/deploy path below. Both paths retry transient ATS failures, preserve per-source diagnostics, tolerate at most two final board failures, and run `scripts/check_corpus_health.py` so a green run still requires a healthy non-expired corpus.
 
 Latest verified weekly refresh path:
 
@@ -178,13 +178,13 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 - [Source acquisition strategy](docs/architecture/source_acquisition_strategy.md)
 - [Local workflows](docs/development/local_workflows.md)
 - [AWS staging deployment](docs/deployment/aws_staging.md)
-- [Development log](docs/devlog/week7.md)
+- [Latest development log](docs/devlog/week8.md)
 
 ## Quality Checkpoint
 
 Recent validation checkpoints:
 
-- Local backend suite after corpus health gate updates: `216 passed`
+- Local backend suite after refresh resilience updates: `226 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `30 passed`
 - Frontend lint and production build: passing

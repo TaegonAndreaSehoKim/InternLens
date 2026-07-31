@@ -90,6 +90,10 @@ Refresh active Lever and Greenhouse registry targets:
 .\.venv\Scripts\python.exe scripts\refresh_job_corpus.py
 ```
 
+Transient timeouts, connection errors, `429`, and `5xx` responses are retried up to three times. The
+local command remains strict by default: it attempts the rest of the registry but exits non-zero if any
+source still fails after retries.
+
 Verify that the processed corpus has at least one non-expired job:
 
 ```powershell
@@ -104,7 +108,12 @@ Useful variants:
 .\.venv\Scripts\python.exe scripts\refresh_job_corpus.py --timeout 180
 .\.venv\Scripts\python.exe scripts\refresh_job_corpus.py --include-inactive
 .\.venv\Scripts\python.exe scripts\refresh_job_corpus.py --greenhouse-all-jobs
+.\.venv\Scripts\python.exe scripts\refresh_job_corpus.py --max-failed-sources 2 --report-file outputs\corpus_refresh_report.json
 ```
+
+`--min-successful-sources` and `--max-failed-sources` control the final source policy. When
+`--report-file` is supplied, the JSON report lists every successful and failed board with its provider,
+job counts, and final error message.
 
 Fetch active registry targets directly:
 
@@ -141,7 +150,7 @@ Discovery/promotion tools:
 
 Source promotion should stay operator-reviewed. Do not auto-promote broad discovered boards without inspecting dry-run output.
 
-The GitHub Actions `refresh-job-corpus` workflow is artifact-only. It refreshes corpus files on the GitHub runner and uploads `refreshed-job-corpus`, including `outputs/corpus_health.json`, but it does not commit generated data or deploy the staging backend. Staging corpus deployment uses the AWS CodeBuild weekly refresh path documented in `docs/deployment/aws_staging.md`.
+The GitHub Actions `refresh-job-corpus` workflow is artifact-only. It refreshes corpus files on the GitHub runner and uploads `refreshed-job-corpus`, including `outputs/corpus_refresh_report.json` and `outputs/corpus_health.json`, but it does not commit generated data or deploy the staging backend. The artifact step runs even after a failed refresh so source diagnostics remain available. Staging corpus deployment uses the AWS CodeBuild weekly refresh path documented in `docs/deployment/aws_staging.md`.
 
 ## Baseline Ranking CLI
 

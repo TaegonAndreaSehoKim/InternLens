@@ -127,13 +127,19 @@ def run_registry_fetch(
     if not entries:
         print("No registry entries to fetch.")
         return {
+            "entries_selected": 0,
             "entries_fetched": 0,
+            "entries_failed": 0,
             "total_filtered_jobs": 0,
             "total_processed_jobs": 0,
+            "successful_sources": [],
+            "failed_sources": [],
         }
 
     total_raw_jobs = 0
     total_processed_jobs = 0
+    successful_sources: List[Dict[str, Any]] = []
+    failed_sources: List[Dict[str, Any]] = []
 
     for entry in entries:
         site_name = entry["site_name"]
@@ -141,11 +147,23 @@ def run_registry_fetch(
 
         print(f"=== Fetching Lever board: {site_name} ===")
 
-        jobs = fetch_lever_postings(
-            site_name,
-            limit=limit,
-            timeout=timeout,
-        )
+        try:
+            jobs = fetch_lever_postings(
+                site_name,
+                limit=limit,
+                timeout=timeout,
+            )
+        except (RuntimeError, ValueError) as exc:
+            failure = {
+                "provider": "lever",
+                "source_id": site_name,
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+            }
+            failed_sources.append(failure)
+            print(f"WARNING: Skipping Lever board '{site_name}': {exc}")
+            print()
+            continue
 
         raw_output_path = save_raw_lever_snapshot(
             site_name,
@@ -173,29 +191,49 @@ def run_registry_fetch(
 
         total_raw_jobs += len(jobs)
         total_processed_jobs += len(processed_paths)
+        successful_sources.append(
+            {
+                "provider": "lever",
+                "source_id": site_name,
+                "filtered_jobs": len(jobs),
+                "processed_jobs": len(processed_paths),
+            }
+        )
         print()
 
     print("=== Registry fetch complete ===")
+    print(f"Sources selected: {len(entries)}")
+    print(f"Sources succeeded: {len(successful_sources)}")
+    print(f"Sources failed: {len(failed_sources)}")
     print(f"Total filtered jobs fetched: {total_raw_jobs}")
     print(f"Total processed jobs saved: {total_processed_jobs}")
 
     return {
-        "entries_fetched": len(entries),
+        "entries_selected": len(entries),
+        "entries_fetched": len(successful_sources),
+        "entries_failed": len(failed_sources),
         "total_filtered_jobs": total_raw_jobs,
         "total_processed_jobs": total_processed_jobs,
+        "successful_sources": successful_sources,
+        "failed_sources": failed_sources,
     }
 
 
 def main() -> None:
     args = _parse_args()
     registry_path = PROJECT_ROOT / args.registry_path
-    run_registry_fetch(
+    summary = run_registry_fetch(
         registry_path=registry_path,
         timeout=args.timeout,
         limit=args.limit,
         only_active=args.only_active,
         project_root=PROJECT_ROOT,
     )
+
+    if summary["entries_failed"]:
+        raise SystemExit(
+            f"Lever registry refresh completed with {summary['entries_failed']} failed source(s)."
+        )
 
 
 if __name__ == "__main__":

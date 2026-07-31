@@ -10,6 +10,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 
+from src.ingestion.http_retry import (
+    DEFAULT_MAX_ATTEMPTS,
+    DEFAULT_RETRY_BACKOFF_SECONDS,
+    get_json_with_retry,
+)
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
 
 
@@ -257,6 +262,8 @@ def fetch_lever_postings(
     *,
     timeout: float = 60.0,
     limit: Optional[int] = None,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    retry_backoff_seconds: float = DEFAULT_RETRY_BACKOFF_SECONDS,
 ) -> List[Dict[str, Any]]:
     # Fetch published Lever postings for a single site.
     request_url = _build_request_url(site_name)
@@ -270,9 +277,13 @@ def fetch_lever_postings(
             },
             follow_redirects=True,
         ) as client:
-            response = client.get(request_url)
-            response.raise_for_status()
-            payload = response.json()
+            payload = get_json_with_retry(
+                client,
+                request_url,
+                request_label=f"Lever site '{site_name}'",
+                max_attempts=max_attempts,
+                backoff_seconds=retry_backoff_seconds,
+            )
     except httpx.TimeoutException as exc:
         raise RuntimeError(
             f"Lever request timed out for site '{site_name}'. Try a larger timeout or verify the site name."

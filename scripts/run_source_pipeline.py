@@ -216,6 +216,7 @@ def _run_refresh(args: argparse.Namespace) -> Dict[str, int]:
         raise ValueError("Choose at most one of --greenhouse-only or --lever-only.")
 
     total_entries = 0
+    total_entries_failed = 0
     total_filtered_jobs = 0
     total_processed_jobs = 0
 
@@ -229,6 +230,7 @@ def _run_refresh(args: argparse.Namespace) -> Dict[str, int]:
             project_root=PROJECT_ROOT,
         )
         total_entries += int(lever_summary["entries_fetched"])
+        total_entries_failed += int(lever_summary.get("entries_failed", 0))
         total_filtered_jobs += int(lever_summary["total_filtered_jobs"])
         total_processed_jobs += int(lever_summary["total_processed_jobs"])
         print()
@@ -244,18 +246,26 @@ def _run_refresh(args: argparse.Namespace) -> Dict[str, int]:
             project_root=PROJECT_ROOT,
         )
         total_entries += int(greenhouse_summary["entries_fetched"])
+        total_entries_failed += int(greenhouse_summary.get("entries_failed", 0))
         total_filtered_jobs += int(greenhouse_summary["total_filtered_jobs"])
         total_processed_jobs += int(greenhouse_summary["total_processed_jobs"])
         print()
 
     print("##### Refresh step complete #####")
     print(f"Registry entries fetched: {total_entries}")
+    print(f"Registry entries failed: {total_entries_failed}")
     print(f"Filtered jobs saved: {total_filtered_jobs}")
     print(f"Processed job files saved: {total_processed_jobs}")
     print()
 
+    if total_entries_failed:
+        raise RuntimeError(
+            f"Source pipeline refresh completed with {total_entries_failed} failed source(s)."
+        )
+
     return {
         "entries_fetched": total_entries,
+        "entries_failed": total_entries_failed,
         "total_filtered_jobs": total_filtered_jobs,
         "total_processed_jobs": total_processed_jobs,
     }

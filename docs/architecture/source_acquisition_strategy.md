@@ -339,6 +339,15 @@ Refresh should be source-aware rather than blindly global.
 - refresh higher-scoring sources first
 - preserve raw snapshots
 - update processed jobs only after normalization succeeds
+- retry transient timeouts, connection failures, `408`, `425`, `429`, and `5xx` responses up to three attempts
+- do not retry permanent client errors such as a missing `404` board
+- isolate a failed board so the remaining registry sources are still attempted
+- record successful and failed sources in `outputs/corpus_refresh_report.json`
+- gate automation on both source-success policy and non-expired corpus health
+
+The local refresh command is strict by default and allows no failed sources. The full GitHub and AWS
+automation paths currently allow at most two failed boards because they refresh a larger registry. They
+still fail when no source succeeds, more than two boards fail, or the resulting corpus has no active jobs.
 
 ### Suggested cadence
 
@@ -360,7 +369,7 @@ Refresh should be source-aware rather than blindly global.
 
 - filter out non-board Greenhouse URLs such as embed helpers before candidate creation
 - preserve partial discovery output earlier during long runs so timeouts do not waste all progress
-- add retry/backoff or softer handling for `403` and `429` responses
+- use refresh reliability reports to identify sources that should be deactivated or revalidated
 - consider limited parallelism so larger seed files remain practical
 
 ---

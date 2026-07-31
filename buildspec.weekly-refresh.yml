@@ -16,7 +16,7 @@ phases:
       - export EB_ARTIFACT_PREFIX="${EB_ARTIFACT_PREFIX:-internlens-backend}"
   build:
     commands:
-      - python scripts/refresh_job_corpus.py --timeout "${REFRESH_TIMEOUT_SECONDS:-180}"
+      - python scripts/refresh_job_corpus.py --timeout "${REFRESH_TIMEOUT_SECONDS:-180}" --min-successful-sources 1 --max-failed-sources "${MAX_FAILED_SOURCES:-2}" --report-file outputs/corpus_refresh_report.json
       - python scripts/check_corpus_health.py --min-active-jobs "${MIN_ACTIVE_JOBS:-1}" --output-file outputs/corpus_health.json
       - python -m pytest -q
       - python scripts/package_eb.py --output-file outputs/internlens_eb_backend.zip
@@ -36,5 +36,7 @@ phases:
 artifacts:
   files:
     - outputs/internlens_eb_backend.zip
+    - outputs/corpus_refresh_report.json
+    - outputs/corpus_health.json
     - data/processed/jobs/**/*
   discard-paths: no

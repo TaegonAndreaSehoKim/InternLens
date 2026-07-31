@@ -9,6 +9,11 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from src.ingestion.http_retry import (
+    DEFAULT_MAX_ATTEMPTS,
+    DEFAULT_RETRY_BACKOFF_SECONDS,
+    get_json_with_retry,
+)
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
 
 
@@ -159,6 +164,8 @@ def fetch_greenhouse_jobs(
     timeout: float = 60.0,
     limit: Optional[int] = None,
     content: bool = True,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    retry_backoff_seconds: float = DEFAULT_RETRY_BACKOFF_SECONDS,
 ) -> List[Dict[str, Any]]:
     # Fetch published Greenhouse jobs for one board token.
     request_url = _build_jobs_url(board_token, content=content)
@@ -172,9 +179,13 @@ def fetch_greenhouse_jobs(
             },
             follow_redirects=True,
         ) as client:
-            response = client.get(request_url)
-            response.raise_for_status()
-            payload = response.json()
+            payload = get_json_with_retry(
+                client,
+                request_url,
+                request_label=f"Greenhouse board '{board_token}'",
+                max_attempts=max_attempts,
+                backoff_seconds=retry_backoff_seconds,
+            )
     except httpx.TimeoutException as exc:
         raise RuntimeError(
             f"Greenhouse request timed out for board '{board_token}'. Try a larger timeout or verify the board token."

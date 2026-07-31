@@ -216,3 +216,51 @@ def test_main_fetches_registry_entries_and_applies_filters(
     assert "=== Fetching Lever board: rws ===" in output
     assert "Total filtered jobs fetched: 2" in output
     assert "Total processed jobs saved: 2" in output
+
+
+def test_run_registry_fetch_continues_after_one_source_failure(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    registry_path = tmp_path / "lever_targets.json"
+    _write_registry(
+        registry_path,
+        [
+            {"site_name": "broken", "active": True, "internship_only": False},
+            {"site_name": "healthy", "active": True, "internship_only": False},
+        ],
+    )
+    fetch_calls: list[str] = []
+
+    def fake_fetch(site_name: str, *, limit, timeout):
+        fetch_calls.append(site_name)
+        if site_name == "broken":
+            raise RuntimeError("Lever request failed with status 503.")
+        return [{"id": "job-1", "text": "Software Intern"}]
+
+    monkeypatch.setattr(registry_script, "fetch_lever_postings", fake_fetch)
+    monkeypatch.setattr(
+        registry_script,
+        "save_raw_lever_snapshot",
+        lambda site_name, jobs, *, project_root: project_root / f"{site_name}.json",
+    )
+    monkeypatch.setattr(
+        registry_script,
+        "save_processed_lever_postings",
+        lambda site_name, jobs, *, project_root: [project_root / f"{site_name}-job.json"],
+    )
+
+    summary = registry_script.run_registry_fetch(
+        registry_path=registry_path,
+        timeout=60.0,
+        limit=None,
+        only_active=True,
+        project_root=tmp_path,
+    )
+
+    assert fetch_calls == ["broken", "healthy"]
+    assert summary["entries_selected"] == 2
+    assert summary["entries_fetched"] == 1
+    assert summary["entries_failed"] == 1
+    assert summary["failed_sources"][0]["source_id"] == "broken"
+    assert summary["successful_sources"][0]["source_id"] == "healthy"

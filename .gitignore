@@ -41,6 +41,8 @@ outputs/deployment_smoke*.json
 outputs/internlens_eb_backend.zip
 outputs/promotion_candidate_smoke*.json
 outputs/ranking_quality_report.*
+outputs/corpus_refresh_report.json
+outputs/corpus_health.json
 
 # Frontend dependencies / build output
 frontend/node_modules/

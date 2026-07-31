@@ -142,3 +142,51 @@ def test_run_refresh_rejects_conflicting_source_flags(tmp_path: Path, monkeypatc
         assert False, "Expected ValueError for conflicting source flags"
     except ValueError as exc:
         assert "Choose at most one" in str(exc)
+
+
+def test_run_refresh_attempts_both_providers_before_reporting_source_failures(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    args = SimpleNamespace(
+        lever_registry="data/source_registry/lever_targets.json",
+        greenhouse_registry="data/source_registry/greenhouse_targets.json",
+        refresh_timeout=60.0,
+        refresh_limit=None,
+        refresh_include_inactive=False,
+        greenhouse_all_jobs=False,
+        greenhouse_only=False,
+        lever_only=False,
+    )
+    monkeypatch.setattr(pipeline_script, "PROJECT_ROOT", tmp_path)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        pipeline_script,
+        "run_lever_registry_fetch",
+        lambda **kwargs: calls.append("lever")
+        or {
+            "entries_fetched": 0,
+            "entries_failed": 1,
+            "total_filtered_jobs": 0,
+            "total_processed_jobs": 0,
+        },
+    )
+    monkeypatch.setattr(
+        pipeline_script,
+        "run_greenhouse_registry_fetch",
+        lambda **kwargs: calls.append("greenhouse")
+        or {
+            "entries_fetched": 1,
+            "entries_failed": 0,
+            "total_filtered_jobs": 2,
+            "total_processed_jobs": 2,
+        },
+    )
+
+    try:
+        pipeline_script._run_refresh(args)
+        assert False, "Expected RuntimeError for a failed refresh source"
+    except RuntimeError as exc:
+        assert "1 failed source" in str(exc)
+
+    assert calls == ["lever", "greenhouse"]

@@ -5,16 +5,19 @@ on:
   schedule:
     - cron: "0 14 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
 
     steps:
       - name: check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -25,16 +28,24 @@ jobs:
           pip install -r requirements.txt
 
       - name: refresh processed job corpus
-        run: python scripts/refresh_job_corpus.py
+        id: refresh
+        run: >-
+          python scripts/refresh_job_corpus.py
+          --min-successful-sources 1
+          --max-failed-sources 2
+          --report-file outputs/corpus_refresh_report.json
 
       - name: verify refreshed corpus health
         run: python scripts/check_corpus_health.py --min-active-jobs 1 --output-file outputs/corpus_health.json
 
       - name: upload refreshed corpus artifacts
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: refreshed-job-corpus
           path: |
             data/raw
             data/processed/jobs
+            outputs/corpus_refresh_report.json
             outputs/corpus_health.json
+          if-no-files-found: warn

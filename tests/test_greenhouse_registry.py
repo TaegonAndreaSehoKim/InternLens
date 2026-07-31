@@ -197,3 +197,52 @@ def test_main_fetches_registry_entries_and_applies_filters(
     assert "=== Fetching Greenhouse board: honehealth ===" in output
     assert "Total filtered jobs fetched: 2" in output
     assert "Total processed jobs saved: 2" in output
+
+
+def test_run_registry_fetch_continues_after_one_source_failure(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    registry_path = tmp_path / "greenhouse_targets.json"
+    _write_registry(
+        registry_path,
+        [
+            {"board_token": "broken", "active": True},
+            {"board_token": "healthy", "active": True},
+        ],
+    )
+    fetch_calls: list[str] = []
+
+    def fake_fetch(board_token: str, *, limit, timeout, content):
+        fetch_calls.append(board_token)
+        if board_token == "broken":
+            raise RuntimeError("Greenhouse request timed out.")
+        return [{"id": 1, "title": "Software Intern"}]
+
+    monkeypatch.setattr(registry_script, "fetch_greenhouse_jobs", fake_fetch)
+    monkeypatch.setattr(
+        registry_script,
+        "save_raw_greenhouse_snapshot",
+        lambda board_token, jobs, *, project_root: project_root / f"{board_token}.json",
+    )
+    monkeypatch.setattr(
+        registry_script,
+        "save_processed_greenhouse_jobs",
+        lambda board_token, jobs, *, project_root: [project_root / f"{board_token}-job.json"],
+    )
+
+    summary = registry_script.run_registry_fetch(
+        registry_path=registry_path,
+        timeout=60.0,
+        limit=None,
+        only_active=True,
+        internship_only=False,
+        project_root=tmp_path,
+    )
+
+    assert fetch_calls == ["broken", "healthy"]
+    assert summary["entries_selected"] == 2
+    assert summary["entries_fetched"] == 1
+    assert summary["entries_failed"] == 1
+    assert summary["failed_sources"][0]["source_id"] == "broken"
+    assert summary["successful_sources"][0]["source_id"] == "healthy"
