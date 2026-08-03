@@ -10,9 +10,9 @@ Live staging app:
 https://main.d1d00e49guhewo.amplifyapp.com
 ```
 
-<img src="docs/assets/internlens-shortlist.jpg" alt="InternLens shortlist dashboard showing ranked internship matches, score breakdown, matched skills, and job actions" width="100%">
+<img src="docs/assets/internlens-shortlist.png" alt="InternLens shortlist workspace showing ranked internship matches, compact evidence, match scores, filters, and job actions" width="100%">
 
-Representative shortlist view. The live UI may show saved profiles in a compact summary before the shortlist.
+Representative shortlist view from the redesigned application workspace. The live UI shows the saved profile and pipeline overview above this review list.
 
 ## Project Diagram
 

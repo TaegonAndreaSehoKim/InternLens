@@ -447,24 +447,24 @@ const INDUSTRY_OPTIONS = [
 
 const PUBLIC_FEATURES = [
   {
-    title: "Structured profile setup",
-    body: "Start from guided role, skill, location, and industry choices instead of relying on a long free-text prompt.",
+    title: "A profile you can inspect",
+    body: "Set the roles, skills, locations, and constraints that should shape every search.",
   },
   {
-    title: "Explainable recommendations",
-    body: "Review ranked internship leads with readable match reasons, blockers, and fit signals before taking action.",
+    title: "Evidence beside every role",
+    body: "See the specific matches, gaps, and eligibility signals behind each ranked lead.",
   },
   {
-    title: "Shortlist workflow",
-    body: "Keep saved, applied, and hidden roles organized so each search pass gets easier to review.",
+    title: "One working application list",
+    body: "Move roles from review to saved or applied, and keep dismissed noise out of the way.",
   },
 ];
 
 const PUBLIC_STEPS = [
-  "Create an account",
-  "Build a profile",
-  "Find matches",
-  "Track decisions",
+  "Set your criteria",
+  "Review ranked roles",
+  "Check the evidence",
+  "Track each decision",
 ];
 
 const PUBLIC_SAMPLE_JOBS = [
@@ -1382,21 +1382,25 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   }, [form, selectedRun, recommendationFilter]);
 
   return (
-    <main className="shell">
+    <main className="shell" id="workspace">
       <header className="app-header">
-        <div className="product-title">
-          <p className="eyebrow">InternLens</p>
-          <h1>Internship application board</h1>
-          <p className="hero-copy">
-            Review ranked leads, keep useful roles in motion, and suppress noise from the next pass.
-          </p>
-        </div>
+        <a className="brand-lockup" href="#workspace" aria-label="InternLens workspace home">
+          <span className="brand-mark" aria-hidden="true">IL</span>
+          <span>
+            <strong>InternLens</strong>
+            <small>Application workspace</small>
+          </span>
+        </a>
+        <nav className="app-nav" aria-label="Workspace sections">
+          <a href="#overview">Overview</a>
+          <a href="#profile">Profile</a>
+          <a href="#jobs">Jobs</a>
+        </nav>
         <div className={`status-card server-status ${apiHealth}`}>
           <div className="server-status-main">
             <span className={busy || apiHealth === "checking" ? "pulse-dot active" : "pulse-dot"} />
             <div>
-              <p className="eyebrow">Server</p>
-              <h2>{SERVER_STATUS_LABELS[apiHealth]}</h2>
+              <span className="status-label">Workspace {SERVER_STATUS_LABELS[apiHealth].toLowerCase()}</span>
             </div>
           </div>
           <div className="account-strip">
@@ -1405,6 +1409,21 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           </div>
         </div>
       </header>
+
+      <section className="workspace-heading" id="overview">
+        <div>
+          <p className="eyebrow">Internship pipeline</p>
+          <h1>Applications</h1>
+          <p className="hero-copy">
+            Review new leads, keep promising roles moving, and record what you have already handled.
+          </p>
+        </div>
+        <ol className="workflow-key" aria-label="Application workflow">
+          <li><span>01</span> Profile</li>
+          <li><span>02</span> Review</li>
+          <li><span>03</span> Apply</li>
+        </ol>
+      </section>
 
       {profileState === "changed" && (
         <section className="unsaved-change-banner" aria-label="Unsaved profile changes">
@@ -1418,7 +1437,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         </section>
       )}
 
-      <section className="grid two">
+      <section className="grid two workspace-grid">
         <ProfilePanel
           form={form}
           setForm={setForm}
@@ -1494,9 +1513,12 @@ function PublicHome({ onSignIn, errorMessage }) {
   return (
     <main className="public-shell">
       <header className="public-nav">
-        <div className="public-brand">
-          <p className="eyebrow">InternLens</p>
-          <strong>Internship application board</strong>
+        <div className="brand-lockup public-brand">
+          <span className="brand-mark" aria-hidden="true">IL</span>
+          <span>
+            <strong>InternLens</strong>
+            <small>Application workspace</small>
+          </span>
         </div>
         <div className="public-auth-actions" aria-label="Account actions">
           <button className="ghost-action" onClick={onSignIn}>
@@ -1516,18 +1538,42 @@ function PublicHome({ onSignIn, errorMessage }) {
       )}
 
       <section className="public-hero">
-        <p className="eyebrow">Internship discovery workspace</p>
-        <h1>InternLens</h1>
-        <p>
-          Build a structured candidate profile, find ranked internship matches from public ATS data, and keep each
-          application decision organized in one account.
-        </p>
-        <div className="public-hero-actions">
-          <button className="primary-action" onClick={onSignIn}>
-            Start matching
-          </button>
-          <span>Personalized profiles, shortlists, and job actions appear only after sign-in.</span>
+        <div className="public-hero-copy">
+          <p className="eyebrow">A calmer internship search</p>
+          <h1>Turn scattered listings into a working shortlist.</h1>
+          <p>
+            InternLens ranks public internship postings against criteria you control, explains the useful signals,
+            and keeps every application decision in one place.
+          </p>
+          <div className="public-hero-actions">
+            <button className="primary-action" onClick={onSignIn}>
+              Build your shortlist
+            </button>
+            <button className="ghost-action" onClick={onSignIn}>
+              Log in to your workspace
+            </button>
+          </div>
         </div>
+
+        <section className="public-preview" aria-label="Sample shortlist preview">
+          <div className="preview-heading">
+            <p className="eyebrow">Shortlist / sample</p>
+            <h2>Three roles ready to review</h2>
+          </div>
+          <div className="sample-job-list">
+            {PUBLIC_SAMPLE_JOBS.map((job, index) => (
+              <article key={`${job.company}-${job.title}`} className="sample-job-card">
+                <span className="sample-rank">{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <h3>{job.title}</h3>
+                  <p>{job.company}</p>
+                  <small>{job.meta}</small>
+                </div>
+                <p>{job.reason}</p>
+              </article>
+            ))}
+          </div>
+        </section>
       </section>
 
       <section className="public-workflow" aria-label="How InternLens works">
@@ -1539,35 +1585,14 @@ function PublicHome({ onSignIn, errorMessage }) {
         ))}
       </section>
 
-      <section className="public-content-grid">
-        <div className="public-feature-list">
-          {PUBLIC_FEATURES.map((feature) => (
-            <article key={feature.title}>
-              <h2>{feature.title}</h2>
-              <p>{feature.body}</p>
-            </article>
-          ))}
-        </div>
-
-        <section className="public-preview" aria-label="Sample shortlist preview">
-          <div className="preview-heading">
-            <p className="eyebrow">Sample preview</p>
-            <h2>Ranked leads without exposing private data</h2>
-          </div>
-          <div className="sample-job-list">
-            {PUBLIC_SAMPLE_JOBS.map((job, index) => (
-              <article key={`${job.company}-${job.title}`} className="sample-job-card">
-                <div>
-                  <span className="sample-rank">#{index + 1}</span>
-                  <h3>{job.title}</h3>
-                  <p>{job.company}</p>
-                </div>
-                <small>{job.meta}</small>
-                <p>{job.reason}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+      <section className="public-feature-list" aria-label="Product features">
+        {PUBLIC_FEATURES.map((feature, index) => (
+          <article key={feature.title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <h2>{feature.title}</h2>
+            <p>{feature.body}</p>
+          </article>
+        ))}
       </section>
     </main>
   );
@@ -1681,7 +1706,7 @@ function ProfilePanel({
   }
 
   return (
-    <section className="panel profile-panel">
+    <section className="panel profile-panel" id="profile">
       <div className="panel-heading">
         <p className="eyebrow">Profile Setup</p>
         <h2>Candidate information</h2>
@@ -1834,7 +1859,7 @@ function ProfileSummaryPanel({ form, profileState, quality, status, busy, onEdit
   const featuredSkills = summary.skills.slice(0, 8);
 
   return (
-    <section className="panel profile-panel profile-summary-panel">
+    <section className="panel profile-panel profile-summary-panel" id="profile">
       <div className="panel-heading split">
         <div>
           <p className="eyebrow">Profile</p>
@@ -2133,11 +2158,11 @@ function DashboardPanel({
   const canFindMatches = Boolean(dashboard) && profileState === "saved" && profileReady;
 
   return (
-    <section className="panel dashboard-panel">
+    <section className="panel dashboard-panel" aria-labelledby="dashboard-title">
       <div className="panel-heading split">
         <div>
           <p className="eyebrow">Dashboard</p>
-          <h2>Current application board</h2>
+          <h2 id="dashboard-title">Pipeline overview</h2>
         </div>
         <button className="ghost-action" disabled={busy || !dashboard} onClick={onRefresh}>
           Refresh
@@ -2295,10 +2320,10 @@ function RecommendationPanel({
   }
 
   return (
-    <section className="panel results-panel">
+    <section className="panel results-panel" id="jobs">
       <div className="panel-heading split">
         <div>
-          <p className="eyebrow">{showingDashboardJobs ? "Dashboard jobs" : "Recommendations"}</p>
+          <p className="eyebrow">{showingDashboardJobs ? "Application pipeline" : "Ranked leads"}</p>
           <h2>{heading}</h2>
         </div>
         {hasBoard && (
@@ -2838,12 +2863,10 @@ function MatchBreakdown({ items }) {
 }
 
 function ScoreDial({ score, fitLevel }) {
-  const safeScore = score ?? 0;
-
   return (
-    <div className={`score-dial ${fitLevel}`} style={{ "--score": `${Math.min(Math.max(safeScore, 0), 100) * 3.6}deg` }}>
+    <div className={`score-dial ${fitLevel}`}>
       <strong>{score ?? "--"}</strong>
-      <span>{score === null ? "no score" : "score"}</span>
+      <span>{score === null ? "Not scored" : "Match"}</span>
     </div>
   );
 }

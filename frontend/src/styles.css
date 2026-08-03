@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   --ink: #1f2933;
@@ -2347,322 +2347,1226 @@ textarea {
   }
 }
 
-/* Product polish pass: quieter typography, flatter surfaces, and dashboard-first density. */
+
+/* Workspace redesign: editorial hierarchy, restrained surfaces, and a denser review flow. */
+:root {
+  --ink: #18211e;
+  --muted: #64706b;
+  --paper: #f4f3ef;
+  --card: #ffffff;
+  --line: #d7d9d3;
+  --line-strong: #afb7b1;
+  --steel: #356759;
+  --moss: #39715f;
+  --cedar: #b44d32;
+  --gold: #a87418;
+  --sky: #e7eeeb;
+  --rose: #f3e9e5;
+  --peach: #f4e5dd;
+  --orchid: #ece9ee;
+  --cloud: #f3f4f1;
+  --accent: #174f40;
+  --accent-strong: #10392f;
+  --accent-soft: #e5eee9;
+  --focus: #d75b35;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: "Inter", "Aptos", "Segoe UI", sans-serif;
+  color: var(--ink);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   background: var(--paper);
 }
 
-.shell {
-  width: min(100% - 40px, 1500px);
-  padding: 24px 0 40px;
+button,
+a,
+input,
+select,
+textarea {
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, opacity 150ms ease;
 }
 
-.public-shell {
-  width: min(100% - 40px, 1200px);
-  padding: 18px 0 42px;
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(215, 91, 53, 0.24);
+  outline-offset: 2px;
+}
+
+.shell {
+  width: min(100% - 40px, 1480px);
+  padding: 0 0 56px;
 }
 
 .app-header {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  align-items: stretch;
-  gap: 16px;
-  margin-bottom: 16px;
-  animation: none;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(240px, 1fr) auto;
+  gap: 30px;
+  align-items: center;
+  min-height: 66px;
+  margin: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: rgba(244, 243, 239, 0.96);
 }
 
-.product-title,
-.status-card,
+.brand-lockup {
+  display: inline-flex;
+  gap: 11px;
+  align-items: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-lockup > span:last-child {
+  display: grid;
+  gap: 1px;
+}
+
+.brand-lockup strong {
+  font-size: 0.96rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.brand-lockup small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.brand-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--focus);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+}
+
+.app-nav {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.app-nav a {
+  position: relative;
+  padding: 23px 0 21px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-nav a:hover {
+  color: var(--ink);
+}
+
+.app-nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--focus);
+  content: "";
+  opacity: 0;
+}
+
+.app-nav a:hover::after,
+.app-nav a:focus-visible::after {
+  opacity: 1;
+}
+
+.status-card.server-status {
+  display: flex;
+  min-height: 0;
+  gap: 14px;
+  align-items: center;
+  justify-content: flex-end;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.server-status-main {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.status-label {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.67rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--moss);
+  box-shadow: none;
+}
+
+.server-status.offline .pulse-dot {
+  background: var(--cedar);
+}
+
+.account-strip {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.account-strip button {
+  border: 0;
+  border-radius: 3px;
+  padding: 6px 8px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.account-strip button:hover {
+  color: var(--ink);
+  background: #e8e8e3;
+}
+
+.workspace-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  align-items: end;
+  padding: 48px 2px 25px;
+  border-bottom: 1px solid var(--line-strong);
+  scroll-margin-top: 80px;
+}
+
+.workspace-heading h1 {
+  margin: 5px 0 8px;
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.hero-copy {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.eyebrow {
+  color: var(--cedar);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.workflow-key {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+}
+
+.workflow-key li {
+  display: grid;
+  gap: 4px;
+  min-width: 64px;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.workflow-key span {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.64rem;
+}
+
+.unsaved-change-banner {
+  margin: 16px 0 0;
+  border: 1px solid #d8b573;
+  border-left: 4px solid var(--gold);
+  border-radius: 2px;
+  padding: 12px 14px;
+  background: #fff9ed;
+}
+
+.unsaved-change-banner button {
+  border-radius: 3px;
+  color: #fff;
+  background: var(--ink);
+}
+
+.grid.two.workspace-grid {
+  grid-template-columns: minmax(340px, 0.78fr) minmax(560px, 1.22fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
 .panel,
+.product-title,
 .public-alert,
-.public-feature-list article,
-.public-preview,
-.sample-job-card,
 .quality-card,
 .profile-state,
 .match-breakdown,
 .evidence-list,
 .source-freshness-summary,
 .pagination,
-.job-card,
-.public-workflow article {
+.job-card {
   border-color: var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--card);
   box-shadow: none;
   backdrop-filter: none;
 }
 
-.product-title {
-  display: grid;
-  align-content: center;
-  border: 1px solid var(--line);
-  padding: 20px 22px;
-}
-
-.product-title h1,
-.server-status h2,
-.auth-panel h1,
-.public-hero h1,
-.public-feature-list h2,
-.public-preview h2,
-.panel-heading h2,
-.job-card h3,
-.score-dial strong {
-  font-family: inherit;
-  letter-spacing: 0;
-}
-
-.product-title h1 {
-  margin: 6px 0 8px;
-  font-size: clamp(1.7rem, 2.6vw, 2.7rem);
-  line-height: 1.08;
-  font-weight: 800;
-}
-
-.hero-copy {
-  max-width: 720px;
-  font-size: 0.95rem;
-  line-height: 1.55;
-}
-
-.eyebrow {
-  color: var(--accent);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-}
-
-.status-card {
-  min-height: auto;
-  padding: 18px;
-}
-
-.server-status {
-  justify-content: space-between;
-  text-align: left;
-}
-
-.server-status-main {
-  justify-content: flex-start;
-}
-
-.server-status h2 {
-  font-size: 1.4rem;
-  font-weight: 800;
-}
-
-.account-strip {
-  justify-content: space-between;
-  margin-top: 14px;
-}
-
-.grid.two {
-  grid-template-columns: minmax(360px, 0.78fr) minmax(460px, 1.22fr);
-  gap: 16px;
-}
-
 .panel {
-  border-radius: 8px;
-  padding: 18px;
-  animation: none;
+  padding: 22px;
 }
 
 .panel-heading {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-heading h2,
+.product-title h1,
+.server-status h2,
+.auth-panel h1,
+.job-card h3,
+.score-dial strong {
+  font-family: "IBM Plex Sans", sans-serif;
 }
 
 .panel-heading h2 {
-  font-size: 1.25rem;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.form-grid {
-  gap: 12px;
-}
-
-label,
-.selector-heading strong {
-  font-size: 0.82rem;
+  margin-top: 4px;
+  font-size: 1.3rem;
   font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
-input,
-select,
-textarea {
-  border-radius: 6px;
-  background: #ffffff;
+.profile-summary-panel {
+  align-self: start;
 }
 
-.primary-action,
-.ghost-action,
-.job-actions button,
-.job-actions a,
-.run-list button,
-.account-strip button,
-.filter-bar button,
-.pagination button {
-  border-radius: 6px;
+.profile-state {
+  border: 0;
+  border-left: 3px solid var(--steel);
+  border-radius: 0;
+  padding: 9px 12px;
+  background: var(--cloud);
 }
 
-.primary-action {
-  padding: 12px 14px;
+.profile-state.saved {
+  border-color: var(--moss);
+  background: #eef3ef;
 }
 
-.profile-state,
-.quality-card,
-.source-freshness-summary,
-.pagination {
-  padding: 12px;
+.profile-state.changed {
+  border-color: var(--gold);
+  background: #fff8e9;
+}
+
+.profile-state strong,
+.profile-state span {
+  font-weight: 500;
+}
+
+.profile-state strong {
+  font-size: 0.82rem;
+}
+
+.profile-state span {
+  font-size: 0.75rem;
+}
+
+.profile-summary-readiness {
+  border-radius: 3px;
+  background: var(--accent-soft);
+}
+
+.profile-summary-grid {
+  gap: 0;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.profile-summary-grid div {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-summary-skills b,
+.selected-chip-row button,
+.search-select button,
+.suggestion-menu button,
+.skill-chip-row > span,
+.skill-chip-row.gaps button,
+.job-detail-row span {
+  border-radius: 3px;
+}
+
+.resume-import-panel,
+.resume-review-panel,
+.quality-card {
+  border-color: var(--line);
+  border-radius: 3px;
+  background: var(--cloud);
+}
+
+.quality-card {
+  padding: 13px;
 }
 
 .quality-list > div,
 .match-signal,
 .source-freshness-summary dl div {
-  border-radius: 6px;
+  border-radius: 2px;
+  background: #eceeea;
+}
+
+.resume-upload-control,
+.primary-action,
+.ghost-action,
+.resume-review-actions button,
+.resume-suggestion button,
+.opened-followup button,
+.job-actions button,
+.job-actions a,
+.run-list button,
+.filter-bar button,
+.pagination button {
+  border-radius: 3px;
+}
+
+.primary-action {
+  color: #fff;
+  background: var(--accent);
+}
+
+.primary-action:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.ghost-action {
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: transparent;
+}
+
+.ghost-action:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: transparent;
+}
+
+input,
+select,
+textarea {
+  border-color: var(--line-strong);
+  border-radius: 3px;
+  background: #fff;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: #808c85;
+}
+
+.metric-row {
+  gap: 0;
+  border: 1px solid var(--line);
+}
+
+.metric {
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  padding: 15px;
+  background: #fff;
+}
+
+.metric:last-child {
+  border-right: 0;
+}
+
+.metric:hover {
+  border-color: var(--line);
   background: var(--cloud);
 }
 
-.metric-row,
-.filter-bar,
-.mini-columns {
-  gap: 10px;
+.metric.active {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent);
 }
 
-.metric,
-.filter-bar button {
-  border-radius: 8px;
-  background: #ffffff;
+.metric strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.65rem;
 }
 
+.metric span {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.metric.active span {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.next-actions {
+  margin: 18px 0;
+}
+
+.next-actions article {
+  border-left: 2px solid var(--gold);
+  border-radius: 0;
+  padding: 10px 13px;
+  background: #faf7ef;
+}
+
+.next-actions span,
+.preview-list h3,
+.run-list h3,
+.activity-list h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.next-actions p,
+.preview-item span,
+.activity-list small {
+  font-size: 0.78rem;
+}
+
+.match-progress {
+  border-radius: 3px;
+  background: var(--accent-soft);
+}
+
+.mini-columns,
 .dashboard-lower {
-  gap: 14px;
+  gap: 20px;
 }
 
-.job-card {
-  grid-template-columns: minmax(0, 1fr) 136px;
-  gap: 16px;
-  padding: 16px;
+.run-list button {
+  border: 1px solid var(--line);
+  background: #fff;
 }
 
-.job-card h3 {
-  margin: 8px 0 6px;
-  font-size: 1.08rem;
-  line-height: 1.35;
-  font-weight: 800;
+.run-list button:hover {
+  border-color: var(--line-strong);
+  background: var(--cloud);
 }
 
-.job-meta {
-  gap: 6px;
-  font-size: 0.7rem;
-}
-
-.skill-chip-row > span,
-.skill-chip-row button,
-.job-detail-row span,
-.selected-chip-row button,
-.search-select button,
-.suggestion-menu button,
+.activity-badge,
 .state-pill,
 .action-pill,
 .result-count,
 .freshness-pill,
 .health-pill,
 .status-refresh {
-  border-radius: 999px;
+  border-radius: 2px;
 }
 
-.match-breakdown,
-.evidence-grid {
-  margin-top: 12px;
+.activity-badge {
+  background: var(--accent-soft);
 }
 
-.evidence-list {
-  padding: 12px;
+.results-panel {
+  margin-top: 16px;
+  scroll-margin-top: 80px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.filter-bar button {
+  gap: 9px;
+  justify-content: flex-start;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 10px 14px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.filter-bar button:hover {
+  color: var(--ink);
+}
+
+.filter-bar button.active {
+  border-color: var(--focus);
+  color: var(--ink);
+  background: transparent;
+}
+
+.filter-bar strong,
+.filter-bar button.active strong {
+  display: inline;
+  min-width: 0;
+  height: auto;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+}
+
+.list-toolbar {
+  align-items: end;
+  padding: 2px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.list-toolbar label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+}
+
+.list-toolbar input,
+.list-toolbar select {
+  min-height: 38px;
+}
+
+.source-freshness-summary {
+  margin: 0 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 11px 2px 14px;
+}
+
+.source-freshness-summary dl div {
+  min-width: 54px;
+  padding: 5px 8px;
+}
+
+.source-freshness-summary dd {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.86rem;
+}
+
+.pagination {
+  border: 0;
+  border-radius: 0;
+  padding: 7px 0;
+  background: transparent;
+}
+
+.pagination button {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.pagination span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.job-list {
+  gap: 10px;
+}
+
+.job-card {
+  grid-template-columns: minmax(0, 1fr) 154px;
+  gap: 20px;
+  border-left: 3px solid var(--line-strong);
+  padding: 19px 18px;
+  background: #fff;
+}
+
+.job-card:hover {
+  border-color: #a8aea9;
+  border-left-color: var(--accent);
+}
+
+.job-card.apply-now {
+  border-color: var(--line);
+  border-left-color: var(--focus);
+  background: #fff;
+}
+
+.job-card.skip,
+.job-card.state-dismissed {
+  opacity: 0.68;
+}
+
+.job-card.state-saved {
+  border-left-color: var(--moss);
+  box-shadow: none;
+}
+
+.job-card.state-applied {
+  border-left-color: var(--gold);
+  box-shadow: none;
+}
+
+.job-card.state-dismissed {
+  border-left-color: var(--cedar);
+  box-shadow: none;
+}
+
+.job-meta {
+  gap: 0;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.job-meta > span:not(.state-pill):not(.action-pill):not(.freshness-pill) {
+  display: inline-flex;
+  align-items: center;
+}
+
+.job-meta > span:not(:last-child)::after {
+  margin: 0 7px;
+  color: #b1b6b2;
+  content: "/";
+}
+
+.job-meta .state-pill,
+.job-meta .action-pill,
+.job-meta .freshness-pill {
+  margin-right: 7px;
+  border: 1px solid var(--line);
+  padding: 2px 5px;
+  background: transparent;
+}
+
+.job-card h3 {
+  margin: 9px 0 5px;
+  font-size: 1.14rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.job-card .fit-summary {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.job-card .score-explanation,
+.job-card .job-summary {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.48;
+}
+
+.signal-snapshot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  background: var(--cloud);
+}
+
+.signal-snapshot div {
+  min-width: 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  padding: 8px 10px;
+  background: transparent;
+}
+
+.signal-snapshot div:last-child {
+  border-right: 0;
+}
+
+.signal-snapshot span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.signal-snapshot strong {
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.job-side {
+  gap: 10px;
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
 }
 
 .score-dial {
-  width: 96px;
-  height: 96px;
-  border-width: 8px;
+  display: flex;
+  width: 100%;
+  height: auto;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  border: 0;
+  border-top: 3px solid var(--moss);
+  border-radius: 0;
+  padding: 9px 8px 7px;
+  background: var(--cloud);
+  box-shadow: none;
+}
+
+.score-dial.weak {
+  border-color: var(--cedar);
+}
+
+.score-dial.moderate {
+  border-color: var(--gold);
+}
+
+.score-dial strong,
+.score-dial span {
+  grid-area: auto;
+  margin: 0;
 }
 
 .score-dial strong {
-  margin-top: -12px;
-  font-size: 1.9rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.55rem;
+  line-height: 1;
 }
 
 .score-dial span {
-  margin-top: 30px;
-  font-size: 0.62rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.job-actions {
+  gap: 6px;
+}
+
+.job-actions button,
+.job-actions a {
+  border: 1px solid var(--line);
+  padding: 8px 9px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.job-actions button:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--cloud);
+}
+
+.job-actions a {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+}
+
+.job-actions a:hover {
+  background: var(--accent-strong);
+}
+
+.job-actions .subtle-action {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.opened-followup,
+.skill-signal-panel,
+.match-breakdown,
+.evidence-list {
+  border-radius: 3px;
+}
+
+.skill-signal-panel,
+.match-breakdown {
+  background: #fff;
+}
+
+.evidence-list {
+  background: var(--cloud);
+}
+
+.match-signal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modal-backdrop {
+  place-items: stretch end;
+  padding: 0;
+  background: rgba(17, 24, 21, 0.56);
+}
+
+.job-detail-modal {
+  width: min(720px, 100%);
+  max-height: 100vh;
+  height: 100vh;
+  border: 0;
+  border-left: 1px solid var(--line-strong);
+  border-radius: 0;
+  padding: 30px;
+  box-shadow: -18px 0 50px rgba(17, 24, 21, 0.16);
+}
+
+.modal-heading {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.modal-heading h2 {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 1.65rem;
+  letter-spacing: -0.025em;
+}
+
+.modal-heading button,
+.detail-actions a {
+  border-radius: 3px;
+}
+
+.empty-state {
+  border-radius: 3px;
+  padding: 28px;
+  background: var(--cloud);
+}
+
+.public-shell {
+  width: min(100% - 40px, 1240px);
+  padding: 0 0 56px;
 }
 
 .public-nav {
-  padding: 10px 0 28px;
+  min-height: 70px;
+  padding: 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.public-auth-actions .primary-action,
+.public-hero-actions .primary-action {
+  width: auto;
+  margin: 0;
+}
+
+.public-auth-actions {
+  gap: 8px;
+}
+
+.public-auth-actions .primary-action,
+.public-auth-actions .ghost-action {
+  padding: 9px 14px;
 }
 
 .public-hero {
-  max-width: 760px;
-  padding: 42px 0 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(420px, 0.96fr);
+  gap: clamp(40px, 7vw, 90px);
+  align-items: center;
+  max-width: none;
+  padding: 76px 0 58px;
+}
+
+.public-hero-copy {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
 }
 
 .public-hero h1 {
-  font-size: clamp(2.6rem, 7vw, 5.6rem);
-  line-height: 0.96;
-  font-weight: 800;
+  max-width: 720px;
+  margin: 0;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: clamp(3rem, 5.8vw, 5.15rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
 }
 
 .public-hero p:not(.eyebrow) {
-  font-size: clamp(1rem, 1.8vw, 1.16rem);
+  max-width: 650px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
-.public-content-grid {
-  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr);
+.public-hero-actions {
+  gap: 9px;
+  margin-top: 6px;
 }
 
-.public-feature-list h2,
+.public-hero-actions .primary-action,
+.public-hero-actions .ghost-action {
+  padding: 12px 16px;
+}
+
+.public-preview {
+  min-width: 0;
+  border: 0;
+  border-radius: 3px;
+  padding: 22px;
+  color: #f7f7f3;
+  background: #1c2925;
+}
+
+.public-preview .eyebrow {
+  color: #df886d;
+}
+
 .public-preview h2 {
-  font-size: 1.1rem;
-  font-weight: 800;
+  margin: 5px 0 18px;
+  color: #fff;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
-.public-feature-list article,
-.public-preview,
+.sample-job-list {
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .sample-job-card {
-  padding: 16px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
+  padding: 15px 0;
+  background: transparent;
 }
 
-@media (min-width: 1180px) {
-  .results-panel {
-    margin-top: 16px;
-  }
+.sample-job-card > div {
+  display: block;
+  min-width: 0;
+}
+
+.sample-job-card > p {
+  grid-column: 2;
+  color: #aebdb7;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.sample-job-card h3 {
+  margin: 0 0 2px;
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.sample-job-card div p,
+.sample-job-card small {
+  color: #aebdb7;
+  font-size: 0.68rem;
+}
+
+.sample-rank {
+  display: block;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  color: #df886d;
+  background: transparent;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+}
+
+.public-workflow {
+  gap: 0;
+  margin: 0 0 56px;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.public-workflow article {
+  gap: 12px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  padding: 16px 12px;
+  background: transparent;
+}
+
+.public-workflow article:last-child {
+  border-right: 0;
+}
+
+.public-workflow span {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  color: var(--cedar);
+  background: transparent;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+}
+
+.public-workflow strong {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.public-feature-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.public-feature-list article {
+  display: grid;
+  gap: 8px;
+  border: 0;
+  border-top: 3px solid var(--ink);
+  border-radius: 0;
+  padding: 17px 0 0;
+  background: transparent;
+}
+
+.public-feature-list article > span {
+  color: var(--cedar);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+}
+
+.public-feature-list h2 {
+  margin: 0;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.public-feature-list p {
+  max-width: 340px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.auth-shell {
+  padding-top: 40px;
+}
+
+.auth-panel {
+  border-top: 4px solid var(--focus);
 }
 
 @media (max-width: 1120px) {
-  .app-header,
-  .grid.two,
-  .public-content-grid {
+  .app-header {
+    grid-template-columns: auto 1fr;
+  }
+
+  .app-nav {
+    display: none;
+  }
+
+  .status-card.server-status {
+    justify-self: end;
+  }
+
+  .grid.two.workspace-grid,
+  .public-hero {
     grid-template-columns: 1fr;
   }
 
-  .status-card {
-    align-items: stretch;
+  .public-hero {
+    gap: 38px;
+  }
+
+  .public-preview {
+    width: min(100%, 680px);
   }
 }
 
 @media (max-width: 760px) {
   .shell,
   .public-shell {
-    width: min(100% - 24px, 1500px);
-    padding-top: 14px;
+    width: min(100% - 24px, 1480px);
+    padding-top: 0;
   }
 
-  .product-title {
-    padding: 16px;
+  .app-header {
+    min-height: 60px;
   }
 
-  .product-title h1 {
-    font-size: 1.75rem;
+  .server-status-main,
+  .account-strip > span {
+    display: none;
+  }
+
+  .account-strip {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-heading {
+    align-items: start;
+    flex-direction: column;
+    padding-top: 34px;
+  }
+
+  .workspace-heading h1 {
+    font-size: 2.7rem;
+  }
+
+  .workflow-key {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 4px;
+  }
+
+  .panel {
+    border-radius: 3px;
+    padding: 17px;
   }
 
   .split,
@@ -2670,7 +3574,7 @@ textarea {
   .resume-review-heading,
   .resume-suggestion,
   .source-freshness-summary,
-  .public-nav {
+  .modal-heading {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2679,33 +3583,16 @@ textarea {
   .profile-summary-actions,
   .profile-summary-grid,
   .quality-list,
-  .metric-row,
   .mini-columns,
-  .filter-bar,
   .skill-signal-panel,
   .evidence-grid,
-  .match-signal-grid,
   .detail-signal-columns,
-  .detail-skill-panel,
-  .public-workflow {
+  .detail-skill-panel {
     grid-template-columns: 1fr;
-  }
-
-  .job-card {
-    grid-template-columns: 1fr;
-  }
-
-  .score-dial {
-    justify-self: start;
-  }
-
-  .job-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .list-toolbar {
-    justify-content: stretch;
+    align-items: stretch;
   }
 
   .list-toolbar label,
@@ -2714,22 +3601,122 @@ textarea {
     width: 100%;
   }
 
+  .metric-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .metric:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .filter-bar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filter-bar button {
+    justify-content: space-between;
+  }
+
+  .job-card {
+    grid-template-columns: 1fr;
+  }
+
+  .job-side {
+    grid-template-columns: 112px minmax(0, 1fr);
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    padding-top: 13px;
+    padding-left: 0;
+  }
+
+  .job-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opened-followup,
+  .job-side .state-note {
+    grid-column: 1 / -1;
+  }
+
+  .signal-snapshot {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .signal-snapshot div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .signal-snapshot div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .match-signal-grid {
+    grid-template-columns: 1fr;
+  }
+
   .modal-backdrop {
-    align-items: end;
-    padding: 10px;
+    padding: 0;
   }
 
   .job-detail-modal {
-    max-height: 92vh;
-    padding: 18px;
+    width: 100%;
+    max-height: 100vh;
+    padding: 20px;
   }
 
-  .modal-heading {
-    flex-direction: column;
+  .public-nav {
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    min-height: 62px;
   }
 
-  .unsaved-change-banner {
-    align-items: stretch;
-    flex-direction: column;
+  .public-auth-actions {
+    flex-wrap: nowrap;
+  }
+
+  .public-auth-actions .ghost-action {
+    display: none;
+  }
+
+  .public-hero {
+    padding: 48px 0 38px;
+  }
+
+  .public-hero h1 {
+    font-size: clamp(2.35rem, 11.5vw, 3.2rem);
+    line-height: 1.02;
+  }
+
+  .public-hero-actions {
+    display: grid;
+  }
+
+  .public-hero-actions .primary-action,
+  .public-hero-actions .ghost-action {
+    width: 100%;
+  }
+
+  .public-workflow,
+  .public-feature-list {
+    grid-template-columns: 1fr;
+  }
+
+  .public-workflow article {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .public-workflow article:last-child {
+    border-bottom: 0;
+  }
+
+  .public-feature-list {
+    gap: 34px;
   }
 }
