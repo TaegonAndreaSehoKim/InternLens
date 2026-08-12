@@ -64,8 +64,9 @@ const DASHBOARD_JOB_VIEWS = {
 
 const SERVER_STATUS_LABELS = {
   checking: "Checking",
-  online: "Online",
-  offline: "Offline"
+  online: "Healthy",
+  offline: "Offline",
+  error: "Issue"
 };
 
 const DEGREE_OPTIONS = [
@@ -1136,6 +1137,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     } catch (error) {
       if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
+      } else {
+        setApiHealth("error");
       }
       setProfileStatus({ type: "error", message: friendlyErrorMessage(error) });
     } finally {
@@ -1309,6 +1312,8 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     } catch (error) {
       if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
+      } else {
+        setApiHealth("error");
       }
       setJobDetailStatus({ loading: false, error: friendlyErrorMessage(error) });
     }
@@ -1321,9 +1326,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     async function restoreSession() {
       try {
         await api("/health", {}, authToken);
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          setApiHealth("offline");
+          setApiHealth(String(error.message).includes("fetch") ? "offline" : "error");
         }
         return;
       }
@@ -1348,6 +1353,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
             setSelectedRun(null);
           }
           return;
+        }
+        if (!cancelled) {
+          setApiHealth(String(error.message).includes("fetch") ? "offline" : "error");
         }
         return;
       }
@@ -1398,10 +1406,9 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
         </nav>
         <div className={`status-card server-status ${apiHealth}`}>
           <div className="server-status-main">
-            <span className={busy || apiHealth === "checking" ? "pulse-dot active" : "pulse-dot"} />
-            <div>
-              <span className="status-label">Workspace {SERVER_STATUS_LABELS[apiHealth].toLowerCase()}</span>
-            </div>
+            <span className="status-label" role="status" aria-live="polite">
+              Workspace {SERVER_STATUS_LABELS[apiHealth].toLowerCase()}
+            </span>
           </div>
           <div className="account-strip">
             <span>{accountEmail}</span>
