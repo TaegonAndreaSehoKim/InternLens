@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AuthProvider, useAuth } from "react-oidc-context";
 import "./styles.css";
+import {
+  configureCognitoAuth,
+  confirmCognitoSignIn,
+  confirmCognitoSignUp,
+  currentCognitoSession,
+  resendCognitoSignUpCode,
+  signInWithPassword,
+  signOutCognito,
+  signUpWithPassword
+} from "./cognitoAuth";
 import {
   ACTION_FILTERS,
   JOB_SORT_OPTIONS,
@@ -24,7 +33,6 @@ import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboard
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 const STORAGE_KEY = "internlens.ui.state";
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? "dev";
-const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION ?? "";
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
 const COGNITO_APP_CLIENT_ID = import.meta.env.VITE_COGNITO_APP_CLIENT_ID ?? "";
 const RECOMMENDATION_FETCH_LIMIT = 1000;
@@ -503,10 +511,6 @@ const defaultProfile = {
   notes: ""
 };
 
-function cognitoAuthority() {
-  return `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}`;
-}
-
 function csvToList(value) {
   return value
     .split(",")
@@ -960,24 +964,6 @@ function writeStoredState(state) {
   } catch {
     // Storage can be unavailable in private browsing or locked-down environments.
   }
-}
-
-function oidcConfig() {
-  if (AUTH_MODE !== "cognito") {
-    return null;
-  }
-  if (!COGNITO_REGION || !COGNITO_USER_POOL_ID || !COGNITO_APP_CLIENT_ID) {
-    return null;
-  }
-
-  return {
-    authority: cognitoAuthority(),
-    client_id: COGNITO_APP_CLIENT_ID,
-    redirect_uri: window.location.origin,
-    post_logout_redirect_uri: window.location.origin,
-    response_type: "code",
-    scope: "openid email"
-  };
 }
 
 async function api(path, options = {}, authToken = null) {
@@ -1516,7 +1502,214 @@ function AuthShell({ title, detail, action }) {
   );
 }
 
-function PublicHome({ onSignIn, errorMessage }) {
+function authErrorMessage(error) {
+  const messages = {
+    CodeMismatchException: "That verification code is not correct.",
+    ExpiredCodeException: "That verification code has expired. Request a new code.",
+    InvalidPasswordException: "Choose a password that meets the account requirements.",
+    LimitExceededException: "Too many attempts. Please wait a moment and try again.",
+    NotAuthorizedException: "The email or password is incorrect.",
+    PasswordResetRequiredException: "This account needs a password reset before it can log in.",
+    TooManyRequestsException: "Too many attempts. Please wait a moment and try again.",
+    UserNotFoundException: "The email or password is incorrect.",
+    UsernameExistsException: "An account with this email already exists. Log in instead."
+  };
+  return messages[error?.name] ?? error?.message ?? "Authentication failed. Please try again.";
+}
+
+function AuthDialog({ initialMode, onClose, onAuthenticated }) {
+  const [mode, setMode] = useState(initialMode);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [challengeResponse, setChallengeResponse] = useState("");
+  const [challengeKind, setChallengeKind] = useState("code");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setMessage("");
+    setError("");
+    setChallengeResponse("");
+  }
+
+  async function finishSignIn(result) {
+    const step = result.nextStep?.signInStep;
+    if (result.isSignedIn || step === "DONE") {
+      await onAuthenticated();
+      return;
+    }
+    if (step === "CONFIRM_SIGN_UP") {
+      setMode("confirmSignUp");
+      setMessage("Enter the confirmation code sent to your email.");
+      return;
+    }
+    if (step === "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") {
+      setChallengeKind("password");
+      setMode("confirmSignIn");
+      setMessage("Choose a new password to finish signing in.");
+      return;
+    }
+    if (["CONFIRM_SIGN_IN_WITH_EMAIL_CODE", "CONFIRM_SIGN_IN_WITH_SMS_CODE", "CONFIRM_SIGN_IN_WITH_TOTP_CODE"].includes(step)) {
+      setChallengeKind("code");
+      setMode("confirmSignIn");
+      setMessage("Enter the verification code to finish signing in.");
+      return;
+    }
+    throw new Error("This account requires an authentication step that is not supported yet.");
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (mode === "signIn") {
+        await finishSignIn(await signInWithPassword(email.trim(), password));
+      } else if (mode === "signUp") {
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+        const result = await signUpWithPassword(email.trim(), password);
+        if (result.isSignUpComplete || result.nextStep?.signUpStep === "DONE") {
+          await finishSignIn(await signInWithPassword(email.trim(), password));
+        } else {
+          setMode("confirmSignUp");
+          setMessage("We sent a confirmation code to your email.");
+        }
+      } else if (mode === "confirmSignUp") {
+        await confirmCognitoSignUp(email.trim(), challengeResponse.trim());
+        await finishSignIn(await signInWithPassword(email.trim(), password));
+      } else {
+        await finishSignIn(await confirmCognitoSignIn(challengeResponse));
+      }
+    } catch (authError) {
+      setError(authErrorMessage(authError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    setBusy(true);
+    setError("");
+    try {
+      await resendCognitoSignUpCode(email.trim());
+      setMessage("A new confirmation code was sent to your email.");
+    } catch (authError) {
+      setError(authErrorMessage(authError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isSignUp = mode === "signUp";
+  const isConfirmation = mode === "confirmSignUp" || mode === "confirmSignIn";
+  const title = mode === "signIn" ? "Log in" : isSignUp ? "Create your account" : "Confirm your account";
+
+  return (
+    <div className="auth-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
+        <div className="auth-dialog-heading">
+          <div>
+            <p className="eyebrow">InternLens account</p>
+            <h2 id="auth-dialog-title">{title}</h2>
+          </div>
+          <button className="auth-close" type="button" onClick={onClose} aria-label="Close account form">
+            Close
+          </button>
+        </div>
+
+        <form className="auth-form" onSubmit={submit}>
+          {mode !== "confirmSignIn" && (
+            <label>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                placeholder="you@example.com"
+                disabled={mode === "confirmSignUp"}
+                required
+                autoFocus
+              />
+            </label>
+          )}
+
+          {(mode === "signIn" || isSignUp) && (
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                placeholder="Enter your password"
+                required
+              />
+            </label>
+          )}
+
+          {isSignUp && (
+            <label>
+              Confirm password
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                placeholder="Enter your password again"
+                required
+              />
+            </label>
+          )}
+
+          {isConfirmation && (
+            <label>
+              {challengeKind === "password" ? "New password" : "Confirmation code"}
+              <input
+                type={challengeKind === "password" ? "password" : "text"}
+                inputMode={challengeKind === "password" ? undefined : "numeric"}
+                value={challengeResponse}
+                onChange={(event) => setChallengeResponse(event.target.value)}
+                autoComplete={challengeKind === "password" ? "new-password" : "one-time-code"}
+                placeholder={challengeKind === "password" ? "Choose a new password" : "Enter code"}
+                required
+                autoFocus
+              />
+            </label>
+          )}
+
+          {message && <p className="auth-message" role="status">{message}</p>}
+          {error && <p className="auth-error" role="alert">{error}</p>}
+
+          <button className="primary-action auth-submit" type="submit" disabled={busy}>
+            {busy ? "Please wait..." : mode === "signIn" ? "Log in" : isSignUp ? "Create account" : "Continue"}
+          </button>
+        </form>
+
+        {mode === "confirmSignUp" ? (
+          <button className="auth-switch" type="button" onClick={resendCode} disabled={busy}>
+            Send a new code
+          </button>
+        ) : !isConfirmation ? (
+          <p className="auth-alternate">
+            {isSignUp ? "Already have an account?" : "New to InternLens?"}
+            <button type="button" onClick={() => switchMode(isSignUp ? "signIn" : "signUp")}>
+              {isSignUp ? "Log in" : "Create an account"}
+            </button>
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function PublicHome({ authMode, onOpenAuth, onCloseAuth, onAuthenticated, errorMessage }) {
   return (
     <main className="public-shell">
       <header className="public-nav">
@@ -1528,10 +1721,10 @@ function PublicHome({ onSignIn, errorMessage }) {
           </span>
         </div>
         <div className="public-auth-actions" aria-label="Account actions">
-          <button className="ghost-action" onClick={onSignIn}>
+          <button className="ghost-action" onClick={() => onOpenAuth("signIn")}>
             Log in
           </button>
-          <button className="primary-action" onClick={onSignIn}>
+          <button className="primary-action" onClick={() => onOpenAuth("signUp")}>
             Sign up
           </button>
         </div>
@@ -1553,10 +1746,10 @@ function PublicHome({ onSignIn, errorMessage }) {
             and keeps every application decision in one place.
           </p>
           <div className="public-hero-actions">
-            <button className="primary-action" onClick={onSignIn}>
+            <button className="primary-action" onClick={() => onOpenAuth("signUp")}>
               Build your shortlist
             </button>
-            <button className="ghost-action" onClick={onSignIn}>
+            <button className="ghost-action" onClick={() => onOpenAuth("signIn")}>
               Log in to your workspace
             </button>
           </div>
@@ -1601,51 +1794,83 @@ function PublicHome({ onSignIn, errorMessage }) {
           </article>
         ))}
       </section>
+      {authMode && (
+        <AuthDialog
+          key={authMode}
+          initialMode={authMode}
+          onClose={onCloseAuth}
+          onAuthenticated={onAuthenticated}
+        />
+      )}
     </main>
   );
 }
 
-function AuthenticatedApp() {
-  const auth = useAuth();
+function CognitoApp() {
+  const [session, setSession] = useState({ loading: true, accessToken: "", email: "", error: "" });
+  const [authMode, setAuthMode] = useState(null);
 
-  async function signOut() {
-    const returnUrl = window.location.origin;
-    await auth.removeUser();
-    window.location.assign(returnUrl);
+  async function restoreSession() {
+    const restored = await currentCognitoSession();
+    setSession({ loading: false, ...restored, error: "" });
+    setAuthMode(null);
   }
 
-  if (auth.isLoading) {
+  useEffect(() => {
+    let cancelled = false;
+    if (!configureCognitoAuth({ userPoolId: COGNITO_USER_POOL_ID, userPoolClientId: COGNITO_APP_CLIENT_ID })) {
+      setSession({ loading: false, accessToken: "", email: "", error: "Cognito account settings are incomplete." });
+      return undefined;
+    }
+
+    currentCognitoSession()
+      .then((restored) => {
+        if (!cancelled) setSession({ loading: false, ...restored, error: "" });
+      })
+      .catch(() => {
+        if (!cancelled) setSession({ loading: false, accessToken: "", email: "", error: "" });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleSignOut() {
+    await signOutCognito();
+    setSession({ loading: false, accessToken: "", email: "", error: "" });
+  }
+
+  if (session.loading) {
     return <AuthShell title="Opening InternLens" detail="Checking your session." />;
   }
 
-  if (auth.error) {
-    return <PublicHome onSignIn={() => auth.signinRedirect()} errorMessage={auth.error.message} />;
-  }
-
-  if (!auth.isAuthenticated) {
-    return <PublicHome onSignIn={() => auth.signinRedirect()} />;
+  if (!session.accessToken) {
+    return (
+      <PublicHome
+        authMode={authMode}
+        onOpenAuth={setAuthMode}
+        onCloseAuth={() => setAuthMode(null)}
+        onAuthenticated={restoreSession}
+        errorMessage={session.error}
+      />
+    );
   }
 
   return (
     <App
-      authToken={auth.user?.access_token}
-      accountEmail={auth.user?.profile?.email ?? "Signed in"}
-      onSignOut={signOut}
+      authToken={session.accessToken}
+      accountEmail={session.email || "Signed in"}
+      onSignOut={handleSignOut}
     />
   );
 }
 
 function Root() {
-  const config = oidcConfig();
-  if (!config) {
+  if (AUTH_MODE !== "cognito") {
     return <App />;
   }
-
-  return (
-    <AuthProvider {...config}>
-      <AuthenticatedApp />
-    </AuthProvider>
-  );
+  return <CognitoApp />;
 }
 
 function ProfilePanel({
@@ -2971,6 +3196,7 @@ if (rootElement) {
 }
 
 export {
+  AuthDialog,
   JobCard,
   JobDetailModal,
   ProfilePanel,

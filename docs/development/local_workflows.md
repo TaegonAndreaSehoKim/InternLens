@@ -77,7 +77,6 @@ For Cognito-backed frontend testing:
 
 ```text
 VITE_AUTH_MODE=cognito
-VITE_COGNITO_REGION=us-east-2
 VITE_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
 VITE_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
 ```

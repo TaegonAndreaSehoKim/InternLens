@@ -131,7 +131,6 @@ After enabling Cognito login in staging, add:
 
 ```text
 VITE_AUTH_MODE=cognito
-VITE_COGNITO_REGION=us-east-2
 VITE_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
 VITE_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
 ```
@@ -145,7 +144,7 @@ INTERNLENS_COGNITO_USER_POOL_ID=us-east-2_SV9to18Q1
 INTERNLENS_COGNITO_APP_CLIENT_ID=e0p7dlk90s9bnbtqi4jvhi18i
 ```
 
-The frontend requests only the `openid email` scopes so it works with the default Cognito quick-start app client.
+The frontend uses Cognito's in-app email/password flow. The user-pool app client must be public (no client secret), allow self-service sign-up, and support SRP authentication.
 
 CloudFront is used in front of the single-instance Elastic Beanstalk backend to provide an HTTPS API endpoint for the Amplify-hosted frontend.
 The CloudFront origin is the Beanstalk environment domain over HTTP, with caching disabled and all API methods allowed.

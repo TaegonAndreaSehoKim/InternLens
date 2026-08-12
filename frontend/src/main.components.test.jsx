@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
+  AuthDialog,
   JobCard,
   JobDetailModal,
   ProfilePanel,
@@ -44,6 +45,28 @@ const baseJob = {
 const noop = () => {};
 
 describe("main UI components", () => {
+  it("renders an in-app email and password login form", () => {
+    const html = renderToStaticMarkup(
+      <AuthDialog initialMode="signIn" onClose={noop} onAuthenticated={noop} />
+    );
+
+    expect(html).toContain("InternLens account");
+    expect(html).toContain("Log in");
+    expect(html).toContain('type="email"');
+    expect(html).toContain('type="password"');
+    expect(html).toContain("Create an account");
+  });
+
+  it("renders account creation without leaving the page", () => {
+    const html = renderToStaticMarkup(
+      <AuthDialog initialMode="signUp" onClose={noop} onAuthenticated={noop} />
+    );
+
+    expect(html).toContain("Create your account");
+    expect(html).toContain("Confirm password");
+    expect(html).toContain("Create account");
+  });
+
   it("shows compact recommendation signals by default in the review panel", () => {
     const html = renderToStaticMarkup(
       <RecommendationPanel

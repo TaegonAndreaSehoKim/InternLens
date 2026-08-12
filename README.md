@@ -19,7 +19,7 @@ Representative dashboard view from the redesigned application workspace. The sho
 ```mermaid
 flowchart LR
     user["User"] --> frontend["React Frontend<br/>Profile, Dashboard, Shortlist"]
-    frontend --> auth["Cognito Auth<br/>Hosted UI + JWT"]
+    frontend --> auth["Cognito Auth<br/>In-app form + JWT"]
     frontend --> api["FastAPI Backend<br/>Recommendation + Profile APIs"]
 
     api --> store["SQLite Store<br/>Profiles, Runs, Job Actions"]
@@ -151,7 +151,7 @@ Current staging shape:
 
 - Frontend: AWS Amplify Hosting
 - Backend: Elastic Beanstalk behind CloudFront
-- Auth: Cognito Hosted UI / JWT mode
+- Auth: in-app Cognito email/password / JWT mode
 - Backend deploy: CodePipeline + CodeBuild
 - Weekly corpus refresh: EventBridge -> CodeBuild -> Elastic Beanstalk
 - Failure notification topic: SNS

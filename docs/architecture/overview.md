@@ -118,7 +118,7 @@ InternLens now includes user-scoped SQLite-backed local persistence for:
 - saved, hidden, and applied job states
 
 The current API accepts a temporary `X-InternLens-User-Id` header in `dev` auth mode to scope stored-profile data. This preserves the local demo flow through the default `local_user` scope. When `INTERNLENS_AUTH_MODE=cognito`, the backend validates a Cognito bearer token and uses the verified JWT `sub` as the user scope.
-The frontend has the matching switch: `VITE_AUTH_MODE=dev` keeps the existing demo behavior, while `VITE_AUTH_MODE=cognito` redirects through Cognito and sends the access token to the API.
+The frontend has the matching switch: `VITE_AUTH_MODE=dev` keeps the existing demo behavior, while `VITE_AUTH_MODE=cognito` uses an in-app email/password form backed by the existing Cognito user pool and sends the access token to the API.
 
 The frontend uses these APIs to support:
 - profile setup and restoration
@@ -126,7 +126,7 @@ The frontend uses these APIs to support:
 - account-scoped `/me/...` profile, dashboard, recommendation, and job-action calls for the browser workflow
 - searchable structured selectors for roles, skills, locations, and industries
 - simple online/offline API health status
-- optional Cognito Hosted UI sign-in when `VITE_AUTH_MODE=cognito`
+- in-app Cognito login, sign-up, and email confirmation when `VITE_AUTH_MODE=cognito`
 - dashboard summary review
 - dashboard saved/applied/hidden job review
 - recommendation runs and historical run loading
