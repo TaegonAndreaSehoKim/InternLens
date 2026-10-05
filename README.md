@@ -188,7 +188,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Latest local backend suite: `309 passed`
+- Latest local backend suite: `312 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `68 passed`
 - Frontend lint and production build: passing

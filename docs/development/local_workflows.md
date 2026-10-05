@@ -103,6 +103,8 @@ Verify that the processed corpus has at least one non-expired job:
 
 Processed source refreshes stage and validate all files before replacing the old source snapshot. Failed publication attempts restore the previous directory; if restoration also fails, the exception names a preserved backup under `data/.job-snapshot-*/previous`. These temporary files are outside the corpus loader tree. No existing generated corpus is rewritten by the readiness checks.
 
+Temporary snapshot cleanup retries read-only file/directory removal inside the verified workspace, including Windows/OneDrive backups. If cleanup remains blocked, it logs the workspace path without interrupting a successful refresh or replacing the original publication/validation error. Temporary snapshot directories are ignored by Git; a failed rollback still preserves its backup for recovery.
+
 Registry `company_name` fields control the company display name on the next successful source refresh. For a single source, supply `--company-name "Company Name"` to `scripts/fetch_lever_jobs.py` or `scripts/fetch_greenhouse_jobs.py`. Lever department/team metadata remains separate. Existing generated files and historical run snapshots retain their stored company labels until refreshed or replaced; IDs and directory layouts stay stable.
 
 Useful variants:

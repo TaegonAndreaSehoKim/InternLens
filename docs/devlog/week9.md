@@ -100,3 +100,19 @@
 - Review the synthetic ranking labels with real ATS examples and more candidate constraints.
 - Refresh the expired local/deployed corpus when operationally appropriate; readiness now exposes unavailable data.
 - Broader API authorization/path hardening and CSS consolidation remain separate follow-ups.
+
+## 2026-10-05 - Local corpus refresh and OneDrive cleanup recovery
+
+### Changes
+- Refreshed the local active registries: all 21 sources succeeded, saving 233 processed jobs (95 Lever and 138 Greenhouse).
+- Fixed cleanup of read-only Windows/OneDrive snapshot backups, which interrupted the first refresh after successful publication.
+- Retried removal only inside the verified temporary workspace; persistent cleanup failures now log the workspace path without masking successful publication or the original error.
+- Ignored temporary snapshot directories in Git and retained the existing failed-rollback recovery behavior.
+- Kept refreshed raw/processed files and health/refresh reports local; no generated data or runtime state was staged.
+
+### Validation
+- Snapshot regressions: **14 passed**; backend full suite: **312 passed**.
+- Local corpus health: **233 active**, **233 total**, **0 expired or filtered**.
+- In-process API smoke with the refreshed corpus: `/ready` returned **200**, the sample profile returned **10** eligible/applyable recommendations, and the first job detail returned **200**.
+- Latest source check: **2026-10-05T22:35:05Z**; latest validity expiry: **2026-10-12T22:35:05Z**.
+- Frontend files and checks were unchanged in this refresh task; no deployed corpus was updated.

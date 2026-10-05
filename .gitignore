@@ -28,6 +28,7 @@ Thumbs.db
 !.env.example
 !frontend/.env.example
 data/app/
+data/.job-snapshot-*/
 
 # Local agent guidance
 AGENTS.md

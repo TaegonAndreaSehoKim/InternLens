@@ -1,14 +1,42 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
+import stat
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from src.preprocessing.job_parser import load_job_posting
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def _cleanup_snapshot_workspace(workspace: Path) -> None:
+    def retry_readonly(operation: Callable[..., Any], path: str, error: BaseException) -> None:
+        target = Path(path)
+        if (
+            not isinstance(error, PermissionError)
+            or operation not in {os.unlink, os.rmdir}
+            or target.is_symlink()
+            or not target.resolve().is_relative_to(workspace)
+        ):
+            raise error
+        # Windows/OneDrive can retain the old directory's read-only attribute.
+        # Only adjust entries in this verified, private staging workspace.
+        os.chmod(target, stat.S_IWRITE)
+        operation(path)
+
+    try:
+        shutil.rmtree(workspace, onexc=retry_readonly)
+    except OSError as error:
+        # Cleanup must not undo a successful publication or mask its error.
+        LOGGER.warning("Could not remove temporary snapshot workspace %s: %s", workspace, error)
 
 
 def save_job_snapshot(output_dir: Path, jobs: list[dict[str, Any]], *, project_root: Path) -> list[Path]:
@@ -74,4 +102,4 @@ def save_job_snapshot(output_dir: Path, jobs: list[dict[str, Any]], *, project_r
         # A failed rollback keeps its backup for recovery. Staging/backup JSON is
         # outside the loader's corpus tree and cannot appear as duplicate jobs.
         if published or not backup.exists():
-            shutil.rmtree(workspace)
+            _cleanup_snapshot_workspace(workspace)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import stat
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,65 @@ def test_successful_empty_snapshot_removes_closed_jobs(tmp_path):
     destination = previous_snapshot(tmp_path)
     assert snapshots.save_job_snapshot(destination, [], project_root=tmp_path) == []
     assert list(destination.glob("*.json")) == []
+
+
+def test_readonly_backup_removal_is_retried_without_interrupting_publication(tmp_path, monkeypatch):
+    destination = previous_snapshot(tmp_path)
+    original_rmdir = snapshots.os.rmdir
+    original_chmod = snapshots.os.chmod
+    failed_paths = []
+    adjusted_paths = []
+
+    def fail_readonly_once(path, *args, **kwargs):
+        if Path(path).name == "previous" and not failed_paths:
+            failed_paths.append(Path(path))
+            raise PermissionError("read-only backup")
+        return original_rmdir(path, *args, **kwargs)
+
+    def record_chmod(path, mode, *args, **kwargs):
+        adjusted_paths.append(Path(path))
+        assert mode == stat.S_IWRITE
+        assert Path(path).resolve().is_relative_to((tmp_path / "data").resolve())
+        assert not Path(path).resolve().is_relative_to(destination.resolve())
+        return original_chmod(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(snapshots.os, "rmdir", fail_readonly_once)
+    monkeypatch.setattr(snapshots.os, "chmod", record_chmod)
+    paths = snapshots.save_job_snapshot(destination, [job("new")], project_root=tmp_path)
+    assert json.loads(paths[0].read_text()) == job("new")
+    assert adjusted_paths == failed_paths
+    assert len(failed_paths) == 1
+    assert not list((tmp_path / "data").glob(".job-snapshot-*"))
+
+
+def test_cleanup_failure_keeps_successful_publication_and_logs_workspace(tmp_path, monkeypatch, caplog):
+    destination = previous_snapshot(tmp_path)
+
+    def fail_cleanup(*args, **kwargs):
+        raise PermissionError("workspace locked")
+
+    monkeypatch.setattr(snapshots.shutil, "rmtree", fail_cleanup)
+    paths = snapshots.save_job_snapshot(destination, [job("new")], project_root=tmp_path)
+    assert json.loads(paths[0].read_text()) == job("new")
+    assert not (destination / "old.json").exists()
+    workspaces = list((tmp_path / "data").glob(".job-snapshot-*"))
+    assert len(workspaces) == 1
+    assert str(workspaces[0]) in caplog.text
+    assert "workspace locked" in caplog.text
+
+
+def test_cleanup_failure_preserves_original_validation_error(tmp_path, monkeypatch, caplog):
+    destination = previous_snapshot(tmp_path)
+    original = (destination / "old.json").read_bytes()
+
+    def fail_cleanup(*args, **kwargs):
+        raise PermissionError("workspace locked")
+
+    monkeypatch.setattr(snapshots.shutil, "rmtree", fail_cleanup)
+    with pytest.raises(TypeError, match="not JSON serializable"):
+        snapshots.save_job_snapshot(destination, [job("broken") | {"unexpected": object()}], project_root=tmp_path)
+    assert (destination / "old.json").read_bytes() == original
+    assert "workspace locked" in caplog.text
 
 
 @pytest.mark.parametrize("jobs", [
