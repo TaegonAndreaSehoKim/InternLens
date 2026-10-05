@@ -42,6 +42,8 @@ Current components:
 - `freshness_score`: gives a small tie-breaker to recently posted jobs and gently lowers stale postings.
 - `internship_signal_score`: rewards postings that explicitly identify themselves as internships.
 
+Freshness uses elapsed time since `posting_date`, evaluated at one shared time for a ranking run. `freshness_days` is the validity period after a source check and never represents posting age. Missing dates receive a neutral `0.5`; freshly fetching an old posting does not increase its posting freshness. Greenhouse's normalized posting date currently comes from the board's update timestamp, while Lever uses its creation timestamp.
+
 ## Skill Priority
 
 Skill matching uses priority weights so all skill mentions are not treated equally:
@@ -73,6 +75,10 @@ Current blockers include:
 - graduation timing appears incompatible with the posting
 
 If blockers are present, the action label becomes `Skip` even if the raw fit score is high.
+
+PhD blockers require degree-targeted title/minimum qualification evidence or an explicit requirement in the description. Preferred qualifications, incidental mentions, and alternative degree options such as master's or PhD do not become hard blockers. Dotted `Ph.D.` and doctoral degree names are recognized for both candidates and postings.
+
+Both ingestion clients preserve explicit sponsorship restrictions and their source text in `sponsorship_info`. The loader applies the same interpretation to older files in memory, without rewriting the corpus. Unknown policy and non-restrictive phrases such as "no sponsorship required" are not treated as unavailable sponsorship. Recommendation and job detail endpoints share the requirement interpretation.
 
 ## Noise Guardrails
 

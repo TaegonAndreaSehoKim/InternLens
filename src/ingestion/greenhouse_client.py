@@ -15,6 +15,7 @@ from src.ingestion.http_retry import (
     get_json_with_retry,
 )
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+from src.preprocessing.job_requirements import extract_sponsorship_info
 
 
 GREENHOUSE_JOBS_BASE_URL = "https://boards-api.greenhouse.io/v1/boards"
@@ -259,7 +260,7 @@ def normalize_greenhouse_job(
         "min_qualifications": "",
         "preferred_qualifications": "",
         "posting_date": posting_date,
-        "sponsorship_info": "",
+        "sponsorship_info": extract_sponsorship_info(description),
         "employment_type": "",
         "source_url": source_url,
         "application_url": source_url,

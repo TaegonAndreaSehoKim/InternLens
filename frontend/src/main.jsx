@@ -3023,7 +3023,7 @@ function JobDetailModal({ detail, summaryJob, status, onClose }) {
                   {detail.fetched_at && <span>Checked {checkedAgeLabel(detail.fetched_at)}</span>}
                   {detail.expires_at && <span>Refresh by {detail.expires_at}</span>}
                   {detail.freshness_days !== null && detail.freshness_days !== undefined && (
-                    <span>{detail.freshness_days} freshness days</span>
+                    <span>Valid for {detail.freshness_days} days after the source check</span>
                   )}
                 </div>
               </section>

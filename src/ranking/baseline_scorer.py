@@ -4,6 +4,8 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from src.preprocessing.job_requirements import is_phd_degree, requires_phd, sponsorship_is_unavailable
+
 
 # These are the core skill phrases the baseline scorer knows how to detect.
 SKILL_KEYWORDS = [
@@ -770,27 +772,20 @@ def _parse_datetime(value: str) -> Optional[datetime]:
     return None
 
 
-def _compute_freshness_score(job: Dict[str, Any]) -> float:
+def _compute_freshness_score(job: Dict[str, Any], *, now: datetime | None = None) -> float:
     """
     Return a small tie-breaker score for newer postings.
 
-    Prefer a normalized `freshness_days` field when available so tests and
-    refresh pipelines can keep this deterministic.
+    `freshness_days` is the corpus TTL, not the age of the posting. Use the
+    posting timestamp and an injectable evaluation time for deterministic tests.
     """
-    freshness_days = job.get("freshness_days")
-    if freshness_days is not None:
-        try:
-            days_old = int(freshness_days)
-        except (TypeError, ValueError):
-            days_old = None
-    else:
-        days_old = None
-
-    if days_old is None:
-        posted_at = _parse_datetime(str(job.get("posting_date", "")))
-        if posted_at is None:
-            return 0.50
-        days_old = (datetime.now(timezone.utc) - posted_at).days
+    posted_at = _parse_datetime(str(job.get("posting_date", "")))
+    if posted_at is None:
+        return 0.50
+    current_time = now or datetime.now(timezone.utc)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+    days_old = max(0, (current_time - posted_at).days)
 
     if days_old <= 14:
         return 1.0
@@ -820,7 +815,6 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     """
     blockers: List[str] = []
 
-    sponsorship_text = job["sponsorship_info"].lower()
     combined_text = " ".join(
         [
             job["title"],
@@ -834,7 +828,7 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     degree_level = profile["degree_level"].lower()
     grad_year = _extract_grad_year(profile["grad_date"])
 
-    if profile["sponsorship_need"] and "no sponsorship" in sponsorship_text:
+    if profile["sponsorship_need"] and sponsorship_is_unavailable(job):
         blockers.append("Sponsorship is not available for this role")
 
     # Require explicit or strong internship evidence instead of a loose substring check.
@@ -844,7 +838,7 @@ def _check_blocking_constraints(profile: Dict[str, Any], job: Dict[str, Any]) ->
     if _looks_like_senior_role(job):
         blockers.append("This role appears to be a senior-level position")
 
-    if "phd" in combined_text and "phd" not in degree_level:
+    if requires_phd(job) and not is_phd_degree(degree_level):
         blockers.append("This role appears to require a PhD")
 
     if grad_year is not None:
@@ -946,7 +940,7 @@ def _generate_skill_gaps(profile: Dict[str, Any], job: Dict[str, Any]) -> List[s
     return gaps[:4]
 
 
-def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
+def score_job(profile: Dict[str, Any], job: Dict[str, Any], *, now: datetime | None = None) -> Dict[str, Any]:
     """
     Score one job, derive a recommendation label, and attach explanations.
     """
@@ -961,7 +955,7 @@ def score_job(profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
         str(location).strip() for location in profile.get("preferred_locations", [])
     )
     major_score, major_matches = _compute_major_match(profile, job)
-    freshness_score = _compute_freshness_score(job)
+    freshness_score = _compute_freshness_score(job, now=now)
     internship_bonus = _compute_internship_signal_bonus(job)
     blockers = _check_blocking_constraints(profile, job)
 
@@ -1116,7 +1110,8 @@ def _ranking_sort_key(job: Dict[str, Any]) -> tuple[int, int, int, float, float,
     )
 
 
-def rank_jobs(profile: Dict[str, Any], jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def rank_jobs(profile: Dict[str, Any], jobs: List[Dict[str, Any]], *, now: datetime | None = None) -> List[Dict[str, Any]]:
     """Score all jobs and return them in final recommendation order."""
-    scored_jobs = [score_job(profile, job) for job in jobs]
+    evaluation_time = now or datetime.now(timezone.utc)
+    scored_jobs = [score_job(profile, job, now=evaluation_time) for job in jobs]
     return sorted(scored_jobs, key=_ranking_sort_key)

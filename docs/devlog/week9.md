@@ -18,3 +18,21 @@
 
 ### Follow-up
 - Continue with ranking freshness, degree eligibility, and sponsorship interpretation (item 3).
+
+## 2026-10-05 - Posting age and eligibility interpretation (item 3)
+
+### Changes
+- Calculated posting freshness from posting dates at a shared evaluation time; kept `freshness_days` as the source-check validity period.
+- Distinguished required PhD conditions from preferred qualifications, alternative degrees, and incidental mentions.
+- Preserved explicit sponsorship restrictions with source evidence in both ATS normalizers and older job files loaded in memory.
+- Shared requirement interpretation between ranking and job detail endpoints.
+- Corrected the README role weight to 18% and clarified the source validity label in job details.
+- Added end-to-end ATS normalization, loading, ranking, and API regression cases without regenerating the corpus.
+
+### Validation
+- Backend full suite: **265 passed**.
+- Frontend full suite: **50 passed**; lint and production build passed.
+- Existing sample-data and CLI/API tests passed in the full backend suite.
+
+### Follow-up
+- Add corpus readiness, explicit unavailable-data UI states, and safer snapshot replacement (item 4).

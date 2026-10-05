@@ -16,6 +16,7 @@ from src.ingestion.http_retry import (
     get_json_with_retry,
 )
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+from src.preprocessing.job_requirements import extract_sponsorship_info
 
 
 LEVER_POSTINGS_BASE_URL = "https://api.lever.co/v0/postings"
@@ -365,7 +366,7 @@ def normalize_lever_posting(
         "min_qualifications": min_qualifications,
         "preferred_qualifications": preferred_qualifications,
         "posting_date": posting_date,
-        "sponsorship_info": "",
+        "sponsorship_info": extract_sponsorship_info("\n".join([description, min_qualifications, preferred_qualifications])),
         "employment_type": employment_type,
         "source_url": source_url,
         "application_url": application_url,

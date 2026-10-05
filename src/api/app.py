@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from src.preprocessing.job_parser import load_all_job_postings
+from src.preprocessing.job_requirements import requires_phd, sponsorship_is_unavailable
 from src.preprocessing.profile_parser import (
     load_candidate_profile,
     normalize_candidate_profile,
@@ -692,24 +693,14 @@ def _extract_requirement_items(job: Dict[str, Any]) -> List[str]:
 
 def _possible_posting_blockers(job: Dict[str, Any]) -> List[str]:
     blockers: List[str] = []
-    combined_text = " ".join(
-        [
-            str(job.get("title", "")),
-            str(job.get("description", "")),
-            str(job.get("min_qualifications", "")),
-            str(job.get("preferred_qualifications", "")),
-            str(job.get("employment_type", "")),
-            str(job.get("sponsorship_info", "")),
-        ]
-    ).lower()
 
     if not (_has_explicit_internship_signal(job) or _has_description_internship_signal(job)):
         blockers.append("This posting may not be an internship")
     if _looks_like_senior_role(job):
         blockers.append("This posting looks senior-level")
-    if "phd" in combined_text:
+    if requires_phd(job):
         blockers.append("This posting may require a PhD")
-    if "no sponsorship" in combined_text:
+    if sponsorship_is_unavailable(job):
         blockers.append("This posting states sponsorship is not available")
 
     return blockers[:4]

@@ -48,7 +48,7 @@ flowchart LR
 
     scorer --> skill["Skill Match<br/>35%"]
     scorer --> quals["Qualification Coverage<br/>17%"]
-    scorer --> role["Preferred Role Match<br/>22%"]
+    scorer --> role["Preferred Role Match<br/>18%"]
     scorer --> major["Major Match<br/>12%"]
     scorer --> location["Location Fit<br/>8%"]
     scorer --> fresh["Freshness<br/>4%"]
@@ -184,7 +184,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Local backend suite after refresh resilience updates: `226 passed`
+- Latest local backend suite: `265 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `50 passed`
 - Frontend lint and production build: passing

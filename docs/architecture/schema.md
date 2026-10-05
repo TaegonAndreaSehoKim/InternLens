@@ -63,7 +63,7 @@ A processed job record is the normalized form used by the current InternLens ran
 | min_qualifications | string | Extracted or normalized required qualifications text |
 | preferred_qualifications | string | Extracted or normalized preferred qualifications text |
 | posting_date | string | Posting date in ISO-like string format if available |
-| sponsorship_info | string | Sponsorship or work authorization information |
+| sponsorship_info | string | Sponsorship or work authorization information; explicit restrictions include the source evidence, unknown policy remains empty |
 | employment_type | string | Internship, full-time, contract, etc. |
 | source_url | string | Public application or detail page URL |
 | created_at | string | Timestamp when the processed record was created |
@@ -76,6 +76,9 @@ A processed job record is the normalized form used by the current InternLens ran
 | team | string | Team, department, or function |
 | remote_status | string | `remote`, `hybrid`, `onsite`, or empty |
 | application_url | string | Apply URL if different from source_url |
+| fetched_at | string | UTC timestamp of the most recent successful source check |
+| expires_at | string | End of the source-check validity window; expired jobs are excluded from new recommendations |
+| freshness_days | integer | Validity duration after fetching, retained for compatibility; not the age of the posting |
 | salary_range | string | Compensation text if available |
 | job_status | string | Open/closed if available |
 | offices | list[string] | Source office hierarchy if available |

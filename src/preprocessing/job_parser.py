@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from src.preprocessing.job_requirements import extract_sponsorship_info
+
 
 REQUIRED_JOB_FIELDS = [
     "job_id",
@@ -265,6 +267,11 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
     for field in optional_text_fields:
         if field in payload:
             job[field] = _coerce_text(payload.get(field, ""))
+
+    if not job["sponsorship_info"]:
+        job["sponsorship_info"] = extract_sponsorship_info("\n".join(
+            job[field] for field in ("description", "min_qualifications", "preferred_qualifications")
+        ))
 
     return job
 

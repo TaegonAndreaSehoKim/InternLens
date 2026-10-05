@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from src.ranking.baseline_scorer import score_job
 from src.ranking.baseline_scorer import rank_jobs
 
@@ -846,7 +848,7 @@ def test_skill_gaps_show_required_skills_before_preferred_skills() -> None:
     assert result["skill_gaps"][:2] == ["sql", "aws"]
 
 
-def test_freshness_score_uses_normalized_freshness_days() -> None:
+def test_freshness_score_uses_posting_age_not_corpus_ttl() -> None:
     profile = _build_profile()
     recent_job = {
         "job_id": "recent_data_intern",
@@ -856,8 +858,8 @@ def test_freshness_score_uses_normalized_freshness_days() -> None:
         "description": "Use Python and machine learning to analyze product data.",
         "min_qualifications": "",
         "preferred_qualifications": "",
-        "posting_date": "",
-        "freshness_days": 3,
+        "posting_date": "2026-10-02",
+        "freshness_days": 7,
         "sponsorship_info": "",
         "employment_type": "Internship",
         "team": "Data",
@@ -867,11 +869,12 @@ def test_freshness_score_uses_normalized_freshness_days() -> None:
     stale_job = {
         **recent_job,
         "job_id": "stale_data_intern",
-        "freshness_days": 240,
+        "posting_date": "2026-01-01",
     }
 
-    recent_result = score_job(profile, recent_job)
-    stale_result = score_job(profile, stale_job)
+    now = datetime(2026, 10, 5, tzinfo=timezone.utc)
+    recent_result = score_job(profile, recent_job, now=now)
+    stale_result = score_job(profile, stale_job, now=now)
 
     assert recent_result["component_scores"]["freshness_score"] == 1.0
     assert stale_result["component_scores"]["freshness_score"] == 0.0
