@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 
@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from src.preprocessing.job_parser import load_all_job_postings
+from src.preprocessing.corpus_health import build_corpus_health_report
 from src.preprocessing.job_requirements import requires_phd, sponsorship_is_unavailable
 from src.preprocessing.profile_parser import (
     load_candidate_profile,
@@ -310,6 +311,17 @@ class RecommendOverview(BaseModel):
     top_locations: List[str]
     common_blockers: List[str]
     highlighted_titles: List[str]
+
+
+class CorpusReadinessResponse(BaseModel):
+    status: Literal["ready", "unavailable"]
+    checked_at: str
+    active_job_count: int
+    all_job_count: int
+    expired_or_filtered_job_count: int
+    latest_fetched_at: Optional[str]
+    latest_expires_at: Optional[str]
+    message: str
 
 
 class RecommendResponse(BaseModel):
@@ -975,7 +987,13 @@ def _build_recommend_response(
 ) -> RecommendResponse:
     jobs_dir_path = resolve_project_path(PROJECT_ROOT, jobs_dir)
 
-    jobs = load_all_job_postings(jobs_dir_path)
+    try:
+        jobs = load_all_job_postings(jobs_dir_path)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Current job data is unavailable. Please try again after the next source refresh.",
+        ) from error
     ranked_jobs = rank_jobs(profile, jobs)
 
     reranking_applied = False
@@ -1017,6 +1035,23 @@ def _build_recommend_response(
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/ready", response_model=CorpusReadinessResponse, responses={503: {"model": CorpusReadinessResponse}})
+def readiness(response: Response) -> CorpusReadinessResponse:
+    report = build_corpus_health_report(DEFAULT_API_JOBS_DIR, project_root=PROJECT_ROOT)
+    ready = report["ok"]
+    if not ready:
+        response.status_code = 503
+    return CorpusReadinessResponse(
+        status="ready" if ready else "unavailable",
+        **{field: report[field] for field in (
+            "checked_at", "active_job_count", "all_job_count", "expired_or_filtered_job_count",
+            "latest_fetched_at", "latest_expires_at",
+        )},
+        message="Current job data is ready." if ready else
+        "Current job data is unavailable. Please try again after the next source refresh.",
+    )
 
 
 @app.put("/me/profile", response_model=StoredProfileResponse)
@@ -1637,6 +1672,8 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             feedback_profile=feedback_profile,
             feedback_source=feedback_source,
         )
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

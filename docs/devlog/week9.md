@@ -36,3 +36,22 @@
 
 ### Follow-up
 - Add corpus readiness, explicit unavailable-data UI states, and safer snapshot replacement (item 4).
+
+## 2026-10-05 - Corpus readiness and recoverable snapshots (item 4)
+
+### Changes
+- Added public `/ready` with active/total counts and source-check/expiry timestamps; kept `/health` as liveness.
+- Shared the CLI corpus health check with the API and rejected missing or malformed data, including checks with a zero minimum.
+- Returned `503` for empty/expired recommendations and distinguished unavailable data from connectivity problems in the workspace.
+- Gated new matches on readiness, added a retry notice, and retained historical runs and saved-job views.
+- Staged and validated processed snapshots outside the corpus tree before directory replacement; preserved previous data on normalization, serialization, and publication failures.
+- Preserved a named backup when rollback itself fails and documented the publication gap and refresh cadence margin.
+
+### Validation
+- Targeted backend checks: **58 passed**.
+- Backend full suite: **284 passed**.
+- Frontend full suite: **58 passed**; lint and production build passed.
+- Existing generated data was not refreshed or staged. The local corpus was fully expired during inspection; live AWS scheduling was not changed.
+
+### Follow-up
+- Add browser interaction coverage, frontend CI, and a labeled ranking evaluation (item 6).

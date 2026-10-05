@@ -23,7 +23,7 @@ function createApiClient({ baseUrl, getAccessToken = null, onUnauthorized = null
       }
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw Object.assign(new Error(body.detail ?? `Request failed: ${response.status}`), { status: response.status });
+        throw Object.assign(new Error(body.detail ?? body.message ?? `Request failed: ${response.status}`), { status: response.status, data: body });
       }
       return body;
     } catch (error) {

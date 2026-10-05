@@ -16,6 +16,7 @@ from src.ingestion.http_retry import (
     get_json_with_retry,
 )
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+from src.ingestion.snapshot_store import save_job_snapshot
 from src.preprocessing.job_requirements import extract_sponsorship_info
 
 
@@ -384,28 +385,14 @@ def save_processed_lever_postings(
 ) -> List[Path]:
     # Normalize each Lever posting and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "lever" / site_name
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Match Greenhouse behavior: each refresh should leave only the latest
-    # source snapshot for this board, otherwise closed Lever postings linger.
-    for existing_file in output_dir.glob("*.json"):
-        existing_file.unlink()
-
-    saved_paths: List[Path] = []
     fetched_at = _utc_now()
-
-    for posting in postings:
-        normalized = normalize_lever_posting(
+    normalized_jobs = [
+        normalize_lever_posting(
             posting,
             site_name,
             fetched_at=fetched_at,
             freshness_days=freshness_days,
         )
-        output_path = output_dir / f"{normalized['job_id']}.json"
-
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(normalized, f, indent=2, ensure_ascii=False)
-
-        saved_paths.append(output_path)
-
-    return saved_paths
+        for posting in postings
+    ]
+    return save_job_snapshot(output_dir, normalized_jobs, project_root=project_root)

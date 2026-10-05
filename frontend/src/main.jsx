@@ -31,6 +31,7 @@ import {
 } from "./recommendationHelpers";
 import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
 import { createApiClient } from "./apiClient";
+import { fetchCorpusReadiness } from "./corpusReadiness";
 import { LOCAL_USER_ID, clearStoredState, readStoredState, writeStoredState } from "./uiState";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -1071,6 +1072,7 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [matchProgress, setMatchProgress] = useState("");
   const [apiHealth, setApiHealth] = useState("checking");
+  const [corpusReadiness, setCorpusReadiness] = useState({ status: "checking" });
   const [busy, setBusy] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
   const quality = profileQuality(form);
@@ -1089,7 +1091,9 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
         setProfileStatus({ type: "success", message: options.successMessage });
       }
     } catch (error) {
-      if (String(error.message).includes("fetch")) {
+      if (error.status === 503) {
+        setApiHealth("online");
+      } else if (String(error.message).includes("fetch")) {
         setApiHealth("offline");
       } else {
         setApiHealth("error");
@@ -1104,6 +1108,18 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
     const data = await api("/me/dashboard");
     setDashboard(data);
     return data;
+  }
+
+  async function loadCorpusReadiness() {
+    setCorpusReadiness({ status: "checking" });
+    try {
+      const data = await fetchCorpusReadiness(api);
+      setCorpusReadiness(data);
+      return data;
+    } catch (error) {
+      setCorpusReadiness({ status: "error" });
+      throw error;
+    }
   }
 
   async function loadDashboardJobView(view) {
@@ -1190,6 +1206,10 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
     setDashboardJobView("recommendations");
     setMatchProgress("Loading current profile and job corpus");
     try {
+      const readiness = await loadCorpusReadiness();
+      if (readiness.status !== "ready") {
+        throw Object.assign(new Error(readiness.message), { status: 503 });
+      }
       setMatchProgress("Scoring roles and applying feedback");
       const data = await api("/me/recommend", {
         method: "POST",
@@ -1290,6 +1310,15 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
       if (cancelled) return;
       setApiHealth("online");
 
+      try {
+        const readiness = await fetchCorpusReadiness(api);
+        if (cancelled) return;
+        setCorpusReadiness(readiness);
+      } catch {
+        if (cancelled) return;
+        setCorpusReadiness({ status: "error" });
+      }
+
       let restoredDashboard;
       try {
         const storedProfile = await api("/me/profile");
@@ -1382,6 +1411,8 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
         </ol>
       </section>
 
+      <CorpusReadinessNotice readiness={corpusReadiness} busy={busy} onCheck={() => runTask(loadCorpusReadiness)} />
+
       {profileState === "changed" && (
         <section className="unsaved-change-banner" aria-label="Unsaved profile changes">
           <div>
@@ -1416,9 +1447,10 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
           dashboard={dashboard}
           profileState={profileState}
           profileReady={quality.isReady}
+          corpusReady={corpusReadiness.status === "ready"}
           busy={busy}
           matchProgress={matchProgress}
-          onRefresh={() => runTask(() => loadDashboard())}
+          onRefresh={() => runTask(async () => { await loadCorpusReadiness(); await loadDashboard(); })}
           onRun={() => runTask(runRecommendations)}
           onLoadRun={(runId) => runTask(() => loadRun(runId))}
           activeJobView={dashboardJobView}
@@ -1427,6 +1459,7 @@ function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthori
       </section>
 
       <RecommendationPanel
+        corpusReadiness={corpusReadiness}
         recommendations={recommendations}
         dashboard={dashboard}
         dashboardJobView={dashboardJobView}
@@ -2357,10 +2390,26 @@ function ChipSelector({ title, value, options = [], customPlaceholder, onChange 
   );
 }
 
+function CorpusReadinessNotice({ readiness, busy, onCheck }) {
+  if (readiness.status === "ready") return null;
+  const checking = readiness.status === "checking";
+  return (
+    <section className="unsaved-change-banner" aria-label="Job data status" role="status">
+      <div>
+        <strong>{checking ? "Checking job availability" : readiness.status === "unavailable" ? "Current job data is unavailable" : "Could not check job availability"}</strong>
+        <span>{checking ? "Checking whether current jobs are ready for a new shortlist." : "New matches need current job data. Your saved jobs and earlier shortlists are still available."}</span>
+        {readiness.latest_fetched_at && <span>Last source check: {compactTimestamp(readiness.latest_fetched_at)}</span>}
+      </div>
+      <button type="button" disabled={busy || checking} onClick={onCheck}>Check again</button>
+    </section>
+  );
+}
+
 function DashboardPanel({
   dashboard,
   profileState,
   profileReady,
+  corpusReady = true,
   busy,
   matchProgress,
   onRefresh,
@@ -2370,7 +2419,7 @@ function DashboardPanel({
   onShowJobView
 }) {
   const summary = dashboard?.summary;
-  const canFindMatches = Boolean(dashboard) && profileState === "saved" && profileReady;
+  const canFindMatches = Boolean(dashboard) && profileState === "saved" && profileReady && corpusReady;
 
   return (
     <section className="panel dashboard-panel" aria-labelledby="dashboard-title">
@@ -2471,6 +2520,7 @@ function DashboardPanel({
 }
 
 function RecommendationPanel({
+  corpusReadiness = null,
   recommendations,
   dashboard,
   dashboardJobView,
@@ -2550,8 +2600,8 @@ function RecommendationPanel({
 
       {!hasBoard ? (
         <div className="empty-state">
-          <strong>{showingDashboardJobs ? dashboardView.heading : "No shortlist loaded"}</strong>
-          <span>{dashboardView.empty}</span>
+          <strong>{showingDashboardJobs ? dashboardView.heading : corpusReadiness?.status === "unavailable" ? "Waiting for current job data" : "No shortlist loaded"}</strong>
+          <span>{!showingDashboardJobs && corpusReadiness?.status === "unavailable" ? "A new shortlist will be available after the job sources are refreshed." : dashboardView.empty}</span>
         </div>
       ) : (
         <>
@@ -3181,6 +3231,8 @@ if (rootElement) {
 export {
   App,
   AuthDialog,
+  CorpusReadinessNotice,
+  DashboardPanel,
   JobCard,
   JobDetailModal,
   ProfilePanel,

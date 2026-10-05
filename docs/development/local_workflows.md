@@ -99,6 +99,10 @@ Verify that the processed corpus has at least one non-expired job:
 .\.venv\Scripts\python.exe scripts\check_corpus_health.py
 ```
 
+`GET /health` checks API liveness. `GET /ready` checks the configured recommendation corpus using the same expiry and duplicate rules as the CLI health check, returning `200` when at least one active job exists and `503` for empty, missing, malformed, or fully expired data. The response includes active/total counts and the latest source-check and expiry timestamps. Empty or expired recommendation requests also return `503`; historical run and saved-job endpoints remain usable.
+
+Processed source refreshes stage and validate all files before replacing the old source snapshot. Failed publication attempts restore the previous directory; if restoration also fails, the exception names a preserved backup under `data/.job-snapshot-*/previous`. These temporary files are outside the corpus loader tree. No existing generated corpus is rewritten by the readiness checks.
+
 Useful variants:
 
 ```powershell

@@ -505,6 +505,8 @@ Returned jobs: None
 
 ## Current Staging Limitations
 
+The default source-check validity is seven days. A refresh scheduled exactly seven days apart leaves no allowance for ingestion, deployment, or a failed run. For staging operations, schedule refresh/deploy more frequently than the validity period and monitor `GET /ready` separately from `GET /health`. A green liveness check does not establish that the deployed corpus contains active jobs. The daily GitHub artifact workflow does not deploy those jobs. The readiness change does not modify the live EventBridge schedule.
+
 - Cognito authentication mode is implemented, but staging should still be treated as a demo environment until auth rollout, callback/logout URLs, and operational settings are reviewed together.
 - `X-InternLens-User-Id` remains only a development bridge for `INTERNLENS_AUTH_MODE=dev`.
 - SQLite is still single-host prototype persistence, though the schema now scopes rows by user.

@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `265 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `284 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -50,6 +50,8 @@ The ingestion layer saves:
 - processed per-job JSON files for ranking
 
 This keeps collection and ranking decoupled, which makes debugging and iteration easier.
+
+Source refreshes normalize the complete response before staging validated JSON outside the corpus tree. The source directory is replaced only after staging succeeds, with rollback to the previous snapshot on a publication failure. A failed rollback preserves its backup path for operator recovery. Directory renames have a brief publication gap; this is not a concurrent-writer or crash-recovery transaction.
 
 ---
 
@@ -130,6 +132,7 @@ The frontend uses these APIs to support:
 - account-scoped `/me/...` profile, dashboard, recommendation, and job-action calls for the browser workflow
 - searchable structured selectors for roles, skills, locations, and industries
 - simple online/offline API health status
+- separate job-data readiness, unavailable-data messages, and a retry control; new shortlists require current data while saved jobs and historical runs remain accessible
 - in-app Cognito login, sign-up, and email confirmation when `VITE_AUTH_MODE=cognito`
 - dashboard summary review
 - dashboard saved/applied/hidden job review

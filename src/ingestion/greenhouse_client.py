@@ -15,6 +15,7 @@ from src.ingestion.http_retry import (
     get_json_with_retry,
 )
 from src.ingestion.job_freshness import DEFAULT_JOB_FRESHNESS_DAYS, build_freshness_fields
+from src.ingestion.snapshot_store import save_job_snapshot
 from src.preprocessing.job_requirements import extract_sponsorship_info
 
 
@@ -278,31 +279,17 @@ def save_processed_greenhouse_jobs(
 ) -> List[Path]:
     # Normalize each Greenhouse job and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "greenhouse" / board_token
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Remove stale processed files from older fetches so reruns reflect only the
-    # latest normalization logic and latest board snapshot.
-    for existing_file in output_dir.glob("*.json"):
-        existing_file.unlink()
-
-    saved_paths: List[Path] = []
     fetched_at = _utc_now()
-
-    for job in jobs:
-        normalized = normalize_greenhouse_job(
+    normalized_jobs = [
+        normalize_greenhouse_job(
             job,
             board_token,
             fetched_at=fetched_at,
             freshness_days=freshness_days,
         )
-        output_path = output_dir / f"{normalized['job_id']}.json"
-
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(normalized, f, indent=2, ensure_ascii=False)
-
-        saved_paths.append(output_path)
-
-    return saved_paths
+        for job in jobs
+    ]
+    return save_job_snapshot(output_dir, normalized_jobs, project_root=project_root)
 
 def _extract_metadata_values(job: Dict[str, Any], target_name: str) -> List[str]:
     # Extract values from a Greenhouse metadata entry by name.
