@@ -116,3 +116,13 @@
 - In-process API smoke with the refreshed corpus: `/ready` returned **200**, the sample profile returned **10** eligible/applyable recommendations, and the first job detail returned **200**.
 - Latest source check: **2026-10-05T22:35:05Z**; latest validity expiry: **2026-10-12T22:35:05Z**.
 - Frontend files and checks were unchanged in this refresh task; no deployed corpus was updated.
+
+## 2026-10-05 - Snapshot regression portability
+
+### Changes
+- Diagnosed the failed GitHub Actions run for `025cc1f`: 311 backend tests passed, but the new read-only backup regression compared POSIX directory-relative removal paths with absolute retry paths.
+- Recorded the actual backup directory in the test so Windows and Linux validate the same target, while preserving the publication, permission-scope, retry-count, and cleanup assertions.
+- Snapshot cleanup behavior and refreshed local job data were unchanged.
+
+### Validation
+- Windows backend full suite: **312 passed** after the test correction.

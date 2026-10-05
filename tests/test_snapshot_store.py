@@ -49,7 +49,11 @@ def test_readonly_backup_removal_is_retried_without_interrupting_publication(tmp
 
     def fail_readonly_once(path, *args, **kwargs):
         if Path(path).name == "previous" and not failed_paths:
-            failed_paths.append(Path(path))
+            # POSIX rmtree may pass a name relative to dir_fd, while its
+            # error callback receives an absolute path. Record the actual
+            # backup so both platforms compare the same removal target.
+            backup, = (tmp_path / "data").glob(".job-snapshot-*/previous")
+            failed_paths.append(backup.resolve())
             raise PermissionError("read-only backup")
         return original_rmdir(path, *args, **kwargs)
 
