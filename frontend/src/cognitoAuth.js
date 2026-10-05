@@ -44,16 +44,25 @@ async function currentCognitoSession() {
     fetchAuthSession(),
     fetchUserAttributes().catch(() => ({}))
   ]);
-  const accessToken = session.tokens?.accessToken?.toString() ?? "";
-
-  if (!accessToken) {
-    throw new Error("Your session could not be restored. Please log in again.");
-  }
+  accessTokenForUser(session, user.userId);
 
   return {
-    accessToken,
+    userId: user.userId,
     email: attributes.email ?? user.signInDetails?.loginId ?? user.username
   };
+}
+
+function accessTokenForUser(session, userId) {
+  const token = session.tokens?.accessToken;
+  if (!userId || token?.payload?.sub !== userId || !token.toString()) {
+    throw Object.assign(new Error("Your session ended or changed. Please log in again."), { status: 401 });
+  }
+  return token.toString();
+}
+
+async function currentCognitoAccessToken(userId, { forceRefresh = false } = {}) {
+  const session = await fetchAuthSession({ forceRefresh });
+  return accessTokenForUser(session, userId);
 }
 
 function signInWithPassword(email, password) {
@@ -90,6 +99,7 @@ export {
   configureCognitoAuth,
   confirmCognitoSignIn,
   confirmCognitoSignUp,
+  currentCognitoAccessToken,
   currentCognitoSession,
   resendCognitoSignUpCode,
   signInWithPassword,

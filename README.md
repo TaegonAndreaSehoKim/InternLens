@@ -186,7 +186,7 @@ Recent validation checkpoints:
 
 - Local backend suite after refresh resilience updates: `226 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
-- Frontend suite: `30 passed`
+- Frontend suite: `50 passed`
 - Frontend lint and production build: passing
 - Corpus health gate: refresh artifacts and weekly deploys must contain at least one non-expired processed job
 - Deployment smoke now checks `health`, auth protection, OpenAPI schema, and the public recommendation corpus

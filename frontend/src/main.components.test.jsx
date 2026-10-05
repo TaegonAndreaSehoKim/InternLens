@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  App,
   AuthDialog,
   JobCard,
   JobDetailModal,
@@ -14,6 +15,7 @@ import {
   removeResumeSuggestion,
   scoreExplanation
 } from "./main.jsx";
+import { clearStoredState, writeStoredState } from "./uiState";
 
 const baseJob = {
   job_id: "job_1",
@@ -43,6 +45,38 @@ const baseJob = {
 };
 
 const noop = () => {};
+
+describe("workspace draft isolation", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function mockStorage() {
+    const values = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key)
+    });
+  }
+
+  it("shows an account's draft while a new account starts with an empty profile", () => {
+    mockStorage();
+    writeStoredState({ form: { resume_text: "Private resume for account A" } }, "account-a");
+
+    const ownHtml = renderToStaticMarkup(<App accountUserId="account-a" />);
+    const otherHtml = renderToStaticMarkup(<App accountUserId="account-b" />);
+
+    expect(ownHtml).toContain("Private resume for account A");
+    expect(otherHtml).not.toContain("Private resume for account A");
+  });
+
+  it("does not restore a cleared draft on a later login", () => {
+    mockStorage();
+    writeStoredState({ form: { resume_text: "Signed-out resume" } }, "account-a");
+    clearStoredState("account-a");
+
+    expect(renderToStaticMarkup(<App accountUserId="account-a" />)).not.toContain("Signed-out resume");
+  });
+});
 
 describe("main UI components", () => {
   it("renders an in-app email and password login form", () => {

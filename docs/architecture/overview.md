@@ -120,6 +120,10 @@ InternLens now includes user-scoped SQLite-backed local persistence for:
 The current API accepts a temporary `X-InternLens-User-Id` header in `dev` auth mode to scope stored-profile data. This preserves the local demo flow through the default `local_user` scope. When `INTERNLENS_AUTH_MODE=cognito`, the backend validates a Cognito bearer token and uses the verified JWT `sub` as the user scope.
 The frontend has the matching switch: `VITE_AUTH_MODE=dev` keeps the existing demo behavior, while `VITE_AUTH_MODE=cognito` uses an in-app email/password form backed by the existing Cognito user pool and sends the access token to the API.
 
+Browser profile drafts, shortlist selection, and filters are cached separately for each Cognito `sub`, with a separate `local_user` cache for the demo. The legacy shared cache is discarded because its account owner cannot be established. Signing out or ending an invalid session clears that account's cache. Account changes remount the workspace so in-memory state is also isolated.
+
+Authenticated API requests obtain the current access token through Amplify `fetchAuthSession`, which refreshes expired tokens when possible. A `401` triggers one forced refresh and retry before returning to sign-in. Tokens must belong to the workspace's user; a token from another account is rejected before sending profile data.
+
 The frontend uses these APIs to support:
 - profile setup and restoration
 - reviewable resume upload parsing with confidence and evidence snippets for profile prefill

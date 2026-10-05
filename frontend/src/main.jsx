@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import {
   configureCognitoAuth,
   confirmCognitoSignIn,
   confirmCognitoSignUp,
+  currentCognitoAccessToken,
   currentCognitoSession,
   resendCognitoSignUpCode,
   signInWithPassword,
@@ -29,9 +30,10 @@ import {
   visibleRecommendations
 } from "./recommendationHelpers";
 import { activityBadgeLabel, activityTitle, compactTimestamp } from "./dashboardHelpers";
+import { createApiClient } from "./apiClient";
+import { LOCAL_USER_ID, clearStoredState, readStoredState, writeStoredState } from "./uiState";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
-const STORAGE_KEY = "internlens.ui.state";
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? "dev";
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID ?? "";
 const COGNITO_APP_CLIENT_ID = import.meta.env.VITE_COGNITO_APP_CLIENT_ID ?? "";
@@ -950,41 +952,6 @@ function updateRecommendationJobState(recommendations, jobId, state, sourceRunId
   };
 }
 
-function readStoredState() {
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) ?? {};
-  } catch {
-    return {};
-  }
-}
-
-function writeStoredState(state) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Storage can be unavailable in private browsing or locked-down environments.
-  }
-}
-
-async function api(path, options = {}, authToken = null) {
-  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(options.headers ?? {})
-    },
-    ...options
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(body.detail ?? `Request failed: ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-  return body;
-}
-
 function mergeParsedProfileForm(current, parsedProfile) {
   const imported = profileToForm(parsedProfile);
   return {
@@ -1086,8 +1053,9 @@ function friendlyErrorMessage(error) {
   return error.message || "Something went wrong. Try again.";
 }
 
-function App({ authToken = null, accountEmail = "Local demo user", onSignOut = null }) {
-  const [storedState] = useState(() => readStoredState());
+function App({ accountUserId = LOCAL_USER_ID, getAccessToken = null, onUnauthorized = null, accountEmail = "Local demo user", onSignOut = null }) {
+  const api = useMemo(() => createApiClient({ baseUrl: API_BASE, getAccessToken, onUnauthorized }), [getAccessToken, onUnauthorized]);
+  const [storedState] = useState(() => readStoredState(accountUserId));
   const [form, setForm] = useState(() => ({ ...defaultProfile, ...(storedState.form ?? {}) }));
   const [savedProfileForm, setSavedProfileForm] = useState(null);
   const [dashboard, setDashboard] = useState(null);
@@ -1133,7 +1101,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
   }
 
   async function loadDashboard() {
-    const data = await api("/me/dashboard", {}, authToken);
+    const data = await api("/me/dashboard");
     setDashboard(data);
     return data;
   }
@@ -1144,7 +1112,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       return [];
     }
 
-    const data = await api(`/me/${endpoint}`, {}, authToken);
+    const data = await api(`/me/${endpoint}`);
     setDashboardJobLists((current) => ({ ...current, [view]: data.jobs }));
     return data.jobs;
   }
@@ -1161,7 +1129,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     const savedProfile = await api("/me/profile", {
       method: "PUT",
       body: JSON.stringify(payload)
-    }, authToken);
+    });
     const savedForm = profileToForm(savedProfile);
     setForm(savedForm);
     setSavedProfileForm(savedForm);
@@ -1183,7 +1151,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
       const data = await api("/me/profile/resume", {
         method: "POST",
         body: formData
-      }, authToken);
+      });
       setResumeImport(data);
       setProfileEditorOpen(true);
       setForm((current) => clearResumeImportBackground(current));
@@ -1233,7 +1201,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
           include_debug: true,
           save_run: true
         })
-      }, authToken);
+      });
       setMatchProgress("Saving shortlist and refreshing dashboard");
       setRecommendations(data);
       setSelectedRun(data.run_id);
@@ -1247,7 +1215,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     if (activate) {
       setDashboardJobView("recommendations");
     }
-    const data = await api(`/me/recommendations/${runId}`, {}, authToken);
+    const data = await api(`/me/recommendations/${runId}`);
     setRecommendations(data);
     setSelectedRun(runId);
   }
@@ -1256,7 +1224,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     const response = await api(`/me/jobs/${jobId}/action`, {
       method: "POST",
       body: JSON.stringify({ action, run_id: selectedRun })
-    }, authToken);
+    });
     setRecommendations((current) => updateRecommendationJobState(
       current,
       jobId,
@@ -1291,7 +1259,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     setJobDetailStatus({ loading: true, error: "" });
     setJobDetail(null);
     try {
-      const detail = await api(`/jobs/${encodeURIComponent(jobId)}`, {}, authToken);
+      const detail = await api(`/jobs/${encodeURIComponent(jobId)}`);
       setJobDetail(detail);
       setJobDetailStatus({ loading: false, error: "" });
       setApiHealth("online");
@@ -1311,7 +1279,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
     async function restoreSession() {
       try {
-        await api("/health", {}, authToken);
+        await api("/health");
       } catch (error) {
         if (!cancelled) {
           setApiHealth(String(error.message).includes("fetch") ? "offline" : "error");
@@ -1324,12 +1292,12 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
       let restoredDashboard;
       try {
-        const storedProfile = await api("/me/profile", {}, authToken);
+        const storedProfile = await api("/me/profile");
         if (cancelled) return;
         const restoredForm = profileToForm(storedProfile);
         setForm(restoredForm);
         setSavedProfileForm(restoredForm);
-        restoredDashboard = await api("/me/dashboard", {}, authToken);
+        restoredDashboard = await api("/me/dashboard");
       } catch (error) {
         if ([401, 403, 404].includes(error.status)) {
           if (!cancelled) {
@@ -1350,11 +1318,7 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
 
       if (storedState.selectedRun) {
         try {
-          const restoredRun = await api(
-            `/me/recommendations/${storedState.selectedRun}`,
-            {},
-            authToken
-          );
+          const restoredRun = await api(`/me/recommendations/${storedState.selectedRun}`);
           if (cancelled) return;
           setRecommendations(restoredRun);
         } catch {
@@ -1369,11 +1333,11 @@ function App({ authToken = null, accountEmail = "Local demo user", onSignOut = n
     return () => {
       cancelled = true;
     };
-  }, [authToken, storedState.selectedRun]);
+  }, [api, storedState.selectedRun]);
 
   useEffect(() => {
-    writeStoredState({ form, selectedRun, recommendationFilter });
-  }, [form, selectedRun, recommendationFilter]);
+    writeStoredState({ form, selectedRun, recommendationFilter }, accountUserId);
+  }, [accountUserId, form, selectedRun, recommendationFilter]);
 
   return (
     <main className="shell" id="workspace">
@@ -1807,8 +1771,16 @@ function PublicHome({ authMode, onOpenAuth, onCloseAuth, onAuthenticated, errorM
 }
 
 function CognitoApp() {
-  const [session, setSession] = useState({ loading: true, accessToken: "", email: "", error: "" });
+  const [session, setSession] = useState({ loading: true, userId: "", email: "", error: "" });
   const [authMode, setAuthMode] = useState(null);
+  const getAccessToken = useCallback((options) => currentCognitoAccessToken(session.userId, options), [session.userId]);
+  const handleUnauthorized = useCallback(() => {
+    clearStoredState(session.userId);
+    setSession((current) => current.userId === session.userId
+      ? { loading: false, userId: "", email: "", error: "Your session ended or changed. Please log in again." }
+      : current);
+    setAuthMode("signIn");
+  }, [session.userId]);
 
   async function restoreSession() {
     const restored = await currentCognitoSession();
@@ -1819,7 +1791,7 @@ function CognitoApp() {
   useEffect(() => {
     let cancelled = false;
     if (!configureCognitoAuth({ userPoolId: COGNITO_USER_POOL_ID, userPoolClientId: COGNITO_APP_CLIENT_ID })) {
-      setSession({ loading: false, accessToken: "", email: "", error: "Cognito account settings are incomplete." });
+      setSession({ loading: false, userId: "", email: "", error: "Cognito account settings are incomplete." });
       return undefined;
     }
 
@@ -1828,7 +1800,7 @@ function CognitoApp() {
         if (!cancelled) setSession({ loading: false, ...restored, error: "" });
       })
       .catch(() => {
-        if (!cancelled) setSession({ loading: false, accessToken: "", email: "", error: "" });
+        if (!cancelled) setSession({ loading: false, userId: "", email: "", error: "" });
       });
 
     return () => {
@@ -1837,15 +1809,23 @@ function CognitoApp() {
   }, []);
 
   async function handleSignOut() {
-    await signOutCognito();
-    setSession({ loading: false, accessToken: "", email: "", error: "" });
+    let errorMessage = "";
+    try {
+      await signOutCognito();
+    } catch {
+      errorMessage = "Your workspace was closed, but account sign-out could not finish. Please reload and try again.";
+    } finally {
+      clearStoredState(session.userId);
+      setSession({ loading: false, userId: "", email: "", error: errorMessage });
+      setAuthMode(null);
+    }
   }
 
   if (session.loading) {
     return <AuthShell title="Opening InternLens" detail="Checking your session." />;
   }
 
-  if (!session.accessToken) {
+  if (!session.userId) {
     return (
       <PublicHome
         authMode={authMode}
@@ -1859,7 +1839,10 @@ function CognitoApp() {
 
   return (
     <App
-      authToken={session.accessToken}
+      key={session.userId}
+      accountUserId={session.userId}
+      getAccessToken={getAccessToken}
+      onUnauthorized={handleUnauthorized}
       accountEmail={session.email || "Signed in"}
       onSignOut={handleSignOut}
     />
@@ -3196,6 +3179,7 @@ if (rootElement) {
 }
 
 export {
+  App,
   AuthDialog,
   JobCard,
   JobDetailModal,
