@@ -45,6 +45,13 @@ outputs/ranking_quality_report.*
 outputs/corpus_refresh_report.json
 outputs/corpus_health.json
 
+# Local browser/test workspaces and deployment diagnostics
+outputs/.edge-*-profile/
+outputs/.review-pytest-*/
+outputs/aws-*.jpg
+outputs/aws_pipeline_connection_policy_*.json
+outputs/internlens-deployed-*.jpg
+
 # Frontend dependencies / build output
 frontend/node_modules/
 frontend/dist/
