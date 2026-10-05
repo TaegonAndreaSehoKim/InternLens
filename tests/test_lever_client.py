@@ -4,6 +4,11 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import httpx
+import pytest
+
+import src.ingestion.lever_client as lever_client
+
 from src.ingestion.lever_client import (
     _build_request_url,
     fetch_lever_postings,
@@ -19,21 +24,28 @@ def test_build_request_url_appends_mode_json() -> None:
     assert url == "https://api.lever.co/v0/postings/rws?mode=json"
 
 
-def test_fetch_lever_postings_returns_list() -> None:
-    # Fetching a known Lever board should return a list payload.
+@pytest.fixture
+def lever_transport(monkeypatch):
+    original_client = httpx.Client
+    payload = [{"id": str(index), "text": f"Intern {index}"} for index in range(5)] + ["invalid item"]
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+    monkeypatch.setattr(lever_client.httpx, "Client", lambda **kwargs: original_client(transport=transport, **kwargs))
+
+
+def test_fetch_lever_postings_returns_list(lever_transport) -> None:
+    # Unit tests must not depend on a changing public board or network access.
     jobs = fetch_lever_postings("rws", limit=3, timeout=60)
 
     assert isinstance(jobs, list)
-    assert len(jobs) <= 3
+    assert len(jobs) == 3
 
 
-def test_fetch_lever_postings_items_are_dicts_when_present() -> None:
+def test_fetch_lever_postings_items_are_dicts_when_present(lever_transport) -> None:
     # Each returned posting should be a dictionary when results exist.
     jobs = fetch_lever_postings("rws", limit=3, timeout=60)
 
-    if jobs:
-        assert isinstance(jobs[0], dict)
-        assert "id" in jobs[0]
+    assert all(isinstance(job, dict) for job in jobs)
+    assert jobs[0]["id"] == "0"
 
 
 def test_normalize_lever_posting_maps_core_fields() -> None:

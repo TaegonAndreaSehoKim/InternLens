@@ -285,6 +285,15 @@ Backend:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Run the deterministic labeled ranking check separately or write an ignored report for inspection:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\evaluate_ranking.py --check
+.\.venv\Scripts\python.exe scripts\evaluate_ranking.py --check --output-file outputs\ranking_evaluation.json
+```
+
+See [ranking evaluation](../architecture/ranking_evaluation.md) for the fixture scope, metric definitions, and thresholds. This small synthetic regression set is separate from evaluation on reviewed public postings.
+
 Useful targeted tests:
 
 ```powershell
@@ -299,10 +308,13 @@ Frontend:
 
 ```powershell
 cd frontend
+npm ci
 npm run lint
 npm test -- --run
 npm run build
 ```
+
+The frontend GitHub Actions job uses Node 24 and the committed lockfile, then runs lint, all Vitest tests, and the production build. Interaction tests use React Testing Library, user-event, and jsdom for account draft switching, profile saving, recommendation readiness, job actions, search, and pagination. API calls are mocked; these checks do not perform live Cognito sign-in or visual browser layout testing. Lever fetch unit tests also use a local HTTP transport rather than a changing public board.
 
 ## Generated Data Guidance
 

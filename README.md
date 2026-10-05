@@ -184,10 +184,11 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Latest local backend suite: `284 passed`
+- Latest local backend suite: `294 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
-- Frontend suite: `58 passed`
+- Frontend suite: `65 passed`
 - Frontend lint and production build: passing
+- GitHub Actions checks frontend lint, interaction tests, and build, plus a deterministic [ranking evaluation](docs/architecture/ranking_evaluation.md) over 60 curated judgments
 - Corpus health gate: refresh artifacts and weekly deploys must contain at least one non-expired processed job
 - Runtime readiness: `/ready` reports unavailable job data separately from API liveness; the UI retains access to saved jobs and prior shortlists
 - Deployment smoke now checks `health`, auth protection, OpenAPI schema, and the public recommendation corpus

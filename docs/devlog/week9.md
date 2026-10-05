@@ -55,3 +55,23 @@
 
 ### Follow-up
 - Add browser interaction coverage, frontend CI, and a labeled ranking evaluation (item 6).
+
+## 2026-10-05 - Interaction CI and labeled ranking checks (item 6)
+
+### Changes
+- Added jsdom interaction coverage for account draft switching, profile edits and saving, readiness retry, recommendation runs, save/apply/hide/undo, failure recovery, search, and pagination.
+- Added a Node 24 frontend CI job using `npm ci`, lint, Vitest, and the production build.
+- Added a fixed-time benchmark with four candidate profiles, 15 synthetic jobs, and 60 explicit relevance/eligibility judgments.
+- Measured Precision@2, nDCG@2, eligibility accuracy, blocked shortlist rate, and non-internship shortlist rate; each profile must pass thresholds independently.
+- Added a CLI check to backend CI and tests proving bad rankings, empty shortlists, incomplete labels, and regressions fail the gate.
+- Replaced two live Lever unit-test requests with deterministic HTTP transport fixtures.
+
+### Validation
+- Backend full suite: **294 passed**.
+- Frontend full suite: **65 passed**; lint and production build passed.
+- Curated benchmark: Precision@2 **1.0**, nDCG@2 **1.0**, eligibility accuracy **1.0**, both leakage rates **0.0**.
+- The benchmark is synthetic and independent human review remains pending; no production quality claim or live Cognito/browser layout check is implied.
+- New development dependencies and the lockfile were added; generated job data was unchanged.
+
+### Follow-up
+- Separate module responsibilities, add indexed corpus lookup, correct company identity normalization, and synchronize current documentation (item 7).
