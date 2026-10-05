@@ -216,15 +216,19 @@ The backend can be brought into the same push-driven workflow with CodePipeline 
 ```text
 GitHub main push
   -> CodePipeline source stage
-  -> CodeBuild test/package stage
+  -> CodeBuild test/refresh/health/package stage
   -> Elastic Beanstalk deploy stage
 ```
 
 The repository root includes `buildspec.yml` for this backend pipeline.
-It does two things:
+It gates deployment on these steps:
 
 - runs `python -m pytest -q`
+- refreshes active Lever and Greenhouse sources, requiring at least one successful source and allowing at most `${MAX_FAILED_SOURCES:-2}` final source failures
+- checks that the refreshed corpus has at least `${MIN_ACTIVE_JOBS:-1}` non-expired jobs
 - runs `python scripts/package_eb.py` as a source-bundle validation check
+
+Refreshing during a push build prevents checked-in, expired job snapshots from replacing the current server corpus. A failed refresh policy or corpus health check stops the build before its deployment artifact is published. `REFRESH_TIMEOUT_SECONDS` defaults to `180`; raw data and diagnostic reports are not included in the runtime artifact.
 
 The CodeBuild output artifact is intentionally not `outputs/internlens_eb_backend.zip`.
 CodePipeline packages the selected artifact files for the next action, so the artifact should expose the Beanstalk source-bundle layout directly:
@@ -252,6 +256,12 @@ data/processed/jobs/**/*
 12. Select the existing Elastic Beanstalk application and the `internlens-env` environment.
 13. Use the CodeBuild output artifact as the deploy input artifact, not the original GitHub source artifact.
 14. Save the pipeline and run it once manually.
+
+### When pushes stop starting the backend pipeline
+
+Check the last pipeline execution's source commit, the `main` push trigger, and the source action's `DetectChanges` setting. In GitHub's installed applications, verify that **AWS Connector for GitHub** is installed and has access to `InternLens`; the separate AWS Amplify app only serves the frontend workflow. A CodeConnections status of `Available` alone does not prove the GitHub app is still installed or receiving pushes.
+
+If the connector was removed, restore access to the selected repository, complete the AWS connection setup, and verify the source action uses that connection. Reinstalling the app may require a replacement connection and a scoped `UseConnection` permission for the pipeline service role. Verify a new `main` push starts Source, Build, and Deploy, then check `GET /ready` through CloudFront. A `404` indicates an older API version; a `503` indicates that the readiness endpoint exists but the deployed corpus is unavailable.
 
 ## Weekly Corpus Refresh and Deploy
 

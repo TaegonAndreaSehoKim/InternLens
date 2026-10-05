@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `312 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `313 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -169,6 +169,7 @@ The frontend uses these APIs to support:
 - GitHub Actions runs backend tests, frontend lint/interaction tests/build, and a fixed-time labeled ranking regression check; a separate scheduled/manual workflow produces corpus refresh artifacts
 - AWS staging is live with Amplify for the frontend, Elastic Beanstalk for the backend, and CloudFront for HTTPS API access
 - a weekly AWS refresh/deploy path now refreshes the staging job corpus through EventBridge and CodeBuild
+- push-triggered backend CodeBuild runs tests, refreshes active sources, and checks corpus health before publishing its runtime deployment artifact
 
 ### What improved most recently
 Recent work focused on:

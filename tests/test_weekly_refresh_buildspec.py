@@ -1,6 +1,26 @@
 from pathlib import Path
 
 
+def test_push_buildspec_gates_deployment_on_tests_and_fresh_corpus() -> None:
+    buildspec = Path("buildspec.yml").read_text(encoding="utf-8")
+    commands = (
+        "python -m pytest -q",
+        'python scripts/refresh_job_corpus.py --timeout "${REFRESH_TIMEOUT_SECONDS:-180}"'
+        ' --min-successful-sources 1 --max-failed-sources "${MAX_FAILED_SOURCES:-2}"'
+        " --report-file outputs/corpus_refresh_report.json",
+        'python scripts/check_corpus_health.py --min-active-jobs "${MIN_ACTIVE_JOBS:-1}"'
+        " --output-file outputs/corpus_health.json",
+        "python scripts/package_eb.py",
+    )
+
+    positions = [buildspec.index(command) for command in commands]
+    assert positions == sorted(positions)
+    artifact_files = buildspec.split("artifacts:", 1)[1]
+    assert "    - data/processed/jobs/**/*" in artifact_files
+    assert "outputs/" not in artifact_files
+    assert "data/raw/" not in artifact_files
+
+
 def test_weekly_refresh_buildspec_refreshes_packages_and_deploys() -> None:
     buildspec = Path("buildspec.weekly-refresh.yml").read_text(encoding="utf-8")
 

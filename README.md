@@ -159,7 +159,7 @@ Current staging shape:
 - Weekly corpus refresh: EventBridge -> CodeBuild -> Elastic Beanstalk
 - Failure notification topic: SNS
 
-GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. The staging backend corpus is updated by the AWS CodeBuild weekly refresh/deploy path below. Both paths retry transient ATS failures, preserve per-source diagnostics, tolerate at most two final board failures, and run `scripts/check_corpus_health.py` so a green run still requires a healthy non-expired corpus.
+GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. AWS CodeBuild refreshes the staging corpus during both push deployments and the weekly refresh/deploy path below. These paths retry transient ATS failures, preserve per-source diagnostics, tolerate at most two final board failures, and run `scripts/check_corpus_health.py` so a green run still requires a healthy non-expired corpus.
 
 Latest verified weekly refresh path:
 
@@ -188,12 +188,12 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 Recent validation checkpoints:
 
-- Latest local backend suite: `312 passed`
+- Latest local backend suite: `313 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
 - Frontend suite: `68 passed`
 - Frontend lint and production build: passing
 - GitHub Actions checks frontend lint, interaction tests, and build, plus a deterministic [ranking evaluation](docs/architecture/ranking_evaluation.md) over 60 curated judgments
-- Corpus health gate: refresh artifacts and weekly deploys must contain at least one non-expired processed job
+- Corpus health gate: refresh artifacts, push deploys, and weekly deploys must contain at least one non-expired processed job
 - Runtime readiness: `/ready` reports unavailable job data separately from API liveness; the UI retains access to saved jobs and prior shortlists
 - Deployment smoke now checks `health`, auth protection, OpenAPI schema, and the public recommendation corpus
 
