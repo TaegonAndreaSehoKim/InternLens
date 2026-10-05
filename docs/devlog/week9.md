@@ -132,7 +132,7 @@
 ### Findings
 - The deployed frontend requests `/ready`, but the live CloudFront backend returns `404`; `/health` returns `200` and its OpenAPI schema has no readiness route.
 - The backend pipeline's last execution was May 15 at `a2019143`; its `main` push filter and `DetectChanges=true` are still configured.
-- The current backend is the weekly `21f239fea695` build, predating the latest API changes. GitHub's installed applications show AWS Amplify, with no AWS Connector for GitHub.
+- At initial inspection the backend was the weekly `21f239fea695` build, predating the latest API changes. GitHub's installed applications showed AWS Amplify, with no AWS Connector for GitHub.
 
 ### Changes
 - Added source refresh and corpus health gates to the normal push build before packaging, using the weekly workflow's failure policy and environment defaults.
@@ -143,4 +143,6 @@
 - Buildspec regressions: **3 passed**; Windows backend full suite: **313 passed**.
 - Local corpus health: **233 active**, **233 total**; source-bundle validation passed (**260 files**, **0.61 MB**).
 - Generated data, reports, and the bundle remain local and are not staged.
-- Live connection restoration and deployment verification are pending GitHub app authorization.
+- The user completed GitHub app authorization. Restricted access to `InternLens`, created the Ohio connection `internlens-github-20261005`, and changed the existing pipeline's source to that connection with the same repository and `main` push filter.
+- Added the exact replacement connection ARN to the existing pipeline role's `UseConnection` policy, preserving the original resources and deployment targets.
+- Automatic push execution and live deployment verification remain pending.

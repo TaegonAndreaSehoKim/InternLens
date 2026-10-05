@@ -253,7 +253,7 @@ data/processed/jobs/**/*
 9. Set the buildspec path to the repo-root default `buildspec.yml`.
 10. Keep the primary build artifact as the build output artifact.
 11. Add a deploy stage using Elastic Beanstalk.
-12. Select the existing Elastic Beanstalk application and the `internlens-env` environment.
+12. Select the existing Elastic Beanstalk application and the `Internlens-env` environment.
 13. Use the CodeBuild output artifact as the deploy input artifact, not the original GitHub source artifact.
 14. Save the pipeline and run it once manually.
 
@@ -262,6 +262,18 @@ data/processed/jobs/**/*
 Check the last pipeline execution's source commit, the `main` push trigger, and the source action's `DetectChanges` setting. In GitHub's installed applications, verify that **AWS Connector for GitHub** is installed and has access to `InternLens`; the separate AWS Amplify app only serves the frontend workflow. A CodeConnections status of `Available` alone does not prove the GitHub app is still installed or receiving pushes.
 
 If the connector was removed, restore access to the selected repository, complete the AWS connection setup, and verify the source action uses that connection. Reinstalling the app may require a replacement connection and a scoped `UseConnection` permission for the pipeline service role. Verify a new `main` push starts Source, Build, and Deploy, then check `GET /ready` through CloudFront. A `404` indicates an older API version; a `503` indicates that the readiness endpoint exists but the deployed corpus is unavailable.
+
+Connection restored on 2026-10-05:
+
+```text
+Pipeline: internlens-backend-staging
+Connection: internlens-github-20261005
+Connection ARN: arn:aws:codeconnections:us-east-2:195687035252:connection/6524be88-af70-4c24-8c66-0ee60cd9c41e
+GitHub repository: TaegonAndreaSehoKim/InternLens
+Push branch: main
+```
+
+The GitHub app is restricted to the selected `InternLens` repository. The existing pipeline role's connection policy includes `UseConnection` for the exact replacement ARN; the original connection and policy resources were retained. Build and Deploy still use `internlens-backend-build` and `internlens / Internlens-env`.
 
 ## Weekly Corpus Refresh and Deploy
 
