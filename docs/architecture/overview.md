@@ -9,7 +9,7 @@ InternLens is a practical internship search product prototype that connects four
 3. shortlist-oriented inspection through CLI and API
 4. stored-profile review through a lightweight frontend dashboard
 
-The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `294 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
+The project began as a simple internship recommender over sample jobs, but it now supports real public ATS sources and a more realistic evaluation loop. At the current stage, the system can fetch public internships from Lever and Greenhouse boards, normalize them into a shared processed schema, rank them against a target candidate profile, persist user-scoped profile workflow state, and expose results through CLI, API, and a Vite/React frontend. The latest local backend checkpoint is `309 passed`, the latest weekly CodeBuild backend checkpoint is `200 passed`, and the frontend lint, test, and production build checks pass.
 
 ---
 
@@ -49,6 +49,8 @@ The ingestion layer saves:
 - raw board snapshots for reproducibility
 - processed per-job JSON files for ranking
 
+Registry `company_name` metadata supplies a company display name, with the source identifier as a fallback. Lever department names remain separate from company identity; `team` uses the source team or falls back to the department. Promotion retains the discovered company name in new registry entries. Existing processed files and stored run snapshots are not rewritten by these normalization changes.
+
 This keeps collection and ranking decoupled, which makes debugging and iteration easier.
 
 Source refreshes normalize the complete response before staging validated JSON outside the corpus tree. The source directory is replaced only after staging succeeds, with rollback to the previous snapshot on a publication failure. A failed rollback preserves its backup path for operator recovery. Directory renames have a brief publication gap; this is not a concurrent-writer or crash-recovery transaction.
@@ -63,6 +65,10 @@ The preprocessing layer loads:
 Candidate preferences such as role targets, graduation timing, sponsorship need, and extracted skills are turned into a baseline-friendly representation.
 
 The job parser supports recursively loading processed jobs from source-specific directories. It also suppresses duplicate `job_id` values and conservative content duplicates by default so older flat files and nested source/site files can coexist during development.
+
+Job detail endpoints use a bounded per-process `JobIndex` in `src/storage/job_index.py`. It checks a recursive file metadata fingerprint, parses a stable snapshot only when the corpus changes, and looks up records by ID. Edits, additions, deletions, and source-directory replacement invalidate the cache. Detail views preserve expired records and distinct content-duplicate IDs; recommendations still use the active loader on every run, so expiry is never bypassed by the detail cache. Fingerprint validation still scans file metadata; this is not a persistent database index.
+
+Pydantic request/response contracts live in `src/api/models.py`, while `src/api/app.py` wires endpoints and workflow logic. In the frontend, profile selector catalogs live in `profileOptions.js` and the account form in `auth/AuthDialog.jsx`; the workspace keeps its existing workflow and styles.
 
 ---
 
@@ -195,25 +201,19 @@ Recent work focused on:
 - splitting the fit score into clearer weighted components for skills, qualification coverage, role fit, major fit, location, freshness, and internship signal strength
 - adding resume upload parsing so profile setup can review evidence-backed suggestions for skills, majors, roles, industries, locations, education timeline, and background text
 
-The latest validation state shows:
-- local backend suite after refresh resilience updates: `226 passed`
-- weekly backend CodeBuild suite: `200 passed`
-- `npm run lint`, `npm test -- --run` (`30 passed`), and `npm run build` passing in `frontend/`
-- Cloudflare re-fetched with improved location extraction
-- Cloudflare applyable-only shortlist reduced to a much smaller, more relevant subset
-- Waymo shortlist remains very small and focused under applyable-only filtering
+Current validation and benchmark details are recorded in [week 9](../devlog/week9.md) and the [README quality checkpoint](../../README.md#quality-checkpoint). Earlier corpus inspections and deployment runs remain historical examples; job availability and shortlist volume depend on the currently deployed snapshot.
 
 ---
 
-## Example current behavior
+## Earlier corpus inspection examples
 
 ### Waymo
-The Waymo shortlist is now very narrow. Under applyable-only filtering, it effectively surfaces a single clearly relevant internship target rather than a noisy wall of blocked roles. That is a strong sign that blocker logic and internship prioritization are working.
+A previous Waymo corpus inspection produced a very narrow applyable-only shortlist. Its size is an example of blocker and internship filtering, not a guarantee about the current public board.
 
 ### Cloudflare
-Cloudflare remains noisier than Waymo, but it is much more usable than before.
+Previous Cloudflare inspections were noisier than Waymo and informed precision safeguards.
 
-Recent visible shortlist examples include:
+Previously inspected shortlist examples included:
 - Data Analytics Intern
 - Business Analyst Intern, Revenue Operations (AI Innovation)
 - DCSC Automation Coordinator Intern

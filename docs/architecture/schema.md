@@ -48,15 +48,17 @@ A raw job record represents one fetched posting before normalization.
 
 A processed job record is the normalized form used by the current InternLens ranking and API layers.
 
+The required fields below match `REQUIRED_JOB_FIELDS` in the loader. Optional metadata is preserved when supplied; fields used by future sources need not be emitted by the current ATS clients.
+
+Company/department semantics below describe current normalization. Older processed files and historical run snapshots retain their original stored labels; this change does not migrate generated data.
+
 ### Required fields
 
 | Field | Type | Description |
 |---|---|---|
 | job_id | string | InternLens job identifier used internally across ranking and API responses |
 | source | string | Source platform such as `lever`, `greenhouse`, or `manual` |
-| source_site | string | Site/board identifier from the source system |
-| source_job_id | string | Original source-specific job/posting ID |
-| company | string | Company name |
+| company | string | Configured company display name, or the source identifier when unknown; never inferred from a Lever department |
 | title | string | Job title |
 | location | string | Normalized location string |
 | description | string | Main job description text |
@@ -65,15 +67,16 @@ A processed job record is the normalized form used by the current InternLens ran
 | posting_date | string | Posting date in ISO-like string format if available |
 | sponsorship_info | string | Sponsorship or work authorization information; explicit restrictions include the source evidence, unknown policy remains empty |
 | employment_type | string | Internship, full-time, contract, etc. |
-| source_url | string | Public application or detail page URL |
-| created_at | string | Timestamp when the processed record was created |
-| updated_at | string | Timestamp when the processed record was last refreshed |
 
 ### Optional fields
 
 | Field | Type | Description |
 |---|---|---|
-| team | string | Team, department, or function |
+| source_site | string | Stable site/board identifier from the source system |
+| source_job_id | string | Original source-specific job/posting ID |
+| source_url | string | Public application or detail page URL |
+| team | string | Source team; falls back to the department when no team is supplied |
+| department | string | Source department, retained separately from company identity |
 | remote_status | string | `remote`, `hybrid`, `onsite`, or empty |
 | application_url | string | Apply URL if different from source_url |
 | fetched_at | string | UTC timestamp of the most recent successful source check |
@@ -165,13 +168,12 @@ and richer records when duplicates are found.
 
 To keep the rest of the pipeline stable:
 
-- all text fields should be normalized to lowercase for internal matching
+- processed jobs preserve source capitalization for display; scoring and profile normalization lowercase values used for internal matching
 - source-specific nested fields should be flattened into the processed schema
 - missing unsupported fields should default to empty strings or empty lists
 - every processed job must include enough data to run:
   - blocker checks
   - ranking
-  - retrieval
   - `/jobs/{id}`
   - `/recommend`
 

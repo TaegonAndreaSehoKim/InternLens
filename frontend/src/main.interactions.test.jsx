@@ -19,7 +19,7 @@ const job = {
 };
 const run = { run_id: "run-1", results: [job] };
 
-function workspaceApi({ readiness = "ready", failedAction = false, missingProfile = false } = {}) {
+function workspaceApi({ readiness = "ready", failedAction = false, missingProfile = false, healthOffline = false } = {}) {
   let state = null;
   const dashboard = () => ({
     summary: { recommendation_run_count: 1, saved_jobs_count: Number(state === "saved"), applied_jobs_count: Number(state === "applied"), dismissed_jobs_count: Number(state === "dismissed") },
@@ -30,7 +30,10 @@ function workspaceApi({ readiness = "ready", failedAction = false, missingProfil
     const path = new URL(url).pathname;
     let status = 200;
     let body;
-    if (path === "/health") body = { status: "ok" };
+    if (path === "/health") {
+      if (healthOffline) throw new TypeError("Failed to fetch");
+      body = { status: "ok" };
+    }
     else if (path === "/ready") {
       status = readiness === "ready" ? 200 : 503;
       body = { status: readiness, active_job_count: readiness === "ready" ? 1 : 0, message: "Job sources need a refresh." };
@@ -66,6 +69,17 @@ beforeEach(() => localStorage.clear());
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("workspace interactions", () => {
+  it("offers a readiness retry after an initial connection failure", async () => {
+    const user = userEvent.setup();
+    workspaceApi({ healthOffline: true });
+    render(<App accountUserId="account-a" />);
+    await screen.findByText("Could not check job availability");
+    const retry = screen.getByRole("button", { name: "Check again" });
+    expect(retry.disabled).toBe(false);
+    await user.click(retry);
+    await waitFor(() => expect(screen.queryByLabelText("Job data status")).toBeNull());
+  });
+
   it("saves, applies, hides and restores a job through the API", async () => {
     const { user, fetchMock } = await openWorkspace();
     const card = within(screen.getByRole("heading", { name: job.title }).closest("article"));

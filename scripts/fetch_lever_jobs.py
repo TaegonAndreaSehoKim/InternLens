@@ -46,6 +46,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--site-name", required=True, help="Lever site name, e.g. a board token from jobs.lever.co/<site_name>")
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for fetched jobs")
     parser.add_argument("--timeout", type=float, default=60.0, help="Request timeout in seconds")
+    parser.add_argument("--company-name", default=None, help="Verified company display name; defaults to the board identifier")
     parser.add_argument(
         "--internship-only",
         action="store_true",
@@ -74,6 +75,7 @@ def main() -> None:
         args.site_name,
         jobs,
         project_root=PROJECT_ROOT,
+        company_name=args.company_name,
     )
 
     print(f"Saved raw snapshot to: {raw_output_path}")

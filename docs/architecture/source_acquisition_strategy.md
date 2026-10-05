@@ -283,11 +283,11 @@ Current implementation caveats observed during a wide seed dry run:
 - blocked-page manual review records are operator cues with `source_type = manual_review` and `status = blocked`; they are not promotion-ready source records
 - discovered source output should therefore be treated as operator-reviewed candidate data, not canonical truth
 
-Recent broad-scan probe result:
+Earlier broad-scan probe result (historical; consult the registry for current activation):
 - baseline discovery found `14` candidates from `144` seeds, with `13` validating successfully
 - discovery with direct ATS probing and blocked-page review records found `82` records
 - validation of that probe with stricter internship-signal rules and a wider validation sample produced `68` validated sources, `1` rejected source, and `13` blocked manual-review records
-- promotion dry-run with conservative safeguards promoted `0` new sources from the latest probe file; Cloudflare remains skipped as an inactive registry entry, and Zoox is blocked by the direct-probe safeguard
+- that promotion dry-run promoted `0` new sources; Cloudflare was skipped as an inactive entry in that run, and Zoox was blocked by the direct-probe safeguard
 - a 30-seed priority-link comparison found two additional `priority_link_scan` candidates, Anthropic and GitLab, while adding four extra `404` warnings
 - validation and promotion-candidate smoke testing showed those two added candidates were general Greenhouse boards with `internship_likelihood = 0.00`, so they were not promoted
 
@@ -326,6 +326,8 @@ promotion smoke:
 3. fetch the temporary registries into a temporary data tree
 4. rank the fetched jobs against the example profile
 5. report processed job counts, action-label counts, blocker counts, and top results
+
+Runtime registry rows may include `company_name`, a reviewed display name passed to processed normalization. New promotion rows retain the discovered company name for review; existing configured names survive registry updates. Without it, normalizers retain the source identifier as the company fallback. Lever `categories.department` is stored as `department`, and supplies the team only when no source team is available. Company display changes do not change source IDs, job IDs, or output directories. Single-board fetch commands accept the equivalent `--company-name` option.
 
 ---
 

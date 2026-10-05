@@ -103,11 +103,14 @@ The browser workflow supports:
 Main runtime pieces:
 
 - Backend: `src/api/app.py`
+- API contracts: `src/api/models.py`
 - Resume parser: `src/preprocessing/resume_parser.py`
 - Ranking: `src/ranking/baseline_scorer.py`
 - Job loading: `src/preprocessing/job_parser.py`
+- Indexed job detail lookup: `src/storage/job_index.py`
 - Profile persistence: `src/storage/profile_store.py`
 - Frontend: `frontend/src/main.jsx`
+- Account form and profile options: `frontend/src/auth/AuthDialog.jsx`, `frontend/src/profileOptions.js`
 - AWS backend packaging: `scripts/package_eb.py`
 - Weekly refresh deploy: `buildspec.weekly-refresh.yml`
 - Ranking quality report: `scripts/generate_ranking_quality_report.py`
@@ -174,19 +177,20 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 
 - [Architecture overview](docs/architecture/overview.md)
 - [Ranking logic](docs/architecture/ranking_logic.md)
+- [Ranking evaluation](docs/architecture/ranking_evaluation.md)
 - [Data schema](docs/architecture/schema.md)
 - [Source acquisition strategy](docs/architecture/source_acquisition_strategy.md)
 - [Local workflows](docs/development/local_workflows.md)
 - [AWS staging deployment](docs/deployment/aws_staging.md)
-- [Latest development log](docs/devlog/week8.md)
+- [Latest development log](docs/devlog/week9.md)
 
 ## Quality Checkpoint
 
 Recent validation checkpoints:
 
-- Latest local backend suite: `294 passed`
+- Latest local backend suite: `309 passed`
 - Backend suite in weekly CodeBuild: `200 passed`
-- Frontend suite: `65 passed`
+- Frontend suite: `68 passed`
 - Frontend lint and production build: passing
 - GitHub Actions checks frontend lint, interaction tests, and build, plus a deterministic [ranking evaluation](docs/architecture/ranking_evaluation.md) over 60 curated judgments
 - Corpus health gate: refresh artifacts and weekly deploys must contain at least one non-expired processed job

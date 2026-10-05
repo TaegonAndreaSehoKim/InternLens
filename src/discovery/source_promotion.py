@@ -31,6 +31,7 @@ def _promotion_note(record: Dict[str, Any], promoted_at: str) -> str:
 def _build_lever_registry_entry(record: Dict[str, Any], promoted_at: str) -> Dict[str, Any]:
     return {
         "site_name": str(record.get("source_identifier", "")).strip(),
+        **({"company_name": str(record["company"]).strip()} if record.get("company") else {}),
         "active": True,
         "internship_only": True,
         "notes": _promotion_note(record, promoted_at),
@@ -40,6 +41,7 @@ def _build_lever_registry_entry(record: Dict[str, Any], promoted_at: str) -> Dic
 def _build_greenhouse_registry_entry(record: Dict[str, Any], promoted_at: str) -> Dict[str, Any]:
     return {
         "board_token": str(record.get("source_identifier", "")).strip(),
+        **({"company_name": str(record["company"]).strip()} if record.get("company") else {}),
         "active": True,
         "notes": _promotion_note(record, promoted_at),
     }

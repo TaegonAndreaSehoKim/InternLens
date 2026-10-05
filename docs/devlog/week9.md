@@ -75,3 +75,28 @@
 
 ### Follow-up
 - Separate module responsibilities, add indexed corpus lookup, correct company identity normalization, and synchronize current documentation (item 7).
+
+## 2026-10-05 - Module boundaries, detail lookup, and company metadata (item 7)
+
+### Changes
+- Extracted 30 API request/response models into `src/api/models.py`, keeping their names and endpoint contracts stable.
+- Moved profile selector catalogs and the account form out of `main.jsx` into dedicated modules; retained the existing workspace flow and styling.
+- Added a bounded per-process job ID index for detail endpoints, with file metadata invalidation, stable-snapshot checks, defensive copies, and canonical duplicate rules.
+- Kept ranking on the active loader so cached detail records cannot bypass expiry in new recommendations.
+- Used optional registry/company CLI metadata for company display names and stored Lever departments separately, with team fallback.
+- Added display names to 20 existing registry entries and retained discovered company names during new-source promotion. Active flags, source/job IDs, and output paths were unchanged.
+- Corrected processed-schema required fields, capitalization guidance, stale checkpoint links, and historical corpus examples.
+- Made the readiness retry available after an initial API connection failure, with an interaction regression test.
+
+### Validation
+- Targeted backend checks before new cases: **87 passed**; index/identity integration checks: **39 passed**.
+- Backend full suite: **309 passed**; the curated ranking gate passed with unchanged metrics.
+- Frontend full suite: **68 passed**; lint and production build passed.
+- Account form tests covered email sign-in challenges and retrying a wrong sign-up confirmation code with mocked SDK calls.
+- Read-only local timing across 12 repetitions: median full-corpus detail parsing **123.71 ms**, warm indexed lookup **23.35 ms**. These are local measurements, not a deployment latency guarantee.
+- Generated jobs/raw data and existing user runtime changes were not regenerated or staged; only small source registry metadata changed.
+
+### Remaining product work
+- Review the synthetic ranking labels with real ATS examples and more candidate constraints.
+- Refresh the expired local/deployed corpus when operationally appropriate; readiness now exposes unavailable data.
+- Broader API authorization/path hardening and CSS consolidation remain separate follow-ups.

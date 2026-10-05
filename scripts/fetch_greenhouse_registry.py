@@ -115,6 +115,7 @@ def _load_registry(registry_path: Path) -> List[Dict[str, Any]]:
         entries.append(
             {
                 "board_token": board_token,
+                "company_name": str(item.get("company_name") or "").strip(),
                 "active": bool(item.get("active", True)),
                 "notes": str(item.get("notes", "")).strip(),
             }
@@ -192,6 +193,7 @@ def run_registry_fetch(
             board_token,
             jobs,
             project_root=project_root,
+            **({"company_name": entry["company_name"]} if entry["company_name"] else {}),
         )
 
         print(f"Saved raw snapshot to: {raw_output_path}")

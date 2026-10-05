@@ -237,6 +237,7 @@ def normalize_greenhouse_job(
     *,
     fetched_at: datetime | None = None,
     freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
+    company_name: str | None = None,
 ) -> Dict[str, Any]:
     # Normalize one Greenhouse job into the current InternLens processed schema.
     source_job_id = _coerce_text(job.get("id", ""))
@@ -254,7 +255,7 @@ def normalize_greenhouse_job(
         "source": "greenhouse",
         "source_site": board_token.strip(),
         "source_job_id": source_job_id,
-        "company": board_token.strip(),
+        "company": _coerce_text(company_name) or board_token.strip(),
         "title": title,
         "location": location,
         "description": description,
@@ -267,6 +268,7 @@ def normalize_greenhouse_job(
         "application_url": source_url,
         "remote_status": remote_status,
         "team": team,
+        "department": team,
     } | build_freshness_fields(fetched_at=fetched_at, freshness_days=freshness_days)
 
 
@@ -276,6 +278,7 @@ def save_processed_greenhouse_jobs(
     *,
     project_root: Path,
     freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
+    company_name: str | None = None,
 ) -> List[Path]:
     # Normalize each Greenhouse job and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "greenhouse" / board_token
@@ -286,6 +289,7 @@ def save_processed_greenhouse_jobs(
             board_token,
             fetched_at=fetched_at,
             freshness_days=freshness_days,
+            company_name=company_name,
         )
         for job in jobs
     ]

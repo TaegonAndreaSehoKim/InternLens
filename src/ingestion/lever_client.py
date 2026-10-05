@@ -337,13 +337,15 @@ def normalize_lever_posting(
     *,
     fetched_at: datetime | None = None,
     freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
+    company_name: str | None = None,
 ) -> Dict[str, Any]:
     # Normalize one Lever posting into the current InternLens processed schema.
     categories = _extract_categories(posting)
 
     source_job_id = _coerce_text(posting.get("id", ""))
     title = _coerce_text(posting.get("text", ""))
-    company = _coerce_text(categories.get("department", "")) or site_name.strip()
+    company = _coerce_text(company_name) or site_name.strip()
+    department = _coerce_text(categories.get("department", ""))
     location = _coerce_text(categories.get("location", "")) or _coerce_text(posting.get("country", ""))
     description = _coerce_text(posting.get("descriptionPlain", "")) or _coerce_text(
         posting.get("descriptionBodyPlain", "")
@@ -372,7 +374,8 @@ def normalize_lever_posting(
         "source_url": source_url,
         "application_url": application_url,
         "remote_status": remote_status,
-        "team": _coerce_text(categories.get("team", "")),
+        "team": _coerce_text(categories.get("team", "")) or department,
+        "department": department,
     } | build_freshness_fields(fetched_at=fetched_at, freshness_days=freshness_days)
 
 
@@ -382,6 +385,7 @@ def save_processed_lever_postings(
     *,
     project_root: Path,
     freshness_days: int = DEFAULT_JOB_FRESHNESS_DAYS,
+    company_name: str | None = None,
 ) -> List[Path]:
     # Normalize each Lever posting and save it under a source/site-specific folder.
     output_dir = project_root / "data" / "processed" / "jobs" / "lever" / site_name
@@ -392,6 +396,7 @@ def save_processed_lever_postings(
             site_name,
             fetched_at=fetched_at,
             freshness_days=freshness_days,
+            company_name=company_name,
         )
         for posting in postings
     ]

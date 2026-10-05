@@ -2,91 +2,109 @@
   {
     "board_token": "airbnb",
     "active": true,
-    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Airbnb, score=0.43, internship_likelihood=0.05)"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Airbnb, score=0.43, internship_likelihood=0.05)",
+    "company_name": "Airbnb"
   },
   {
     "board_token": "andurilindustries",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched firmware and supply chain internship roles"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched firmware and supply chain internship roles",
+    "company_name": "Anduril"
   },
   {
     "board_token": "asana",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched product design and software engineering internships"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched product design and software engineering internships",
+    "company_name": "Asana"
   },
   {
     "board_token": "cloudflare",
     "active": true,
-    "notes": "too noisy for current internship filter; promoted from discovered sources on 2026-05-08T17:25:57Z (company=Cloudflare, score=0.59, internship_likelihood=0.31)"
+    "notes": "too noisy for current internship filter; promoted from discovered sources on 2026-05-08T17:25:57Z (company=Cloudflare, score=0.59, internship_likelihood=0.31)",
+    "company_name": "Cloudflare"
   },
   {
     "board_token": "databricks",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched GenAI research internship role"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched GenAI research internship role",
+    "company_name": "Databricks"
   },
   {
     "board_token": "datadog",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched IT support internship roles"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched IT support internship roles",
+    "company_name": "Datadog"
   },
   {
     "board_token": "honehealth",
     "active": true,
-    "notes": "data science intern source"
+    "notes": "data science intern source",
+    "company_name": "Hone Health"
   },
   {
     "board_token": "instacart",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning PhD internship roles"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning PhD internship roles",
+    "company_name": "Instacart"
   },
   {
     "board_token": "okta",
     "active": true,
-    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Okta, score=0.42, internship_likelihood=0.03)"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Okta, score=0.42, internship_likelihood=0.03)",
+    "company_name": "Okta"
   },
   {
     "board_token": "pinterest",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning internship roles"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched machine learning internship roles",
+    "company_name": "Pinterest"
   },
   {
     "board_token": "roblox",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched applied scientist PhD internship role"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched applied scientist PhD internship role",
+    "company_name": "Roblox"
   },
   {
     "board_token": "samsara",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched supply chain, electrical engineering, and co-op roles"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched supply chain, electrical engineering, and co-op roles",
+    "company_name": "Samsara"
   },
   {
     "board_token": "scaleai",
     "active": true,
-    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Scale AI, score=0.41, internship_likelihood=0.01)"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Scale AI, score=0.41, internship_likelihood=0.01)",
+    "company_name": "Scale AI"
   },
   {
     "board_token": "stripe",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched data science, ML, and software engineering internships"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched data science, ML, and software engineering internships",
+    "company_name": "Stripe"
   },
   {
     "board_token": "twilio",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched developer advocacy, analyst, design, and content internships"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched developer advocacy, analyst, design, and content internships",
+    "company_name": "Twilio"
   },
   {
     "board_token": "verkada",
     "active": true,
-    "notes": "verified via Greenhouse API on 2026-05-12; matched software, embedded, industrial design, and support internships"
+    "notes": "verified via Greenhouse API on 2026-05-12; matched software, embedded, industrial design, and support internships",
+    "company_name": "Verkada"
   },
   {
     "board_token": "waymo",
     "active": true,
-    "notes": "demo/eval source"
+    "notes": "demo/eval source",
+    "company_name": "Waymo"
   },
   {
     "board_token": "zscaler",
     "active": true,
-    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Zscaler, score=0.42, internship_likelihood=0.04)"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Zscaler, score=0.42, internship_likelihood=0.04)",
+    "company_name": "Zscaler"
   }
 ]

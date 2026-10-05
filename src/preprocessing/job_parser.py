@@ -261,6 +261,7 @@ def load_job_posting(file_path: str | Path) -> Dict[str, Any]:
         "application_url",
         "remote_status",
         "team",
+        "department",
         "fetched_at",
         "expires_at",
     ]

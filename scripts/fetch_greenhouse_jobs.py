@@ -25,6 +25,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for fetched jobs")
     parser.add_argument("--timeout", type=float, default=60.0, help="Request timeout in seconds")
+    parser.add_argument("--company-name", default=None, help="Verified company display name; defaults to the board identifier")
     return parser.parse_args()
 
 
@@ -48,6 +49,7 @@ def main() -> None:
         args.board_token,
         jobs,
         project_root=PROJECT_ROOT,
+        company_name=args.company_name,
     )
 
     processed_output_dir = PROJECT_ROOT / "data" / "processed" / "jobs" / "greenhouse" / args.board_token

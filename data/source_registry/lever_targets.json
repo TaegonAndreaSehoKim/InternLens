@@ -9,12 +9,14 @@
     "site_name": "palantir",
     "active": true,
     "internship_only": true,
-    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Palantir, score=0.41, internship_likelihood=0.01)"
+    "notes": "promoted from discovered sources on 2026-05-08T17:25:57Z (company=Palantir, score=0.41, internship_likelihood=0.01)",
+    "company_name": "Palantir"
   },
   {
     "site_name": "rws",
     "active": true,
     "internship_only": false,
-    "notes": "smoke-test source"
+    "notes": "smoke-test source",
+    "company_name": "RWS"
   }
 ]
