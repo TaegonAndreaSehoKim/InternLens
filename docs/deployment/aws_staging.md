@@ -275,6 +275,31 @@ Push branch: main
 
 The GitHub app is restricted to the selected `InternLens` repository. The existing pipeline role's connection policy includes `UseConnection` for the exact replacement ARN; the original connection and policy resources were retained. Build and Deploy still use `internlens-backend-build` and `internlens / Internlens-env`.
 
+### Verified push deployment checkpoint
+
+Verified on 2026-10-05 with a genuine `main` push:
+
+```text
+Source commit: 70368ea0880a79b328e293d59836c28a12218f5a
+CodePipeline execution: d174f692-6ba4-4939-823a-69e877e76cae
+Trigger: GitHub commit pushed to TaegonAndreaSehoKim/InternLens/main
+Source / Build / Deploy: Succeeded
+CodeBuild build: internlens-backend-build:954cc1fb-9bda-4788-ae72-9d0bc3e49cc6
+Backend tests in CodeBuild: 313 passed
+Registry sources: 21 fetched, 0 failed
+Corpus: 234 active jobs, 234 total jobs
+Elastic Beanstalk: Ready / Green
+CloudFront /health and /ready: 200
+Unauthenticated /me/profile: 401
+Public recommendation and first job detail: 200
+```
+
+The authenticated frontend showed `Workspace healthy` without the job-availability error. CORS allowed the deployed Amplify origin. Generated smoke reports and screenshots were kept local.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\smoke_deployment.py --base-url https://d187u93cen5bw8.cloudfront.net --top-k 10 --expect-auth-required --output-file outputs\deployment_smoke_push.json
+```
+
 ## Weekly Corpus Refresh and Deploy
 
 The repo also includes `buildspec.weekly-refresh.yml` for unattended weekly corpus refreshes.

@@ -161,14 +161,13 @@ Current staging shape:
 
 GitHub Actions `refresh-job-corpus` is artifact-only: it refreshes data on the GitHub runner and uploads a `refreshed-job-corpus` artifact, but it does not update a local checkout, commit generated data, or deploy staging. AWS CodeBuild refreshes the staging corpus during both push deployments and the weekly refresh/deploy path below. These paths retry transient ATS failures, preserve per-source diagnostics, tolerate at most two final board failures, and run `scripts/check_corpus_health.py` so a green run still requires a healthy non-expired corpus.
 
-Latest verified weekly refresh path:
+Weekly refresh configuration:
 
 ```text
 EventBridge rule: internlens-weekly-corpus-refresh
 Schedule: cron(0 9 ? * MON *)
 CodeBuild project: internlens-weekly-corpus-refresh
 Elastic Beanstalk environment: internlens / Internlens-env
-Latest deployed weekly version: weekly-corpus-20260514031631-5d9ae2d3b1fa
 ```
 
 See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, permissions, smoke checks, and credential guidance.
@@ -189,7 +188,7 @@ See [docs/deployment/aws_staging.md](docs/deployment/aws_staging.md) for setup, 
 Recent validation checkpoints:
 
 - Latest local backend suite: `313 passed`
-- Backend suite in weekly CodeBuild: `200 passed`
+- Backend suite in push CodeBuild: `313 passed`
 - Frontend suite: `68 passed`
 - Frontend lint and production build: passing
 - GitHub Actions checks frontend lint, interaction tests, and build, plus a deterministic [ranking evaluation](docs/architecture/ranking_evaluation.md) over 60 curated judgments

@@ -145,4 +145,8 @@
 - Generated data, reports, and the bundle remain local and are not staged.
 - The user completed GitHub app authorization. Restricted access to `InternLens`, created the Ohio connection `internlens-github-20261005`, and changed the existing pipeline's source to that connection with the same repository and `main` push filter.
 - Added the exact replacement connection ARN to the existing pipeline role's `UseConnection` policy, preserving the original resources and deployment targets.
-- Automatic push execution and live deployment verification remain pending.
+- The `70368ea` push automatically started CodePipeline execution `d174f692-6ba4-4939-823a-69e877e76cae`; Source, Build, and Deploy succeeded in **1 minute 43 seconds**.
+- CodeBuild ran **313 passing backend tests**, fetched all **21 sources** with **0 failures**, and packaged **234 active jobs**. Elastic Beanstalk returned to **Ready / Green**.
+- CloudFront `/health` and `/ready` returned **200**, `/ready` reported **234 active / 234 total / 0 expired or filtered**, and CORS allowed the Amplify origin.
+- Protected calls returned **401** without authentication; public recommendations returned **10 jobs**, and the first job detail returned **200**.
+- GitHub backend/frontend CI passed. The signed-in frontend showed **Workspace healthy** without the job-availability error; no candidate profile or job action was changed during the UI check.
